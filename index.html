@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pencatatan Customer Kavling - Adam Property</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo & Brand Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-200">
+                        <i class="fa-solid fa-map-location-dot text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-800 leading-tight tracking-tight flex items-center gap-2">
+                            ADAM PROPERTY
+                            <span class="text-xs font-semibold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full">Kavling</span>
+                        </h1>
+                        <p class="text-xs text-slate-500">Sistem Pencatatan Customer & Riwayat Pembayaran</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons Header -->
+                <div class="flex items-center gap-2">
+                    <button onclick="openBackupModal()" class="px-3 py-2 text-xs sm:text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-2" title="Cadangkan atau Pulihkan Data">
+                        <i class="fa-solid fa-database text-slate-500"></i>
+                        <span class="hidden sm:inline">Backup / Restore</span>
+                    </button>
+                    <button onclick="openCustomerModal()" class="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg shadow-sm shadow-emerald-200 transition flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>+ Tambah Customer</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">Total Customer</p>
+                    <h3 id="statTotalCustomers" class="text-xl font-bold text-slate-800">0</h3>
+                    <p class="text-[11px] text-slate-400">Pembeli Kavling Terdaftar</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-tag"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">Total Nilai Kavling</p>
+                    <h3 id="statTotalHarga" class="text-xl font-bold text-slate-800">Rp 0</h3>
+                    <p class="text-[11px] text-slate-400">Total Transaksi Penjualan</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-money-bill-wave"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">Total Uang Masuk</p>
+                    <h3 id="statTotalMasuk" class="text-xl font-bold text-emerald-600">Rp 0</h3>
+                    <p class="text-[11px] text-emerald-600 font-medium" id="statPersenMasuk">0% dari target</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">Sisa Piutang / Belum Lunas</p>
+                    <h3 id="statTotalSisa" class="text-xl font-bold text-amber-600">Rp 0</h3>
+                    <p class="text-[11px] text-slate-400" id="statCustomerBelumLunas">0 Customer belum lunas</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-3 justify-between items-center">
+            <div class="relative w-full md:w-80">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Cari nama customer / no kavling..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+            </div>
+
+            <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs font-medium">
+                    <button onclick="setFilter('all')" id="btnFilterAll" class="px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs font-semibold transition">Semua</button>
+                    <button onclick="setFilter('unpaid')" id="btnFilterUnpaid" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Belum Lunas</button>
+                    <button onclick="setFilter('paid')" id="btnFilterPaid" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Lunas</button>
+                </div>
+                <button onclick="loadDemoData()" class="px-3 py-1.5 text-xs text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg border border-slate-200 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
+                    <span>Contoh Data</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabel Customer Kavling -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                        <tr>
+                            <th class="py-3.5 px-4 w-12 text-center">#</th>
+                            <th class="py-3.5 px-4">Nama Customer</th>
+                            <th class="py-3.5 px-4">Kavling Yang Diambil</th>
+                            <th class="py-3.5 px-4 text-right">Harga Kavling</th>
+                            <th class="py-3.5 px-4 text-right">Total Uang Masuk</th>
+                            <th class="py-3.5 px-4 text-right">Sisa Pembayaran</th>
+                            <th class="py-3.5 px-4 text-center">Status</th>
+                            <th class="py-3.5 px-4 text-center">Data Customer & Pembayaran</th>
+                            <th class="py-3.5 px-4 text-center w-24">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customerTableBody" class="divide-y divide-slate-100">
+                        <!-- Data Customer akan dimuat di sini secara dinamis -->
+                        <tr>
+                            <td colspan="9" class="py-12 text-center text-slate-400">
+                                <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-emerald-500"></i>
+                                <p>Memuat data customer...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden py-14 text-center px-4">
+                <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-2xl">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-700 mb-1">Belum Ada Data Customer</h3>
+                <p class="text-sm text-slate-500 max-w-md mx-auto mb-4">Tambahkan pencatatan pembeli kavling baru untuk mulai mencatat dokumen KK, KTP, dan riwayat kwitansi uang masuk.</p>
+                <div class="flex items-center justify-center gap-3">
+                    <button onclick="openCustomerModal()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">
+                        + Tambah Customer Pertama
+                    </button>
+                    <button onclick="loadDemoData()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition">
+                        Muat Contoh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
+            <p>&copy; 2026 ADAM PROPERTY. Sistem Manajemen Pencatatan Kavling Mandiri.</p>
+            <p class="flex items-center gap-1">
+                <i class="fa-solid fa-shield-halved text-emerald-600"></i> Data tersimpan aman secara lokal di perangkat Anda (IndexedDB).
+            </p>
+        </div>
+    </footer>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 1: LAMAN DETAIL "DATA CUSTOMER" (DOKUMEN KK/KTP + RIWAYAT PEMBAYARAN) -->
+    <!-- ======================================================== -->
+    <div id="customerDetailModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
+            
+            <!-- Detail Header -->
+            <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-id-card"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold flex items-center gap-2" id="detailCustomerName">
+                            Nama Customer
+                        </h2>
+                        <p class="text-xs text-slate-300" id="detailCustomerSubtitle">
+                            Kavling: Blok A-01 | Kontak: 08123456789
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="editCurrentCustomer()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-medium rounded-lg text-slate-200 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit Info
+                    </button>
+                    <button onclick="closeCustomerDetailModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-sm transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detail Body Scrollable -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+
+                <!-- Ringkasan Keuangan Kavling Customer Ini -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="text-xs text-slate-500 font-medium block">Harga Kavling</span>
+                        <span id="detailHargaKavling" class="text-lg font-bold text-slate-800">Rp 0</span>
+                        <div class="text-xs text-slate-500" id="detailKavlingName">Kavling: -</div>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-500 font-medium block">Total Uang Masuk</span>
+                        <span id="detailTotalMasuk" class="text-lg font-bold text-emerald-600">Rp 0</span>
+                        <div class="text-xs text-emerald-700 font-medium" id="detailPersenLunas">0% Terbayar</div>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-500 font-medium block">Sisa Pembayaran / Piutang</span>
+                        <span id="detailSisaPembayaran" class="text-lg font-bold text-amber-600">Rp 0</span>
+                        <div id="detailStatusBadge" class="mt-0.5">
+                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">Belum Lunas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= BAGIAN 1: DOKUMEN CUSTOMER (KTP & KK) ================= -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-folder-closed text-emerald-600"></i>
+                            Dokumen Customer (KTP & KK)
+                        </h3>
+                        <span class="text-xs text-slate-400">Klik gambar untuk memperbesar / zoom</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <!-- Card Dokumen KTP -->
+                        <div class="doc-card border border-slate-200 rounded-xl p-4 bg-white flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                                            <i class="fa-solid fa-address-card"></i>
+                                        </div>
+                                        <h4 class="font-bold text-slate-800 text-sm">Dokumen KTP</h4>
+                                    </div>
+                                    <label class="cursor-pointer text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md transition flex items-center gap-1">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                                        <span>Ganti / Upload KTP</span>
+                                        <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'ktp')">
+                                    </label>
+                                </div>
+                                <p class="text-xs text-slate-500 mb-3" id="ktpStatusText">Kartu Tanda Penduduk Pembeli</p>
+                            </div>
+
+                            <!-- Preview KTP -->
+                            <div id="ktpPreviewContainer" class="w-full h-48 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center overflow-hidden relative group">
+                                <div id="ktpEmptyState" class="text-center p-4">
+                                    <i class="fa-solid fa-id-card text-3xl text-slate-300 mb-2"></i>
+                                    <p class="text-xs text-slate-500 font-medium">Belum ada foto KTP diupload</p>
+                                    <label class="mt-2 inline-block px-3 py-1 bg-white border border-slate-300 rounded text-xs text-slate-700 cursor-pointer hover:bg-slate-50">
+                                        Pilih Foto KTP
+                                        <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'ktp')">
+                                    </label>
+                                </div>
+                                <img id="ktpImageEl" src="" alt="KTP Customer" class="hidden w-full h-full object-cover clickable-image" onclick="openLightbox(this.src, 'Dokumen KTP - ' + currentCustomer.nama)">
+                                <div id="ktpOverlay" class="hidden absolute inset-0 bg-black/40 group-hover:flex items-center justify-center gap-2 transition opacity-0 group-hover:opacity-100">
+                                    <button onclick="openLightbox(document.getElementById('ktpImageEl').src, 'Dokumen KTP - ' + currentCustomer.nama)" class="px-2.5 py-1.5 bg-white text-slate-800 rounded-md text-xs font-semibold hover:bg-slate-100 flex items-center gap-1 shadow">
+                                        <i class="fa-solid fa-magnifying-glass-plus"></i> Perbesar
+                                    </button>
+                                    <a id="ktpDownloadBtn" href="#" download="KTP_Customer.jpg" class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-semibold hover:bg-emerald-700 flex items-center gap-1 shadow">
+                                        <i class="fa-solid fa-download"></i> Unduh
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Dokumen KK (Kartu Keluarga) -->
+                        <div class="doc-card border border-slate-200 rounded-xl p-4 bg-white flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center text-xs">
+                                            <i class="fa-solid fa-people-roof"></i>
+                                        </div>
+                                        <h4 class="font-bold text-slate-800 text-sm">Dokumen KK (Kartu Keluarga)</h4>
+                                    </div>
+                                    <label class="cursor-pointer text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md transition flex items-center gap-1">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                                        <span>Ganti / Upload KK</span>
+                                        <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'kk')">
+                                    </label>
+                                </div>
+                                <p class="text-xs text-slate-500 mb-3" id="kkStatusText">Kartu Keluarga Pembeli</p>
+                            </div>
+
+                            <!-- Preview KK -->
+                            <div id="kkPreviewContainer" class="w-full h-48 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center overflow-hidden relative group">
+                                <div id="kkEmptyState" class="text-center p-4">
+                                    <i class="fa-solid fa-file-invoice text-3xl text-slate-300 mb-2"></i>
+                                    <p class="text-xs text-slate-500 font-medium">Belum ada foto KK diupload</p>
+                                    <label class="mt-2 inline-block px-3 py-1 bg-white border border-slate-300 rounded text-xs text-slate-700 cursor-pointer hover:bg-slate-50">
+                                        Pilih Foto KK
+                                        <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'kk')">
+                                    </label>
+                                </div>
+                                <img id="kkImageEl" src="" alt="KK Customer" class="hidden w-full h-full object-cover clickable-image" onclick="openLightbox(this.src, 'Dokumen KK - ' + currentCustomer.nama)">
+                                <div id="kkOverlay" class="hidden absolute inset-0 bg-black/40 group-hover:flex items-center justify-center gap-2 transition opacity-0 group-hover:opacity-100">
+                                    <button onclick="openLightbox(document.getElementById('kkImageEl').src, 'Dokumen KK - ' + currentCustomer.nama)" class="px-2.5 py-1.5 bg-white text-slate-800 rounded-md text-xs font-semibold hover:bg-slate-100 flex items-center gap-1 shadow">
+                                        <i class="fa-solid fa-magnifying-glass-plus"></i> Perbesar
+                                    </button>
+                                    <a id="kkDownloadBtn" href="#" download="KK_Customer.jpg" class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-semibold hover:bg-emerald-700 flex items-center gap-1 shadow">
+                                        <i class="fa-solid fa-download"></i> Unduh
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- ================= BAGIAN 2: RIWAYAT UANG MASUK DARI CUSTOMER ================= -->
+                <div>
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-3">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-receipt text-emerald-600"></i>
+                                Riwayat Uang Masuk dari Customer
+                            </h3>
+                            <p class="text-xs text-slate-500">Catatan pembayaran: tanggal, tujuan pembayaran, keterangan, dan foto kwitansi</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="printCustomerStatement()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-print"></i> Cetak Rekap
+                            </button>
+                            <button onclick="openPaymentModal()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm shadow-emerald-200 transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-plus"></i> + Catat Uang Masuk
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Riwayat Pembayaran -->
+                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left text-xs sm:text-sm text-slate-600">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[11px] tracking-wider">
+                                    <tr>
+                                        <th class="py-3 px-3 text-center w-10">#</th>
+                                        <th class="py-3 px-3">Tanggal</th>
+                                        <th class="py-3 px-3">Tujuan Pembayaran</th>
+                                        <th class="py-3 px-3 text-right">Nominal Masuk</th>
+                                        <th class="py-3 px-3">Keterangan</th>
+                                        <th class="py-3 px-3 text-center">Foto Kwitansi</th>
+                                        <th class="py-3 px-3 text-center w-24">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailPaymentTableBody" class="divide-y divide-slate-100">
+                                    <!-- List Pembayaran Di-generate di sini -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty State Pembayaran -->
+                        <div id="paymentEmptyState" class="hidden py-10 text-center px-4">
+                            <i class="fa-solid fa-money-check-dollar text-slate-300 text-3xl mb-2"></i>
+                            <p class="text-sm font-medium text-slate-600">Belum Ada Riwayat Uang Masuk</p>
+                            <p class="text-xs text-slate-400 mb-3">Klik tombol "Catat Uang Masuk" untuk menambahkan bukti kwitansi pertama.</p>
+                            <button onclick="openPaymentModal()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition">
+                                + Tambah Pembayaran
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Detail Footer -->
+            <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500 shrink-0">
+                <span id="detailCreatedAtText">Customer terdaftar: -</span>
+                <button onclick="closeCustomerDetailModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg text-xs transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL 2: FORM TAMBAH / EDIT CUSTOMER -->
+    <!-- ======================================================== -->
+    <div id="customerFormModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
+            
+            <div class="px-6 py-4 bg-emerald-700 text-white flex justify-between items-center shrink-0">
+                <h3 class="text-base font-bold flex items-center gap-2" id="customerModalTitle">
+                    <i class="fa-solid fa-user-plus"></i> Tambah Data Customer Kavling
+                </h3>
+                <button onclick="closeCustomerModal()" class="w-8 h-8 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-emerald-100 flex items-center justify-center text-sm transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="customerForm" onsubmit="handleCustomerSubmit(event)" class="p-6 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
+                <input type="hidden" id="customerIdInput" value="">
+
+                <!-- 1. Nama Customer -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        1. Nama Customer <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="namaInput" required placeholder="Contoh: Bapak Ahmad Dahlan" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- 2. Kavling Yang Diambil -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            2. Kavling Yang Diambil <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="kavlingInput" required placeholder="Contoh: Blok A-05 / Kavling 12" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                    </div>
+
+                    <!-- 3. Harga Kavling -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            3. Harga Kavling (Rp) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="hargaInput" required placeholder="Contoh: 85.000.000" onkeyup="formatCurrencyInput(this)" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Nomor Telepon / WA -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            Nomor WhatsApp / HP
+                        </label>
+                        <input type="text" id="teleponInput" placeholder="Contoh: 081234567890" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                    </div>
+
+                    <!-- Alamat -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            Alamat / Domisili
+                        </label>
+                        <input type="text" id="alamatInput" placeholder="Contoh: Jl. Mawar No. 10" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                    </div>
+                </div>
+
+                <!-- Upload Awal Dokumen KTP & KK (Opsional saat pendaftaran) -->
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <p class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-arrow-up text-emerald-600"></i> Upload Dokumen Customer (Bisa diisi sekarang atau nanti)
+                    </p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-600 font-medium mb-1">Foto / Scan KTP</label>
+                            <input type="file" id="formKtpFile" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-600 font-medium mb-1">Foto / Scan KK</label>
+                            <input type="file" id="formKkFile" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeCustomerModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">
+                        Batal
+                    </button>
+                    <button type="submit" id="btnSubmitCustomer" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Data Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL 3: FORM CATAT PEMBAYARAN / UANG MASUK & KWITANSI -->
+    <!-- ======================================================== -->
+    <div id="paymentFormModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
+            
+            <div class="px-6 py-4 bg-emerald-700 text-white flex justify-between items-center shrink-0">
+                <h3 class="text-base font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-receipt"></i> Catat Uang Masuk Customer
+                </h3>
+                <button onclick="closePaymentModal()" class="w-8 h-8 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-emerald-100 flex items-center justify-center text-sm transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="paymentForm" onsubmit="handlePaymentSubmit(event)" class="p-6 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
+                
+                <!-- Tanggal Pembayaran -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Tanggal Uang Masuk <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" id="payTanggalInput" required class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                </div>
+
+                <!-- Tujuan Pembayaran -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Tujuan Pembayaran <span class="text-red-500">*</span>
+                    </label>
+                    <select id="payTujuanSelect" onchange="handleTujuanChange(this.value)" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                        <option value="Booking Fee / Tanda Jadi">Booking Fee / Tanda Jadi</option>
+                        <option value="DP (Uang Muka)">DP (Uang Muka)</option>
+                        <option value="Angsuran / Cicilan Bulanan">Angsuran / Cicilan Bulanan</option>
+                        <option value="Pelunasan Kavling">Pelunasan Kavling</option>
+                        <option value="Biaya AJB / Notaris / Surat">Biaya AJB / Notaris / Surat</option>
+                        <option value="Lainnya">Lainnya (Ketik Manual)...</option>
+                    </select>
+                    <input type="text" id="payTujuanCustomInput" placeholder="Tuliskan tujuan pembayaran khusus..." class="hidden mt-2 w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                </div>
+
+                <!-- Jumlah Nominal (Rp) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Jumlah Uang Masuk (Nominal Rp) <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-sm">Rp</span>
+                        <input type="text" id="payNominalInput" required placeholder="0" onkeyup="formatCurrencyInput(this)" class="w-full pl-11 pr-4 py-2.5 border border-slate-300 rounded-lg text-base font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                    </div>
+                </div>
+
+                <!-- Keterangan Pembayaran -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Keterangan Pembayaran
+                    </label>
+                    <textarea id="payKeteranganInput" rows="2" placeholder="Contoh: Transfer via Bank BCA an. Budi, atau Bayar Cash di kantor..." class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"></textarea>
+                </div>
+
+                <!-- Foto Kwitansi Pembayaran -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Foto Kwitansi / Bukti Pembayaran <span class="text-xs text-slate-400 font-normal">(Disarankan)</span>
+                    </label>
+                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center bg-slate-50 hover:bg-slate-100 transition">
+                        <input type="file" id="payKwitansiFile" accept="image/*" onchange="previewKwitansiInput(this)" class="hidden">
+                        <div id="kwitansiUploadPrompt" onclick="document.getElementById('payKwitansiFile').click()" class="cursor-pointer">
+                            <i class="fa-solid fa-camera text-2xl text-slate-400 mb-1"></i>
+                            <p class="text-xs font-medium text-slate-600">Klik untuk upload foto kwitansi atau nota transfer</p>
+                            <span class="text-[11px] text-slate-400">JPG, PNG, atau WEBP</span>
+                        </div>
+                        <div id="kwitansiPreviewBox" class="hidden relative">
+                            <img id="kwitansiPreviewImg" src="" alt="Preview Kwitansi" class="max-h-40 mx-auto rounded-lg shadow-sm">
+                            <button type="button" onclick="clearKwitansiPreview()" class="mt-2 text-xs text-red-600 hover:text-red-700 font-medium">
+                                <i class="fa-solid fa-trash"></i> Hapus Foto Kwitansi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closePaymentModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">
+                        Batal
+                    </button>
+                    <button type="submit" id="btnSubmitPayment" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-check"></i> Simpan Pembayaran
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL 4: LIGHTBOX (POPUP PERBESAR GAMBAR KTP / KK / KWITANSI) -->
+    <!-- ======================================================== -->
+    <div id="lightboxModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-xs flex flex-col justify-between items-center p-4">
+        <!-- Topbar Lightbox -->
+        <div class="w-full max-w-4xl flex justify-between items-center text-white py-2">
+            <h4 id="lightboxTitle" class="text-sm font-semibold truncate">Preview Gambar</h4>
+            <div class="flex items-center gap-3">
+                <a id="lightboxDownload" href="#" download="dokumen.jpg" class="text-white hover:text-emerald-400 text-sm px-3 py-1 bg-white/10 rounded-lg transition flex items-center gap-1">
+                    <i class="fa-solid fa-download"></i> Unduh
+                </a>
+                <button onclick="closeLightbox()" class="text-white hover:text-red-400 text-xl w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Image Content -->
+        <div class="flex-1 flex items-center justify-center max-w-5xl max-h-[82vh] overflow-hidden my-auto">
+            <img id="lightboxImage" src="" alt="Full Preview" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl transition duration-200">
+        </div>
+
+        <p class="text-xs text-white/60 mb-2">Tekan tombol Tutup (X) atau klik di luar untuk menutup.</p>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL 5: BACKUP & RESTORE DATA -->
+    <!-- ======================================================== -->
+    <div id="backupModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 modal-content-animated">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-database text-emerald-600"></i> Backup & Restore Data
+                </h3>
+                <button onclick="closeBackupModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-500 mb-5 leading-relaxed">
+                Semua data Anda (nama customer, kavling, harga, dokumen KTP/KK, dan kwitansi) tersimpan di browser ini. Lakukan pencadangan (Backup) secara berkala agar data tetap aman saat ganti komputer atau browser.
+            </p>
+
+            <div class="space-y-3">
+                <button onclick="handleExportBackup()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-download"></i> Unduh File Cadangan (Backup Data)
+                </button>
+
+                <div class="relative">
+                    <label class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold cursor-pointer transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-upload"></i> Pulihkan dari File (Restore Data)
+                        <input type="file" id="restoreFileInput" accept=".json" onchange="handleImportBackup(this)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-5 pt-4 border-t border-slate-100 flex justify-end">
+                <button onclick="closeBackupModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- PRINTABLE AREA (UNTUK CETAK KWITANSI & REKAP LAPORAN) -->
+    <!-- ======================================================== -->
+    <div id="printableArea" class="hidden">
+        <!-- Akan diisi secara dinamis saat tombol print ditekan -->
+    </div>
+
+
+    <!-- Load Scripts -->
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

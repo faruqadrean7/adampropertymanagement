@@ -1,0 +1,94 @@
+/* style.css - Custom Styling & Print Layout untuk Adam Property */
+
+/* Glassmorphism & Card Shadows */
+.card-shadow {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Document Card Hover Effects */
+.doc-card {
+    transition: all 0.2s ease-in-out;
+}
+.doc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px -8px rgba(16, 185, 129, 0.15);
+}
+
+/* Image Zoom Cursor */
+.clickable-image {
+    cursor: zoom-in;
+    transition: transform 0.2s;
+}
+.clickable-image:hover {
+    opacity: 0.95;
+    filter: brightness(1.05);
+}
+
+/* Modal Animation */
+.modal-backdrop {
+    backdrop-filter: blur(4px);
+    background-color: rgba(15, 23, 42, 0.65);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content-animated {
+    animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Print Styling */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #printableArea, #printableArea * {
+        visibility: visible;
+    }
+
+    #printableArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #fff;
+        padding: 20px;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+}
