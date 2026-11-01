@@ -1,6 +1,6 @@
-// app.js - Logika Enterprise ADAM PROPERTY GROUP (Kavling, Customer, Barter Material & Hutang Lahan Petani)
+// app.js - Logika Enterprise ADAM PROPERTY GROUP (Kavling, Customer, Barter Material, Hutang Petani & Kas Besar)
 
-let currentTab = 'kavling'; // 'kavling', 'customer', atau 'land_debt'
+let currentTab = 'kavling'; // 'kavling', 'customer', 'land_debt', atau 'cashbook'
 let allProjects = [];
 let selectedProjectId = null;
 let allKavlings = [];
@@ -9,6 +9,16 @@ let allCustomers = [];
 let filteredCustomers = [];
 let allLandDebts = [];
 let selectedLandProjectId = 'all'; // Filter Lahan Aktif untuk Hutang Petani ('all' atau ID Proyek)
+
+// State Kas Besar (Master Cashbook & Arus Kas Investor)
+let allCashbook = [];
+let filteredCashbook = [];
+let currentCashbookEntry = null;
+let cashFilterKategori = 'all';
+let cashFilterTipe = 'all';
+let cashFilterProject = 'all';
+let cashFilterMetode = 'all';
+let cashSearchQuery = '';
 
 let currentFilter = 'all'; // Filter customer: 'all', 'unpaid', 'paid'
 let searchQuery = '';
@@ -34,6 +44,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (payDateInput) payDateInput.value = today;
         const landPayDateInput = document.getElementById('landPayTanggal');
         if (landPayDateInput) landPayDateInput.value = today;
+        const invDateInput = document.getElementById('invTanggal');
+        if (invDateInput) invDateInput.value = today;
+        const expDateInput = document.getElementById('expTanggal');
+        if (expDateInput) expDateInput.value = today;
+
+        // Auto-sync jika ada pembayaran customer / cicilan lahan yang belum masuk Kas Besar
+        await syncAllToCashbook();
+        await refreshCashbookView();
 
     } catch (error) {
         console.error('Gagal inisialisasi aplikasi:', error);
@@ -64,46 +82,55 @@ async function initializeData() {
     await refreshKavlingView();
     await refreshCustomerList();
     await refreshLandDebtList();
+    await refreshCashbookView();
 }
 
-// Navigasi Tab Utama (Company Feels: 3 Modul)
+// Navigasi Tab Utama (Company Feels: 4 Modul Terintegrasi)
 function switchMainTab(tab) {
     currentTab = tab;
 
     const navKavling = document.getElementById('navTabKavling');
     const navCustomer = document.getElementById('navTabCustomer');
     const navLandDebt = document.getElementById('navTabLandDebt');
+    const navCashbook = document.getElementById('navTabCashbook');
 
     const viewKavling = document.getElementById('viewKavling');
     const viewCustomer = document.getElementById('viewCustomer');
     const viewLandDebt = document.getElementById('viewLandDebt');
+    const viewCashbook = document.getElementById('viewCashbook');
 
     const headerActionText = document.getElementById('headerPrimaryActionText');
 
     // Reset tab styles
-    [navKavling, navCustomer, navLandDebt].forEach(el => {
+    [navKavling, navCustomer, navLandDebt, navCashbook].forEach(el => {
         if (el) el.className = 'corp-tab-inactive px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap';
     });
 
-    viewKavling.classList.add('hidden');
-    viewCustomer.classList.add('hidden');
-    viewLandDebt.classList.add('hidden');
+    if (viewKavling) viewKavling.classList.add('hidden');
+    if (viewCustomer) viewCustomer.classList.add('hidden');
+    if (viewLandDebt) viewLandDebt.classList.add('hidden');
+    if (viewCashbook) viewCashbook.classList.add('hidden');
 
     if (tab === 'kavling') {
-        navKavling.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
-        viewKavling.classList.remove('hidden');
-        headerActionText.textContent = '+ Tambah Kavling';
+        if (navKavling) navKavling.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
+        if (viewKavling) viewKavling.classList.remove('hidden');
+        if (headerActionText) headerActionText.textContent = '+ Tambah Kavling';
         refreshKavlingView();
     } else if (tab === 'customer') {
-        navCustomer.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
-        viewCustomer.classList.remove('hidden');
-        headerActionText.textContent = '+ Tambah Customer';
+        if (navCustomer) navCustomer.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
+        if (viewCustomer) viewCustomer.classList.remove('hidden');
+        if (headerActionText) headerActionText.textContent = '+ Tambah Customer';
         refreshCustomerList();
     } else if (tab === 'land_debt') {
-        navLandDebt.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
-        viewLandDebt.classList.remove('hidden');
-        headerActionText.textContent = '+ Lahan Petani';
+        if (navLandDebt) navLandDebt.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
+        if (viewLandDebt) viewLandDebt.classList.remove('hidden');
+        if (headerActionText) headerActionText.textContent = '+ Lahan Petani';
         refreshLandDebtList();
+    } else if (tab === 'cashbook') {
+        if (navCashbook) navCashbook.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
+        if (viewCashbook) viewCashbook.classList.remove('hidden');
+        if (headerActionText) headerActionText.textContent = '+ Dana Investor';
+        refreshCashbookView();
     }
 }
 
@@ -114,6 +141,8 @@ function handlePrimaryAction() {
         openCustomerModal();
     } else if (currentTab === 'land_debt') {
         openLandDebtModal();
+    } else if (currentTab === 'cashbook') {
+        openInvestorModal();
     }
 }
 
@@ -126,6 +155,9 @@ function renderProjectDropdowns() {
     const formKavlingProjectId = document.getElementById('formKavlingProjectId');
     const custFormProjectSelect = document.getElementById('custFormProjectSelect');
     const formLandProjectId = document.getElementById('formLandProjectId');
+    const invProjectId = document.getElementById('invProjectId');
+    const expProjectId = document.getElementById('expProjectId');
+    const cashFilterProject = document.getElementById('cashFilterProject');
 
     const optionsHtml = allProjects.map(p => `
         <option value="${p.id}" ${p.id === selectedProjectId ? 'selected' : ''}>
@@ -137,6 +169,19 @@ function renderProjectDropdowns() {
     if (formKavlingProjectId) formKavlingProjectId.innerHTML = optionsHtml;
     if (custFormProjectSelect) custFormProjectSelect.innerHTML = optionsHtml;
     if (formLandProjectId) formLandProjectId.innerHTML = optionsHtml;
+
+    if (invProjectId) {
+        invProjectId.innerHTML = `<option value="">-- Kas Umum / Holding Developer --</option>` + optionsHtml;
+    }
+    if (expProjectId) {
+        expProjectId.innerHTML = `<option value="">-- Kas Umum / Holding Developer --</option>` + optionsHtml;
+    }
+    if (cashFilterProject) {
+        let filterHtml = `<option value="all">Semua Proyek / Holding</option>`;
+        filterHtml += `<option value="holding">Kas Umum / Holding</option>`;
+        filterHtml += allProjects.map(p => `<option value="${p.id}">${escapeHtml(p.nama)}</option>`).join('');
+        cashFilterProject.innerHTML = filterHtml;
+    }
 
     renderLandProjectDropdown();
     renderProjectListModal();
@@ -1254,7 +1299,10 @@ async function handlePaymentSubmit(event) {
             kwitansiImage: tempKwitansiBase64 || null
         };
 
-        await PaymentDB.add(paymentData);
+        const newPaymentId = await PaymentDB.add(paymentData);
+
+        // AUTO-SYNC KE KAS BESAR
+        await syncSingleCustomerPaymentToCashbook(newPaymentId, paymentData, currentCustomer);
 
         // Periksa apakah total pembayaran customer sudah melunasi kavling
         if (currentCustomer.kavlingId) {
@@ -1269,12 +1317,13 @@ async function handlePaymentSubmit(event) {
         await refreshCustomerList();
         await refreshKavlingView();
         await refreshCustomerDetailView();
+        await refreshCashbookView();
 
         Swal.fire({
             icon: 'success',
             title: metodeBayar === 'barter' ? 'Barter Material Dicatat!' : 'Pembayaran Dicatat!',
-            text: `Senilai Rp ${new Intl.NumberFormat('id-ID').format(nominal)}.`,
-            timer: 1800,
+            text: `Senilai Rp ${new Intl.NumberFormat('id-ID').format(nominal)} otomatis masuk ke Kas Besar.`,
+            timer: 2000,
             showConfirmButton: false
         });
 
@@ -1289,7 +1338,7 @@ async function handlePaymentSubmit(event) {
 async function deletePayment(paymentId) {
     const result = await Swal.fire({
         title: 'Hapus Catatan Pembayaran / Barter?',
-        text: 'Data transaksi ini akan dihapus dari sistem.',
+        text: 'Data transaksi ini akan dihapus dari sistem dan Kas Besar.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -1297,9 +1346,11 @@ async function deletePayment(paymentId) {
     });
     if (result.isConfirmed) {
         await PaymentDB.delete(paymentId);
+        await CashbookDB.deleteByRef('customer_payment', paymentId);
         await refreshCustomerList();
         await refreshKavlingView();
         await refreshCustomerDetailView();
+        await refreshCashbookView();
     }
 }
 
@@ -1934,7 +1985,7 @@ async function handleLandPaymentSubmit(event) {
         kwitansiImage = await compressImage(kwitansiFile, 1500, 0.85);
     }
 
-    await LandPaymentDB.add({
+    const newLandPaymentId = await LandPaymentDB.add({
         landDebtId: currentLandDebt.id,
         tanggal,
         termin,
@@ -1944,15 +1995,26 @@ async function handleLandPaymentSubmit(event) {
         kwitansiImage
     });
 
+    // AUTO-SYNC KE KAS BESAR SEBAGAI PENGELUARAN KAS
+    await syncSingleLandPaymentToCashbook(newLandPaymentId, {
+        tanggal,
+        termin,
+        nominal,
+        metode,
+        keterangan,
+        kwitansiImage
+    }, currentLandDebt);
+
     closeLandPaymentModal();
     await refreshLandDebtList();
     await refreshLandDebtDetailView();
+    await refreshCashbookView();
 
     Swal.fire({
         icon: 'success',
         title: 'Pembayaran ke Petani Dicatat!',
-        text: `Tercatat Rp ${new Intl.NumberFormat('id-ID').format(nominal)}.`,
-        timer: 1500,
+        text: `Tercatat Rp ${new Intl.NumberFormat('id-ID').format(nominal)} otomatis masuk pengeluaran Kas Besar.`,
+        timer: 1800,
         showConfirmButton: false
     });
 }
@@ -1967,8 +2029,10 @@ async function deleteLandPayment(id) {
     });
     if (res.isConfirmed) {
         await LandPaymentDB.delete(id);
+        await CashbookDB.deleteByRef('land_payment', id);
         await refreshLandDebtList();
         await refreshLandDebtDetailView();
+        await refreshCashbookView();
     }
 }
 
@@ -2516,19 +2580,1000 @@ async function loadDemoData() {
         keterangan: 'Tipe ekonomis'
     });
 
+    // 6. Data Kas Besar: Modal Investor & Pengeluaran Awal Proyek
+    const demoSlipTransfer = createDummyDoc('BUKTI TRANSFER BANK BCA', 'Setoran Modal Investor', '#1e3a8a');
+    const demoNotaAlatBerat = createDummyDoc('NOTA KWITANSI OPERASIONAL', 'PT Citra Mandiri Alat Berat', '#991b1b');
+
+    await CashbookDB.add({
+        tanggal: '2026-08-01',
+        tipe: 'masuk',
+        kategori: 'investor',
+        sumber: 'Investor: Bpk. H. Mahmud',
+        keterangan: 'Investasi Modal Awal Proyek: Pengembangan Baitul Makmur Regency (Tenor 18 Bulan, Bagi Hasil 15%)',
+        nominal: 500000000,
+        metode: 'Transfer Bank BCA',
+        rekening: 'Transfer Bank BCA',
+        projectId: baitulId,
+        refType: 'manual',
+        buktiImage: demoSlipTransfer
+    });
+
+    await CashbookDB.add({
+        tanggal: '2026-08-15',
+        tipe: 'masuk',
+        kategori: 'investor',
+        sumber: 'Investor: Ibu Hj. Siti Aminah',
+        keterangan: 'Suntikan Modal Kerja Tambahan: Khusus Pembangunan Ruko Komersil (Bagi Hasil Proyek)',
+        nominal: 250000000,
+        metode: 'Transfer Bank Mandiri',
+        rekening: 'Transfer Bank Mandiri',
+        projectId: baitulId,
+        refType: 'manual',
+        buktiImage: demoSlipTransfer
+    });
+
+    await CashbookDB.add({
+        tanggal: '2026-08-12',
+        tipe: 'keluar',
+        kategori: 'operasional',
+        sumber: 'Kantor Notaris & PPAT Anwar SH',
+        keterangan: 'Biaya Legalitas & Notaris: Pembuatan Akta Pelepasan Hak & Perjanjian Petani H. Sugeng',
+        nominal: 18500000,
+        metode: 'Transfer Bank BCA',
+        rekening: 'Transfer Bank BCA',
+        projectId: baitulId,
+        refType: 'manual',
+        buktiImage: demoKwitansi
+    });
+
+    await CashbookDB.add({
+        tanggal: '2026-08-25',
+        tipe: 'keluar',
+        kategori: 'operasional',
+        sumber: 'PT Citra Mandiri Alat Berat',
+        keterangan: 'Operasional Perataan Lahan & Cut/Fill: Mobilisasi Excavator & Dozer 14 Hari Kerja',
+        nominal: 32000000,
+        metode: 'Transfer Bank BCA',
+        rekening: 'Transfer Bank BCA',
+        projectId: baitulId,
+        refType: 'manual',
+        buktiImage: demoNotaAlatBerat
+    });
+
+    // Auto-sync seluruh pembayaran customer & cicilan petani ke Kas Besar
+    await syncAllToCashbook();
+
     allProjects = await ProjectDB.getAll();
     selectedProjectId = baitulId;
     renderProjectDropdowns();
     await refreshKavlingView();
     await refreshCustomerList();
     await refreshLandDebtList();
+    await refreshCashbookView();
 
     Swal.fire({
         icon: 'success',
         title: 'Data Sampel Perusahaan Dimuat!',
-        text: 'Data Hutang Lahan Petani, Barter Material Ruko, dan Site Plan siap dipelajari.',
+        text: 'Data Kas Besar, Modal Investor, Auto-Sync Penjualan Kavling, Hutang Petani & Barter Material siap diuji.',
         confirmButtonColor: '#059669'
     });
+}
+
+
+// ========================================================
+// MODUL KAS BESAR (MASTER CASHBOOK & ARUS KAS INVESTOR)
+// ========================================================
+
+// 1. Auto-Sync Pembayaran Customer ke Kas Besar
+async function syncSingleCustomerPaymentToCashbook(paymentId, paymentData, customer) {
+    if (!paymentId || !customer) return;
+
+    let kavling = null;
+    if (customer.kavlingId) {
+        kavling = await KavlingDB.getById(customer.kavlingId);
+    }
+    const kavlingText = kavling ? kavling.kodeKavling : (customer.kavling || 'Kavling');
+    const projectId = kavling ? kavling.projectId : (customer.projectId || null);
+
+    const isBarter = paymentData.metodeBayar === 'barter';
+    const kategori = isBarter ? 'jual_kavling_barter' : 'jual_kavling';
+    
+    let rincianText = paymentData.tujuan || 'Pembayaran Kavling';
+    if (paymentData.keterangan) rincianText += ` - ${paymentData.keterangan}`;
+    if (isBarter && paymentData.rincianBarter) {
+        rincianText += ` [Barter: ${paymentData.rincianBarter}]`;
+    }
+
+    const entry = {
+        tanggal: paymentData.tanggal,
+        tipe: 'masuk',
+        kategori: kategori,
+        sumber: `${customer.nama} (${kavlingText})`,
+        keterangan: `Penjualan Kavling ${kavlingText}: ${rincianText}`,
+        nominal: Number(paymentData.nominal) || 0,
+        metode: paymentData.metodeBayar || 'tunai',
+        rekening: isBarter ? 'Barter Material (Aset Non-Tunai)' : 'Kas & Bank Proyek',
+        projectId: projectId,
+        refType: 'customer_payment',
+        refId: paymentId,
+        buktiImage: paymentData.kwitansiImage || paymentData.suratJalanImage || null
+    };
+
+    const existing = await CashbookDB.getByRef('customer_payment', paymentId);
+    if (existing) {
+        await CashbookDB.update(existing.id, entry);
+    } else {
+        await CashbookDB.add(entry);
+    }
+}
+
+// 2. Auto-Sync Pembayaran Cicilan Lahan Petani ke Kas Besar
+async function syncSingleLandPaymentToCashbook(landPaymentId, paymentData, landDebt) {
+    if (!landPaymentId || !landDebt) return;
+
+    const entry = {
+        tanggal: paymentData.tanggal,
+        tipe: 'keluar',
+        kategori: 'lahan_petani',
+        sumber: `Petani: ${landDebt.namaPetani}`,
+        keterangan: `Bayar Lahan Petani (${paymentData.termin || 'Cicilan'}): ${paymentData.keterangan || 'Pembebasan Lahan'}`,
+        nominal: Number(paymentData.nominal) || 0,
+        metode: paymentData.metode || 'transfer',
+        rekening: 'Kas / Rekening Developer',
+        projectId: landDebt.projectId,
+        refType: 'land_payment',
+        refId: landPaymentId,
+        buktiImage: paymentData.kwitansiImage || null
+    };
+
+    const existing = await CashbookDB.getByRef('land_payment', landPaymentId);
+    if (existing) {
+        await CashbookDB.update(existing.id, entry);
+    } else {
+        await CashbookDB.add(entry);
+    }
+}
+
+// 3. Sinkronisasi Keseluruhan (Universal Sync)
+async function syncAllToCashbook() {
+    try {
+        const allCustomersList = await CustomerDB.getAll();
+        const custMap = new Map();
+        allCustomersList.forEach(c => custMap.set(c.id, c));
+
+        const kavlingsList = await KavlingDB.getAll();
+        const kavMap = new Map();
+        kavlingsList.forEach(k => kavMap.set(k.id, k));
+
+        // Sync semua pembayaran customer
+        const payments = await PaymentDB.getAll();
+        for (const p of payments) {
+            const customer = custMap.get(p.customerId);
+            if (customer) {
+                const kavling = customer.kavlingId ? kavMap.get(customer.kavlingId) : null;
+                const existing = await CashbookDB.getByRef('customer_payment', p.id);
+                if (!existing) {
+                    const kavlingText = kavling ? kavling.kodeKavling : (customer.kavling || 'Kavling');
+                    const isBarter = p.metodeBayar === 'barter';
+                    let rincianText = p.tujuan || 'Pembayaran Kavling';
+                    if (p.keterangan) rincianText += ` - ${p.keterangan}`;
+                    if (isBarter && p.rincianBarter) rincianText += ` [Barter: ${p.rincianBarter}]`;
+
+                    await CashbookDB.add({
+                        tanggal: p.tanggal,
+                        tipe: 'masuk',
+                        kategori: isBarter ? 'jual_kavling_barter' : 'jual_kavling',
+                        sumber: `${customer.nama} (${kavlingText})`,
+                        keterangan: `Penjualan Kavling ${kavlingText}: ${rincianText}`,
+                        nominal: Number(p.nominal) || 0,
+                        metode: p.metodeBayar || 'tunai',
+                        rekening: isBarter ? 'Barter Material (Aset Non-Tunai)' : 'Kas & Bank Proyek',
+                        projectId: kavling ? kavling.projectId : (customer.projectId || null),
+                        refType: 'customer_payment',
+                        refId: p.id,
+                        buktiImage: p.kwitansiImage || p.suratJalanImage || null
+                    });
+                }
+            }
+        }
+
+        // Sync semua cicilan lahan petani
+        const landDebtsList = await LandDebtDB.getAll();
+        const debtMap = new Map();
+        landDebtsList.forEach(d => debtMap.set(d.id, d));
+
+        const landPays = await LandPaymentDB.getAll();
+        for (const lp of landPays) {
+            const debt = debtMap.get(lp.landDebtId);
+            if (debt) {
+                const existing = await CashbookDB.getByRef('land_payment', lp.id);
+                if (!existing) {
+                    await CashbookDB.add({
+                        tanggal: lp.tanggal,
+                        tipe: 'keluar',
+                        kategori: 'lahan_petani',
+                        sumber: `Petani: ${debt.namaPetani}`,
+                        keterangan: `Bayar Lahan Petani (${lp.termin || 'Cicilan'}): ${lp.keterangan || 'Pembebasan Lahan'}`,
+                        nominal: Number(lp.nominal) || 0,
+                        metode: lp.metode || 'transfer',
+                        rekening: 'Kas / Rekening Developer',
+                        projectId: debt.projectId,
+                        refType: 'land_payment',
+                        refId: lp.id,
+                        buktiImage: lp.kwitansiImage || null
+                    });
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Error saat auto-sync ke Kas Besar:', err);
+    }
+}
+
+// 4. Render & Refresh Tampilan Kas Besar
+async function refreshCashbookView() {
+    allCashbook = await CashbookDB.getAll();
+
+    let totalCashIn = 0;
+    let totalCashLotSales = 0;
+    let lotSalesCount = 0;
+    let totalCashInvestor = 0;
+    let investorCount = 0;
+    let totalCashOut = 0;
+    let totalBarterAsset = 0;
+
+    for (const entry of allCashbook) {
+        const nom = Number(entry.nominal) || 0;
+        if (entry.tipe === 'masuk') {
+            if (entry.metode === 'barter' || entry.kategori === 'jual_kavling_barter') {
+                totalBarterAsset += nom;
+            } else {
+                totalCashIn += nom;
+            }
+
+            if (entry.kategori === 'jual_kavling' || entry.kategori === 'jual_kavling_barter') {
+                totalCashLotSales += nom;
+                lotSalesCount++;
+            } else if (entry.kategori === 'investor') {
+                totalCashInvestor += nom;
+                investorCount++;
+            }
+        } else if (entry.tipe === 'keluar') {
+            totalCashOut += nom;
+        }
+    }
+
+    const netCashBalance = totalCashIn - totalCashOut;
+
+    // Update Stat Cards di DOM
+    const elCashIn = document.getElementById('statTotalCashIn');
+    const elLotSales = document.getElementById('statCashLotSales');
+    const elLotSalesCount = document.getElementById('statCashLotSalesCount');
+    const elInvestor = document.getElementById('statCashInvestor');
+    const elInvestorCount = document.getElementById('statCashInvestorCount');
+    const elCashOut = document.getElementById('statTotalCashOut');
+    const elNetBalance = document.getElementById('statNetCashBalance');
+    const elBarterAsset = document.getElementById('statBarterAssetTotal');
+    const elBadgeCount = document.getElementById('cashbookBadgeCount');
+
+    if (elCashIn) elCashIn.textContent = formatRupiah(totalCashIn);
+    if (elLotSales) elLotSales.textContent = formatRupiah(totalCashLotSales);
+    if (elLotSalesCount) elLotSalesCount.textContent = `${lotSalesCount} transaksi penjualan`;
+    if (elInvestor) elInvestor.textContent = formatRupiah(totalCashInvestor);
+    if (elInvestorCount) elInvestorCount.textContent = `${investorCount} suntikan modal`;
+    if (elCashOut) elCashOut.textContent = formatRupiah(totalCashOut);
+    if (elBarterAsset) elBarterAsset.textContent = formatRupiah(totalBarterAsset);
+
+    if (elNetBalance) {
+        elNetBalance.textContent = formatRupiah(netCashBalance);
+        if (netCashBalance < 0) {
+            elNetBalance.className = 'text-base sm:text-lg font-black text-rose-300 truncate';
+        } else {
+            elNetBalance.className = 'text-base sm:text-lg font-black text-emerald-300 truncate';
+        }
+    }
+
+    if (elBadgeCount) {
+        elBadgeCount.textContent = `${allCashbook.length} Mutasi`;
+    }
+
+    filterCashbook();
+}
+
+// 5. Filter Buku Kas Besar
+function filterCashbook() {
+    const selKategori = document.getElementById('cashFilterKategori')?.value || 'all';
+    const selTipe = document.getElementById('cashFilterTipe')?.value || 'all';
+    const selProject = document.getElementById('cashFilterProject')?.value || 'all';
+    const selMetode = document.getElementById('cashFilterMetode')?.value || 'all';
+    const searchVal = (document.getElementById('cashSearchInput')?.value || '').toLowerCase().trim();
+
+    cashFilterKategori = selKategori;
+    cashFilterTipe = selTipe;
+    cashFilterProject = selProject;
+    cashFilterMetode = selMetode;
+    cashSearchQuery = searchVal;
+
+    filteredCashbook = allCashbook.filter(item => {
+        // Filter Kategori
+        if (selKategori !== 'all') {
+            if (selKategori === 'jual_kavling' && !(item.kategori === 'jual_kavling' || item.kategori === 'jual_kavling_barter')) return false;
+            if (selKategori !== 'jual_kavling' && item.kategori !== selKategori) return false;
+        }
+
+        // Filter Tipe (Masuk / Keluar)
+        if (selTipe !== 'all' && item.tipe !== selTipe) return false;
+
+        // Filter Proyek
+        if (selProject !== 'all') {
+            if (selProject === 'holding' && item.projectId !== null) return false;
+            if (selProject !== 'holding' && String(item.projectId) !== String(selProject)) return false;
+        }
+
+        // Filter Metode
+        if (selMetode !== 'all') {
+            if (selMetode === 'barter' && item.metode !== 'barter' && item.kategori !== 'jual_kavling_barter') return false;
+            if (selMetode === 'transfer' && !item.metode?.toLowerCase().includes('transfer')) return false;
+            if (selMetode === 'tunai' && !item.metode?.toLowerCase().includes('tunai')) return false;
+        }
+
+        // Filter Search Query
+        if (searchVal) {
+            const sumber = (item.sumber || '').toLowerCase();
+            const ket = (item.keterangan || '').toLowerCase();
+            const nominalStr = String(item.nominal || '');
+            const metode = (item.metode || '').toLowerCase();
+            if (!sumber.includes(searchVal) && !ket.includes(searchVal) && !nominalStr.includes(searchVal) && !metode.includes(searchVal)) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    renderCashbookTable();
+}
+
+// 6. Render Tabel Buku Kas Besar
+function renderCashbookTable() {
+    const tbody = document.getElementById('cashbookTableBody');
+    const emptyState = document.getElementById('emptyCashbookState');
+    const countBadge = document.getElementById('cashbookFilteredCount');
+
+    if (countBadge) {
+        countBadge.textContent = `${filteredCashbook.length} Data Terfilter`;
+    }
+
+    if (!tbody) return;
+
+    if (filteredCashbook.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const projectMap = new Map();
+    allProjects.forEach(p => projectMap.set(p.id, p.nama));
+
+    tbody.innerHTML = filteredCashbook.map((item, idx) => {
+        const isMasuk = item.tipe === 'masuk';
+        const isBarter = item.metode === 'barter' || item.kategori === 'jual_kavling_barter';
+
+        // Badge Kategori & Tipe
+        let catBadge = '';
+        if (item.kategori === 'jual_kavling') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold inline-flex items-center gap-1 border border-emerald-200">
+                <i class="fa-solid fa-house-chimney"></i> Jual Kavling <span class="bg-emerald-200/80 text-emerald-900 px-1 rounded text-[9px]">AUTO</span>
+            </span>`;
+        } else if (item.kategori === 'jual_kavling_barter') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold inline-flex items-center gap-1 border border-amber-200">
+                <i class="fa-solid fa-truck-ramp-box"></i> Barter Material <span class="bg-amber-200/80 text-amber-900 px-1 rounded text-[9px]">AUTO</span>
+            </span>`;
+        } else if (item.kategori === 'investor') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold inline-flex items-center gap-1 border border-indigo-200">
+                <i class="fa-solid fa-user-tie"></i> Modal Investor
+            </span>`;
+        } else if (item.kategori === 'lahan_petani') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 text-[10px] font-bold inline-flex items-center gap-1 border border-orange-200">
+                <i class="fa-solid fa-tractor"></i> Bayar Petani <span class="bg-orange-200/80 text-orange-950 px-1 rounded text-[9px]">AUTO</span>
+            </span>`;
+        } else {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold inline-flex items-center gap-1 border border-rose-200">
+                <i class="fa-solid fa-receipt"></i> Operasional
+            </span>`;
+        }
+
+        // Project label
+        const projectName = item.projectId ? (projectMap.get(item.projectId) || 'Proyek') : 'Kas Umum Holding';
+
+        // Bukti Image Button
+        let buktiBtn = `<span class="text-slate-300">-</span>`;
+        if (item.buktiImage) {
+            buktiBtn = `<button onclick="openLightbox('${item.buktiImage}', 'Bukti Transaksi - ${escapeHtml(item.sumber)}')" class="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 inline-flex items-center justify-center transition" title="Lihat Bukti Lampiran">
+                <i class="fa-solid fa-image text-xs"></i>
+            </button>`;
+        }
+
+        // Action Buttons
+        let actionButtons = `
+            <div class="flex items-center justify-center gap-1">
+                <button onclick="openCashDetailModal(${item.id})" class="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-slate-100 rounded-lg transition" title="Rincian & Cetak Voucher">
+                    <i class="fa-solid fa-file-invoice text-xs"></i>
+                </button>
+        `;
+
+        if (item.refType === 'customer_payment') {
+            actionButtons += `
+                <button onclick="goToCustomerFromCashbook(${item.refId})" class="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition" title="Buka Customer CRM">
+                    <i class="fa-solid fa-users text-xs"></i>
+                </button>
+            `;
+        } else if (item.refType === 'land_payment') {
+            actionButtons += `
+                <button onclick="goToLandDebtFromCashbook(${item.refId})" class="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition" title="Buka Catatan Lahan Petani">
+                    <i class="fa-solid fa-tractor text-xs"></i>
+                </button>
+            `;
+        } else {
+            actionButtons += `
+                <button onclick="deleteCashbookEntry(${item.id})" class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition" title="Hapus Mutasi Kas Manual">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+            `;
+        }
+        actionButtons += `</div>`;
+
+        // Masuk vs Keluar nominal formatting
+        let masukText = `<span class="text-slate-300">-</span>`;
+        let keluarText = `<span class="text-slate-300">-</span>`;
+
+        if (isMasuk) {
+            if (isBarter) {
+                masukText = `<span class="font-bold text-amber-600 font-mono">+ ${formatRupiah(item.nominal)} <small class="block text-[9px] text-amber-700/80 font-normal">Aset Material</small></span>`;
+            } else {
+                masukText = `<span class="font-bold text-emerald-600 font-mono">+ ${formatRupiah(item.nominal)}</span>`;
+            }
+        } else {
+            keluarText = `<span class="font-bold text-rose-600 font-mono">- ${formatRupiah(item.nominal)}</span>`;
+        }
+
+        return `
+            <tr class="hover:bg-slate-50/80 transition">
+                <td class="py-3 px-3.5 text-center text-slate-400 font-mono">${idx + 1}</td>
+                <td class="py-3 px-3.5 whitespace-nowrap text-slate-700 font-medium">
+                    ${formatTanggalIndo(item.tanggal)}
+                </td>
+                <td class="py-3 px-3.5 whitespace-nowrap">
+                    ${catBadge}
+                </td>
+                <td class="py-3 px-3.5">
+                    <span class="font-bold text-slate-800 block">${escapeHtml(item.sumber)}</span>
+                    <span class="text-[11px] text-slate-400 flex items-center gap-1">
+                        <i class="fa-solid fa-map-pin text-[10px]"></i> ${escapeHtml(projectName)}
+                    </span>
+                </td>
+                <td class="py-3 px-3.5 text-slate-600 max-w-xs truncate" title="${escapeHtml(item.keterangan)}">
+                    ${escapeHtml(item.keterangan)}
+                </td>
+                <td class="py-3 px-3.5 whitespace-nowrap">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${isBarter ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-700'}">
+                        ${escapeHtml(item.metode || '-')}
+                    </span>
+                </td>
+                <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                    ${masukText}
+                </td>
+                <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                    ${keluarText}
+                </td>
+                <td class="py-3 px-3.5 text-center">
+                    ${buktiBtn}
+                </td>
+                <td class="py-3 px-3.5 text-center">
+                    ${actionButtons}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// 7. Modal Investor
+function openInvestorModal() {
+    const today = new Date().toISOString().split('T')[0];
+    const elDate = document.getElementById('invTanggal');
+    if (elDate) elDate.value = today;
+    document.getElementById('invNama').value = '';
+    document.getElementById('invKontak').value = '';
+    document.getElementById('invNominal').value = '';
+    document.getElementById('invKeterangan').value = '';
+    document.getElementById('invBuktiFile').value = '';
+
+    const modal = document.getElementById('modalInvestor');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeInvestorModal() {
+    const modal = document.getElementById('modalInvestor');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function handleInvestorSubmit(event) {
+    event.preventDefault();
+
+    const tanggal = document.getElementById('invTanggal').value;
+    const kategori = document.getElementById('invKategori').value;
+    const nama = document.getElementById('invNama').value.trim();
+    const kontak = document.getElementById('invKontak').value.trim();
+    const nominal = parseCurrencyInput(document.getElementById('invNominal').value);
+    const projectId = document.getElementById('invProjectId').value || null;
+    const metode = document.getElementById('invMetode').value;
+    const keterangan = document.getElementById('invKeterangan').value.trim();
+
+    if (!tanggal || !nama || nominal <= 0) {
+        Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Pastikan tanggal, nama investor, dan nominal telah diisi dengan benar.' });
+        return;
+    }
+
+    const buktiFile = document.getElementById('invBuktiFile').files[0];
+    let buktiImage = null;
+    if (buktiFile) {
+        buktiImage = await compressImage(buktiFile, 1500, 0.85);
+    }
+
+    const submitBtn = document.getElementById('btnSubmitInvestor');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+        let desc = `Suntikan Modal Investor: ${kategori}`;
+        if (keterangan) desc += ` - ${keterangan}`;
+        if (kontak) desc += ` (WA: ${kontak})`;
+
+        await CashbookDB.add({
+            tanggal,
+            tipe: 'masuk',
+            kategori: 'investor',
+            sumber: `Investor: ${nama}`,
+            keterangan: desc,
+            nominal,
+            metode,
+            rekening: metode,
+            projectId: projectId ? Number(projectId) : null,
+            refType: 'manual',
+            buktiImage
+        });
+
+        closeInvestorModal();
+        await refreshCashbookView();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Dana Investor Berhasil Dicatat!',
+            text: `Uang masuk senilai Rp ${new Intl.NumberFormat('id-ID').format(nominal)} otomatis masuk ke Kas Besar.`,
+            timer: 2000,
+            showConfirmButton: false
+        });
+    } catch (err) {
+        console.error('Error simpan investor:', err);
+        Swal.fire({ icon: 'error', title: 'Gagal Menyimpan Dana Investor' });
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Dana Investor';
+    }
+}
+
+// 8. Modal Pengeluaran Kas (Kas Keluar)
+function openExpenseModal() {
+    const today = new Date().toISOString().split('T')[0];
+    const elDate = document.getElementById('expTanggal');
+    if (elDate) elDate.value = today;
+    document.getElementById('expPenerima').value = '';
+    document.getElementById('expNominal').value = '';
+    document.getElementById('expKeterangan').value = '';
+    document.getElementById('expBuktiFile').value = '';
+
+    const modal = document.getElementById('modalExpense');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeExpenseModal() {
+    const modal = document.getElementById('modalExpense');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function handleExpenseSubmit(event) {
+    event.preventDefault();
+
+    const tanggal = document.getElementById('expTanggal').value;
+    const kategori = document.getElementById('expKategori').value;
+    const penerima = document.getElementById('expPenerima').value.trim();
+    const nominal = parseCurrencyInput(document.getElementById('expNominal').value);
+    const projectId = document.getElementById('expProjectId').value || null;
+    const metode = document.getElementById('expMetode').value;
+    const keterangan = document.getElementById('expKeterangan').value.trim();
+
+    if (!tanggal || !penerima || nominal <= 0) {
+        Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Pastikan tanggal, penerima, dan nominal telah diisi dengan benar.' });
+        return;
+    }
+
+    const buktiFile = document.getElementById('expBuktiFile').files[0];
+    let buktiImage = null;
+    if (buktiFile) {
+        buktiImage = await compressImage(buktiFile, 1500, 0.85);
+    }
+
+    const submitBtn = document.getElementById('btnSubmitExpense');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+        let desc = `${kategori}`;
+        if (keterangan) desc += ` - ${keterangan}`;
+
+        await CashbookDB.add({
+            tanggal,
+            tipe: 'keluar',
+            kategori: 'operasional',
+            sumber: penerima,
+            keterangan: desc,
+            nominal,
+            metode,
+            rekening: metode,
+            projectId: projectId ? Number(projectId) : null,
+            refType: 'manual',
+            buktiImage
+        });
+
+        closeExpenseModal();
+        await refreshCashbookView();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Pengeluaran Kas Berhasil Dicatat!',
+            text: `Pengeluaran senilai Rp ${new Intl.NumberFormat('id-ID').format(nominal)} tercatat di Buku Kas.`,
+            timer: 1800,
+            showConfirmButton: false
+        });
+    } catch (err) {
+        console.error('Error simpan expense:', err);
+        Swal.fire({ icon: 'error', title: 'Gagal Menyimpan Pengeluaran' });
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Pengeluaran';
+    }
+}
+
+// 9. Hapus Mutasi Kas Manual
+async function deleteCashbookEntry(id) {
+    const res = await Swal.fire({
+        title: 'Hapus Catatan Mutasi Kas?',
+        text: 'Data mutasi ini akan dihapus dari buku kas besar.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Ya, Hapus'
+    });
+
+    if (res.isConfirmed) {
+        await CashbookDB.delete(id);
+        await refreshCashbookView();
+        Swal.fire({ icon: 'success', title: 'Mutasi Dihapus', timer: 1200, showConfirmButton: false });
+    }
+}
+
+// 10. Navigasi Cepat dari Kas Besar ke Customer / Petani
+async function goToCustomerFromCashbook(paymentId) {
+    const allCust = await CustomerDB.getAll();
+    const payments = await PaymentDB.getAll();
+    const pay = payments.find(p => p.id === Number(paymentId));
+    if (pay) {
+        const cust = allCust.find(c => c.id === pay.customerId);
+        if (cust) {
+            switchMainTab('customer');
+            await openCustomerDetail(cust.id);
+            return;
+        }
+    }
+    switchMainTab('customer');
+}
+
+async function goToLandDebtFromCashbook(landPaymentId) {
+    const allDebts = await LandDebtDB.getAll();
+    const landPays = await LandPaymentDB.getAll();
+    const pay = landPays.find(p => p.id === Number(landPaymentId));
+    if (pay) {
+        const debt = allDebts.find(d => d.id === pay.landDebtId);
+        if (debt) {
+            switchMainTab('land_debt');
+            await openLandDebtDetail(debt.id);
+            return;
+        }
+    }
+    switchMainTab('land_debt');
+}
+
+// 11. Modal Detail Transaksi Kas Besar & Voucher
+async function openCashDetailModal(id) {
+    const entry = await CashbookDB.getById(id);
+    if (!entry) return;
+
+    currentCashbookEntry = entry;
+
+    const isMasuk = entry.tipe === 'masuk';
+    document.getElementById('cashDetailTitle').textContent = isMasuk ? 'Bukti Voucher Kas Masuk (BKM)' : 'Bukti Voucher Kas Keluar (BKK)';
+    document.getElementById('cashDetailRefText').textContent = `#CB-${String(entry.id).padStart(4, '0')} | ${formatTanggalIndo(entry.tanggal)}`;
+
+    const elNominalText = document.getElementById('cashDetailNominalText');
+    if (isMasuk) {
+        elNominalText.textContent = `+ ${formatRupiah(entry.nominal)}`;
+        elNominalText.className = 'font-black text-emerald-600 text-base';
+    } else {
+        elNominalText.textContent = `- ${formatRupiah(entry.nominal)}`;
+        elNominalText.className = 'font-black text-rose-600 text-base';
+    }
+
+    document.getElementById('cashDetailSumberText').textContent = entry.sumber || '-';
+    
+    let catName = 'Operasional';
+    if (entry.kategori === 'jual_kavling') catName = 'Penjualan Kavling (Auto)';
+    else if (entry.kategori === 'jual_kavling_barter') catName = 'Barter Material (Auto)';
+    else if (entry.kategori === 'investor') catName = 'Modal Investor';
+    else if (entry.kategori === 'lahan_petani') catName = 'Bayar Lahan Petani (Auto)';
+    document.getElementById('cashDetailKategoriText').textContent = catName;
+
+    let projName = 'Kas Umum Holding';
+    if (entry.projectId) {
+        const proj = allProjects.find(p => p.id === entry.projectId);
+        if (proj) projName = proj.nama;
+    }
+    document.getElementById('cashDetailProjectText').textContent = projName;
+    document.getElementById('cashDetailMetodeText').textContent = entry.metode || '-';
+    document.getElementById('cashDetailKeteranganText').textContent = entry.keterangan || '-';
+
+    const buktiImg = document.getElementById('cashDetailBuktiImg');
+    const emptyBukti = document.getElementById('cashDetailBuktiEmpty');
+    if (entry.buktiImage) {
+        buktiImg.src = entry.buktiImage;
+        buktiImg.classList.remove('hidden');
+        if (emptyBukti) emptyBukti.classList.add('hidden');
+    } else {
+        buktiImg.src = '';
+        buktiImg.classList.add('hidden');
+        if (emptyBukti) emptyBukti.classList.remove('hidden');
+    }
+
+    const modal = document.getElementById('modalCashDetail');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeCashDetailModal() {
+    const modal = document.getElementById('modalCashDetail');
+    if (modal) modal.classList.add('hidden');
+}
+
+// 12. Cetak Voucher Kas Masuk / Keluar (BKM / BKK)
+function printCurrentCashVoucher() {
+    if (!currentCashbookEntry) return;
+
+    const entry = currentCashbookEntry;
+    const isMasuk = entry.tipe === 'masuk';
+    const docTitle = isMasuk ? 'BUKTI KAS MASUK (BKM)' : 'BUKTI KAS KELUAR (BKK)';
+    const docCode = isMasuk ? `BKM-${String(entry.id).padStart(5, '0')}` : `BKK-${String(entry.id).padStart(5, '0')}`;
+
+    let projName = 'ADAM PROPERTY GROUP';
+    if (entry.projectId) {
+        const proj = allProjects.find(p => p.id === entry.projectId);
+        if (proj) projName = `${proj.nama} - ADAM PROPERTY GROUP`;
+    }
+
+    const printable = document.getElementById('printableArea');
+    if (!printable) return;
+
+    printable.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 800px; margin: 0 auto; color: #1e293b; border: 2px solid #0f172a; border-radius: 8px;">
+            <!-- Header Voucher -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 15px;">
+                <div>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #047857; text-transform: uppercase; letter-spacing: 0.5px;">ADAM PROPERTY GROUP</h2>
+                    <p style="margin: 3px 0 0 0; font-size: 11px; color: #64748b;">Pengembang Properti & Kavling Mandiri Siap Bangun</p>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; font-weight: bold; color: #334155;">Proyek: ${escapeHtml(projName)}</p>
+                </div>
+                <div style="text-align: right;">
+                    <div style="display: inline-block; padding: 4px 10px; background: #0f172a; color: white; font-weight: bold; font-size: 13px; border-radius: 4px;">
+                        ${docTitle}
+                    </div>
+                    <p style="margin: 5px 0 0 0; font-size: 11px; font-family: monospace; font-weight: bold;">No: ${docCode}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #475569;">Tanggal: ${formatTanggalIndo(entry.tanggal)}</p>
+                </div>
+            </div>
+
+            <!-- Body Voucher -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+                <tr>
+                    <td style="padding: 8px; width: 25%; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1;">${isMasuk ? 'Diterima Dari' : 'Dibayarkan Kepada'}</td>
+                    <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 13px; color: #0f172a;">${escapeHtml(entry.sumber)}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1;">Jumlah Uang</td>
+                    <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 15px; color: ${isMasuk ? '#047857' : '#e11d48'};">
+                        ${formatRupiah(entry.nominal)}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1;">Terbilang</td>
+                    <td style="padding: 8px; border: 1px solid #cbd5e1; font-style: italic; background: #f1f5f9;">
+                        ${terbilang(entry.nominal)} Rupiah
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1;">Untuk Pembayaran</td>
+                    <td style="padding: 8px; border: 1px solid #cbd5e1;">${escapeHtml(entry.keterangan)}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1;">Metode / Akun Bank</td>
+                    <td style="padding: 8px; border: 1px solid #cbd5e1;">${escapeHtml(entry.metode)}</td>
+                </tr>
+            </table>
+
+            <!-- Signatures -->
+            <div style="display: flex; justify-content: space-between; text-align: center; margin-top: 30px; font-size: 11px;">
+                <div style="width: 28%;">
+                    <p style="margin: 0; color: #64748b;">Disetujui Oleh,</p>
+                    <div style="height: 60px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Direktur Operasional</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY</p>
+                </div>
+                <div style="width: 28%;">
+                    <p style="margin: 0; color: #64748b;">Kasir / Akuntan,</p>
+                    <div style="height: 60px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Bagian Keuangan</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY</p>
+                </div>
+                <div style="width: 28%;">
+                    <p style="margin: 0; color: #64748b;">${isMasuk ? 'Penyetor / Investor' : 'Penerima Uang'},</p>
+                    <div style="height: 60px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">( ${escapeHtml(entry.sumber)} )</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">Tanda Tangan</p>
+                </div>
+            </div>
+
+            <!-- Footer note -->
+            <div style="margin-top: 25px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 10px; color: #94a3b8; text-align: center;">
+                Voucher ini sah dan diterbitkan secara digital oleh Sistem Manajemen Keuangan ADAM PROPERTY GROUP pada ${new Date().toLocaleString('id-ID')}.
+            </div>
+        </div>
+    `;
+
+    printable.classList.remove('hidden');
+    window.print();
+    printable.classList.add('hidden');
+}
+
+// 13. Cetak Laporan Rekapitulasi Mutasi Buku Kas Besar
+function printCashbookReport() {
+    const printable = document.getElementById('printableArea');
+    if (!printable) return;
+
+    let totalIn = 0;
+    let totalOut = 0;
+    let totalBarter = 0;
+
+    for (const item of filteredCashbook) {
+        const nom = Number(item.nominal) || 0;
+        if (item.tipe === 'masuk') {
+            if (item.metode === 'barter' || item.kategori === 'jual_kavling_barter') {
+                totalBarter += nom;
+            } else {
+                totalIn += nom;
+            }
+        } else {
+            totalOut += nom;
+        }
+    }
+
+    const netBal = totalIn - totalOut;
+    const projectMap = new Map();
+    allProjects.forEach(p => projectMap.set(p.id, p.nama));
+
+    const rowsHtml = filteredCashbook.map((item, idx) => {
+        const isMasuk = item.tipe === 'masuk';
+        const isBarter = item.metode === 'barter' || item.kategori === 'jual_kavling_barter';
+        const pName = item.projectId ? (projectMap.get(item.projectId) || '-') : 'Kas Umum';
+
+        return `
+            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 10px;">
+                <td style="padding: 6px; text-align: center;">${idx + 1}</td>
+                <td style="padding: 6px; white-space: nowrap;">${formatTanggalIndo(item.tanggal)}</td>
+                <td style="padding: 6px; font-weight: bold;">${escapeHtml(item.sumber)}</td>
+                <td style="padding: 6px;">${escapeHtml(item.keterangan)}</td>
+                <td style="padding: 6px;">${escapeHtml(pName)}</td>
+                <td style="padding: 6px;">${escapeHtml(item.metode)}</td>
+                <td style="padding: 6px; text-align: right; color: ${isBarter ? '#b45309' : '#047857'}; font-weight: bold;">
+                    ${isMasuk ? formatRupiah(item.nominal) : '-'}
+                </td>
+                <td style="padding: 6px; text-align: right; color: #e11d48; font-weight: bold;">
+                    ${!isMasuk ? formatRupiah(item.nominal) : '-'}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    printable.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 25px; color: #0f172a;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #047857; padding-bottom: 12px; margin-bottom: 15px;">
+                <div>
+                    <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #047857;">ADAM PROPERTY GROUP</h1>
+                    <p style="margin: 3px 0 0 0; font-size: 12px; color: #475569;">Laporan Resmi Rekapitulasi Arus Kas Besar & Modal Investor</p>
+                </div>
+                <div style="text-align: right; font-size: 11px; color: #64748b;">
+                    <p style="margin: 0;">Dicetak: <b>${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</b></p>
+                    <p style="margin: 2px 0 0 0;">Total Mutasi: <b>${filteredCashbook.length} Transaksi</b></p>
+                </div>
+            </div>
+
+            <!-- Financial Summary Bar -->
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; font-size: 11px;">
+                <div style="flex: 1; padding: 8px 12px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px;">
+                    <span style="color: #065f46; display: block; font-weight: bold;">TOTAL KAS MASUK LIKUID</span>
+                    <span style="font-size: 14px; font-weight: bold; color: #047857;">${formatRupiah(totalIn)}</span>
+                </div>
+                <div style="flex: 1; padding: 8px 12px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px;">
+                    <span style="color: #9f1239; display: block; font-weight: bold;">TOTAL KAS KELUAR</span>
+                    <span style="font-size: 14px; font-weight: bold; color: #e11d48;">${formatRupiah(totalOut)}</span>
+                </div>
+                <div style="flex: 1; padding: 8px 12px; background: #0f172a; color: white; border-radius: 6px;">
+                    <span style="color: #94a3b8; display: block; font-weight: bold;">SALDO KAS BERSIH</span>
+                    <span style="font-size: 14px; font-weight: bold; color: #34d399;">${formatRupiah(netBal)}</span>
+                </div>
+                <div style="flex: 1; padding: 8px 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px;">
+                    <span style="color: #92400e; display: block; font-weight: bold;">ASET BARTER MATERIAL</span>
+                    <span style="font-size: 14px; font-weight: bold; color: #b45309;">${formatRupiah(totalBarter)}</span>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                <thead>
+                    <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 10px; font-weight: bold; text-transform: uppercase;">
+                        <th style="padding: 7px; text-align: center; width: 30px;">#</th>
+                        <th style="padding: 7px; text-align: left; width: 75px;">Tanggal</th>
+                        <th style="padding: 7px; text-align: left; width: 140px;">Pihak Terkait</th>
+                        <th style="padding: 7px; text-align: left;">Keterangan Mutasi</th>
+                        <th style="padding: 7px; text-align: left; width: 100px;">Proyek</th>
+                        <th style="padding: 7px; text-align: left; width: 85px;">Metode</th>
+                        <th style="padding: 7px; text-align: right; width: 95px;">Masuk (Rp)</th>
+                        <th style="padding: 7px; text-align: right; width: 95px;">Keluar (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <!-- Signatures -->
+            <div style="display: flex; justify-content: space-between; text-align: center; margin-top: 40px; font-size: 11px;">
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">Disiapkan Oleh,</p>
+                    <div style="height: 60px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Bagian Administrasi & Keuangan</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                </div>
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">Mengetahui,</p>
+                    <div style="height: 60px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Direktur Utama</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    printable.classList.remove('hidden');
+    window.print();
+    printable.classList.add('hidden');
 }
 
 
