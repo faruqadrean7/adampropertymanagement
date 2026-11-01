@@ -75,10 +75,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (stored) {
         const parsed = JSON.parse(stored);
         // Normalize role if legacy role was stored
-        if (!['management', 'it_manager', 'admin'].includes(parsed.role)) {
-          parsed.role = 'management';
-        }
-        setUser(parsed);
+        const role = ['management', 'it_manager', 'admin'].includes(parsed.role)
+          ? (parsed.role as UserRole)
+          : 'management';
+
+        // Auto-refresh stored session with latest official names and titles
+        const officialUser = USER_CREDENTIALS[role]?.user || USER_CREDENTIALS.it_manager.user;
+        const updatedUser: AuthUser = {
+          ...parsed,
+          role,
+          nama: officialUser.nama,
+          jabatan: officialUser.jabatan
+        };
+        setUser(updatedUser);
+        localStorage.setItem('adam_property_auth_user', JSON.stringify(updatedUser));
       }
     } catch (e) {
       console.error('Failed to parse stored auth user', e);
