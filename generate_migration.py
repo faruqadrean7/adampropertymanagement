@@ -39,83 +39,8 @@ projects = [
 ]
 
 # 2. Kavlings
-# Blok B: B1 s/d B12, Blok C: C1 s/d C10
+# Kosongkan kavling (0 unit) sesuai instruksi user: "jangan generate kavling dulu itu nanti saya kasih sendiri"
 kavlings = []
-# Blok B
-for i in range(1, 13):
-    nomor = f'B-{i:02d}'
-    k_id = f'kav-b{i}'
-    status = 'terbuka'
-    cust_id = None
-    cust_nama = None
-    ket = '-'
-    harga = 75000000
-
-    if i == 6:
-        status = 'terjual'
-        cust_id = 'cust-nita'
-        cust_nama = 'Ibu Nita Siswati'
-        ket = 'Terjual unit Blok B6 (DP & Angsuran berjalan)'
-        harga = 75000000
-    elif i == 11:
-        status = 'booking'
-        cust_id = 'cust-nita'
-        cust_nama = 'Ibu Nita Siswati'
-        ket = 'Booking unit kedua Blok B11'
-        harga = 75000000
-    elif i == 10:
-        status = 'booking'
-        cust_id = 'cust-reniati'
-        cust_nama = 'Ibu Reniati (Kel. Bpk. Bari)'
-        ket = 'Terbayar ITJ Rp 5 Jt via Pak Bari + DP Rp 35.5 Jt'
-        harga = 70000000
-
-    kavlings.append({
-        'id': k_id,
-        'projectId': project_id,
-        'blok': 'Blok B',
-        'nomor': nomor,
-        'luas': 84,
-        'dimensi': '6 x 14 m',
-        'harga': harga,
-        'tipe': 'Hunian Standar',
-        'status': status,
-        'customerId': cust_id,
-        'customerNama': cust_nama,
-        'keterangan': ket
-    })
-
-# Blok C
-for i in range(1, 11):
-    nomor = f'C-{i:02d}'
-    k_id = f'kav-c{i}'
-    status = 'terbuka'
-    cust_id = None
-    cust_nama = None
-    ket = '-'
-    harga = 70000000
-
-    if i == 8:
-        status = 'booking'
-        cust_id = 'cust-ngateman'
-        cust_nama = 'Bapak Ngateman'
-        ket = 'Terbayar DP Rp 35 Jt (Blok C8)'
-        harga = 70000000
-
-    kavlings.append({
-        'id': k_id,
-        'projectId': project_id,
-        'blok': 'Blok C',
-        'nomor': nomor,
-        'luas': 77,
-        'dimensi': '7 x 11 m',
-        'harga': harga,
-        'tipe': 'Hunian Standar',
-        'status': status,
-        'customerId': cust_id,
-        'customerNama': cust_nama,
-        'keterangan': ket
-    })
 
 # 3. Customers
 customers = [
@@ -125,12 +50,12 @@ customers = [
         'nik': '3507125809850001',
         'telepon': '081234567890',
         'alamat': 'Kec. Kromengan, Kab. Malang, Jawa Timur',
-        'kavlingId': 'kav-b6',
-        'kavlingKode': 'Blok B-06 & B-11',
+        'kavlingId': None,
+        'kavlingKode': '-',
         'projectId': project_id,
-        'totalHarga': 150000000,
+        'totalHarga': 0,
         'totalMasuk': 73000000,
-        'sisaPiutang': 77000000,
+        'sisaPiutang': 0,
         'statusBayar': 'belum_lunas',
         'tanggalBeli': '2026-09-05'
     },
@@ -140,12 +65,12 @@ customers = [
         'nik': '3507126104880003',
         'telepon': '085732109876',
         'alamat': 'Jatikerto RT 42 RW 03, Kromengan, Malang',
-        'kavlingId': 'kav-b10',
-        'kavlingKode': 'Blok B-10',
+        'kavlingId': None,
+        'kavlingKode': '-',
         'projectId': project_id,
-        'totalHarga': 70000000,
+        'totalHarga': 0,
         'totalMasuk': 40500000,
-        'sisaPiutang': 29500000,
+        'sisaPiutang': 0,
         'statusBayar': 'belum_lunas',
         'tanggalBeli': '2026-09-05'
     },
@@ -155,12 +80,12 @@ customers = [
         'nik': '3507121503750002',
         'telepon': '082198765432',
         'alamat': 'Kromengan, Malang, Jawa Timur',
-        'kavlingId': 'kav-c8',
-        'kavlingKode': 'Blok C-08',
+        'kavlingId': None,
+        'kavlingKode': '-',
         'projectId': project_id,
-        'totalHarga': 70000000,
+        'totalHarga': 0,
         'totalMasuk': 35000000,
-        'sisaPiutang': 35000000,
+        'sisaPiutang': 0,
         'statusBayar': 'belum_lunas',
         'tanggalBeli': '2026-10-24'
     }
@@ -172,29 +97,29 @@ payments = [
         'id': 'pay-1',
         'customerId': 'cust-reniati',
         'customerNama': 'Ibu Reniati (Kel. Bpk. Bari)',
-        'kavlingKode': 'Blok B-10',
+        'kavlingKode': '-',
         'tanggal': '2026-09-05',
         'nominal': 5000000,
         'metodeBayar': 'transfer',
-        'tujuan': 'ITJ / Tanda Jadi Blok B10 (Disetor via Bpk. Bari)',
-        'keterangan': 'ITJ – ITJ Pak Bari'
+        'tujuan': 'ITJ / Tanda Jadi (Disetor via Bpk. Bari)',
+        'keterangan': 'ITJ - ITJ Pak Bari'
     },
     {
         'id': 'pay-2',
         'customerId': 'cust-nita',
         'customerNama': 'Ibu Nita Siswati',
-        'kavlingKode': 'Blok B-06',
+        'kavlingKode': '-',
         'tanggal': '2026-09-05',
         'nominal': 5000000,
         'metodeBayar': 'transfer',
         'tujuan': 'ITJ / Tanda Jadi Unit Kavling',
-        'keterangan': 'ITJ – ITJ Nita Siswati'
+        'keterangan': 'ITJ - ITJ Nita Siswati'
     },
     {
         'id': 'pay-3',
         'customerId': 'cust-nita',
         'customerNama': 'Ibu Nita Siswati',
-        'kavlingKode': 'Blok B-06 & B-11',
+        'kavlingKode': '-',
         'tanggal': '2026-10-03',
         'nominal': 60000000,
         'metodeBayar': 'transfer',
@@ -205,29 +130,29 @@ payments = [
         'id': 'pay-4',
         'customerId': 'cust-reniati',
         'customerNama': 'Ibu Reniati (Kel. Bpk. Bari)',
-        'kavlingKode': 'Blok B-10',
+        'kavlingKode': '-',
         'tanggal': '2026-10-07',
         'nominal': 35500000,
         'metodeBayar': 'transfer',
-        'tujuan': 'Uang Muka / DP Kavling Blok B10',
-        'keterangan': 'DP KAVLING BLOK B10 (RENIATI)'
+        'tujuan': 'Uang Muka / DP Kavling',
+        'keterangan': 'DP KAVLING (RENIATI)'
     },
     {
         'id': 'pay-5',
         'customerId': 'cust-ngateman',
         'customerNama': 'Bapak Ngateman',
-        'kavlingKode': 'Blok C-08',
+        'kavlingKode': '-',
         'tanggal': '2026-10-24',
         'nominal': 35000000,
         'metodeBayar': 'transfer',
-        'tujuan': 'Uang Muka / DP Kavling Blok C8',
+        'tujuan': 'Uang Muka / DP Kavling',
         'keterangan': 'DP PAK NGATEMAN'
     },
     {
         'id': 'pay-6',
         'customerId': 'cust-nita',
         'customerNama': 'Ibu Nita Siswati',
-        'kavlingKode': 'Blok B-06 & B-11',
+        'kavlingKode': '-',
         'tanggal': '2026-10-27',
         'nominal': 8000000,
         'metodeBayar': 'transfer',
@@ -448,9 +373,10 @@ for k in kavlings:
 
 sql_lines.append("\n-- 3. CUSTOMERS")
 for c in customers:
+    k_id_val = f"'{c['kavlingId']}'" if c['kavlingId'] else 'NULL'
     sql_lines.append(
         f"INSERT INTO public.customers (id, nama, nik, telepon, alamat, kavling_id, kavling_kode, project_id, total_harga, total_masuk, sisa_piutang, status_bayar, tanggal_beli) "
-        f"VALUES ('{c['id']}', '{c['nama']}', '{c['nik']}', '{c['telepon']}', '{c['alamat']}', '{c['kavlingId']}', '{c['kavlingKode']}', '{c['projectId']}', {c['totalHarga']}, {c['totalMasuk']}, {c['sisaPiutang']}, '{c['statusBayar']}', '{c['tanggalBeli']}') "
+        f"VALUES ('{c['id']}', '{c['nama']}', '{c['nik']}', '{c['telepon']}', '{c['alamat']}', {k_id_val}, '{c['kavlingKode']}', '{c['projectId']}', {c['totalHarga']}, {c['totalMasuk']}, {c['sisaPiutang']}, '{c['statusBayar']}', '{c['tanggalBeli']}') "
         f"ON CONFLICT (id) DO NOTHING;"
     )
 
