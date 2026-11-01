@@ -50,6 +50,18 @@ let inventoryFilterKondisi = 'all';
 let inventoryFilterLokasi = 'all';
 let inventorySearchQuery = '';
 
+// State Karyawan, Marketing & Payroll Gaji Kas Kecil
+let allEmployees = [];
+let filteredEmployees = [];
+let allPayrolls = [];
+let filteredPayrolls = [];
+let currentEmployee = null;
+let currentPayroll = null;
+let empFilterDept = 'all';
+let empFilterStatus = 'all';
+let empFilterPeriod = '';
+let empSearchQuery = '';
+
 let currentFilter = 'all'; // Filter customer: 'all', 'unpaid', 'paid'
 let searchQuery = '';
 let searchKavlingQuery = '';
@@ -85,12 +97,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const inventoryDate = document.getElementById('inventoryTanggal');
         if (inventoryDate) inventoryDate.value = today;
 
+        // Set default filter periode bulan penggajian (contoh: "2026-03")
+        const currentYearMonth = new Date().toISOString().substring(0, 7);
+        empFilterPeriod = currentYearMonth;
+        populateEmployeePeriodDropdowns();
+
         // Auto-sync jika ada pembayaran customer / cicilan lahan yang belum masuk Kas Besar
         await syncAllToCashbook();
         await refreshDashboardView();
         await refreshCashbookView();
         await refreshPettyCashView();
         await refreshInventoryView();
+        await refreshEmployeeView();
         updateTopbarDate();
 
     } catch (error) {
@@ -119,6 +137,7 @@ async function initializeData() {
     }
 
     renderProjectDropdowns();
+    await initDefaultEmployees();
     await refreshDashboardView();
     await refreshKavlingView();
     await refreshCustomerList();
@@ -126,9 +145,10 @@ async function initializeData() {
     await refreshCashbookView();
     await refreshPettyCashView();
     await refreshInventoryView();
+    await refreshEmployeeView();
 }
 
-// Navigasi Tab Utama (Executive Sidebar Navigation: 7 Modul Terintegrasi)
+// Navigasi Tab Utama (Executive Sidebar Navigation: 8 Modul Terintegrasi)
 function switchMainTab(tab) {
     currentTab = tab;
 
@@ -139,6 +159,7 @@ function switchMainTab(tab) {
     const navCashbook = document.getElementById('navTabCashbook');
     const navPettyCash = document.getElementById('navTabPettyCash');
     const navInventory = document.getElementById('navTabInventory');
+    const navEmployee = document.getElementById('navTabEmployee');
 
     const viewDashboard = document.getElementById('viewDashboard');
     const viewKavling = document.getElementById('viewKavling');
@@ -147,6 +168,7 @@ function switchMainTab(tab) {
     const viewCashbook = document.getElementById('viewCashbook');
     const viewPettyCash = document.getElementById('viewPettyCash');
     const viewInventory = document.getElementById('viewInventory');
+    const viewEmployee = document.getElementById('viewEmployee');
 
     const headerActionText = document.getElementById('headerPrimaryActionText');
     const topbarActionText = document.getElementById('topbarPrimaryActionText');
@@ -158,7 +180,7 @@ function switchMainTab(tab) {
     const activeClasses = `corp-tab-active ${baseClasses} font-bold shadow-md`;
 
     // Reset tab styles
-    [navDashboard, navKavling, navCustomer, navLandDebt, navCashbook, navPettyCash, navInventory].forEach(el => {
+    [navDashboard, navKavling, navCustomer, navLandDebt, navCashbook, navPettyCash, navInventory, navEmployee].forEach(el => {
         if (el) el.className = inactiveClasses;
     });
 
@@ -169,6 +191,7 @@ function switchMainTab(tab) {
     if (viewCashbook) viewCashbook.classList.add('hidden');
     if (viewPettyCash) viewPettyCash.classList.add('hidden');
     if (viewInventory) viewInventory.classList.add('hidden');
+    if (viewEmployee) viewEmployee.classList.add('hidden');
 
     let actionLabel = 'Cetak Laporan';
     let moduleTitle = 'Dashboard Eksekutif';
@@ -223,6 +246,13 @@ function switchMainTab(tab) {
         moduleTitle = '6. Manajemen Inventaris & Aset Kantor';
         breadcrumbLabel = 'Aset Tetap & Peralatan Kantor';
         refreshInventoryView();
+    } else if (tab === 'employee') {
+        if (navEmployee) navEmployee.className = activeClasses;
+        if (viewEmployee) viewEmployee.classList.remove('hidden');
+        actionLabel = '+ Tambah Karyawan';
+        moduleTitle = '7. Data Karyawan & Marketing';
+        breadcrumbLabel = 'Manajemen Tim, Komisi & Payroll Otomatis';
+        refreshEmployeeView();
     }
 
     if (headerActionText) headerActionText.textContent = actionLabel;
@@ -282,6 +312,8 @@ function handlePrimaryAction() {
         openPettyTopupModal();
     } else if (currentTab === 'inventory') {
         openInventoryModal();
+    } else if (currentTab === 'employee') {
+        openEmployeeModal();
     }
 }
 
@@ -6458,4 +6490,1380 @@ function printDashboardSummary() {
     printable.classList.remove('hidden');
     window.print();
     printable.classList.add('hidden');
+}
+// ========================================================
+// MODUL 7: DATA KARYAWAN, TIM MARKETING & PAYROLL GAJI (KAS KECIL)
+// ========================================================
+
+// 1. Format Periode Bulan Indonesia ("2026-03" -> "Maret 2026")
+function formatBulanTahun(yearMonthStr) {
+    if (!yearMonthStr || !yearMonthStr.includes('-')) return '-';
+    const parts = yearMonthStr.split('-');
+    const year = parts[0];
+    const monthIndex = parseInt(parts[1], 10) - 1;
+    const namaBulan = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return `${namaBulan[monthIndex] || parts[1]} ${year}`;
+}
+
+// 2. Generate Nomor Slip Gaji Resmi ("SLIP/APG/202603/0001")
+function generateSlipNumber(empId, period) {
+    const cleanPeriod = (period || new Date().toISOString().substring(0, 7)).replace('-', '');
+    const cleanId = String(empId || 1).padStart(4, '0');
+    return `SLIP/APG/${cleanPeriod}/${cleanId}`;
+}
+
+// 3. Inisialisasi Dropdown Periode Bulan Penggajian
+function populateEmployeePeriodDropdowns() {
+    const filterSelect = document.getElementById('empFilterPeriod');
+    const historyFilterSelect = document.getElementById('payrollHistoryFilterPeriod');
+
+    const now = new Date();
+    const options = [];
+
+    for (let i = -12; i <= 3; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const value = `${y}-${m}`;
+        const label = formatBulanTahun(value);
+        options.push({ value, label, isCurrent: i === 0 });
+    }
+
+    if (filterSelect) {
+        filterSelect.innerHTML = options.map(opt => `
+            <option value="${opt.value}" ${opt.value === empFilterPeriod ? 'selected' : ''}>
+                ${opt.label} ${opt.isCurrent ? '(Bulan Berjalan)' : ''}
+            </option>
+        `).join('');
+    }
+
+    if (historyFilterSelect) {
+        historyFilterSelect.innerHTML = `
+            <option value="all">Semua Periode Penggajian</option>
+            ${options.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}
+        `;
+    }
+}
+
+// 4. Handle Ganti Periode Bulan
+function handleEmpPeriodChange(period) {
+    empFilterPeriod = period;
+    refreshEmployeeView();
+}
+
+// 5. Inisialisasi Data Default Karyawan & Marketing (Jika masih kosong)
+async function initDefaultEmployees() {
+    try {
+        const existing = await EmployeeDB.getAll();
+        if (existing.length === 0) {
+            const demoEmployees = [
+                {
+                    nama: 'Budi Prasetyo, S.E.',
+                    nik: '3515081204890001',
+                    departemen: 'marketing',
+                    jabatan: 'Senior Marketing Executive',
+                    tipe: 'tetap',
+                    noHp: '081234567890',
+                    tanggalMasuk: '2024-01-15',
+                    status: 'aktif',
+                    alamat: 'Jl. Merpati No. 12, Sidoarjo',
+                    bankName: 'BCA',
+                    bankRek: '140001928374',
+                    bankAtasNama: 'Budi Prasetyo',
+                    gajiPokok: 4000000,
+                    tunjangan: 1000000,
+                    komisiDefault: 2500000,
+                    potonganDefault: 0,
+                    keterangan: 'Top marketing penjualan kavling komersil & ruko depan.',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    nama: 'Siti Nurhaliza, S.H.',
+                    nik: '3515085409940002',
+                    departemen: 'legal',
+                    jabatan: 'Staff Legalitas & Notaris AJB',
+                    tipe: 'tetap',
+                    noHp: '081398765432',
+                    tanggalMasuk: '2024-03-01',
+                    status: 'aktif',
+                    alamat: 'Perum Gading Asri C-14, Surabaya',
+                    bankName: 'Mandiri',
+                    bankRek: '1420018899221',
+                    bankAtasNama: 'Siti Nurhaliza',
+                    gajiPokok: 4500000,
+                    tunjangan: 750000,
+                    komisiDefault: 0,
+                    potonganDefault: 0,
+                    keterangan: 'Pengurusan alas hak, AJB, split SHM & perijinan Pemda.',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    nama: 'Hendra Setiawan',
+                    nik: '3515082103950003',
+                    departemen: 'keuangan',
+                    jabatan: 'Staff Kasir & Keuangan',
+                    tipe: 'tetap',
+                    noHp: '082155667788',
+                    tanggalMasuk: '2024-02-10',
+                    status: 'aktif',
+                    alamat: 'Jl. Ahmad Yani No. 88, Sidoarjo',
+                    bankName: 'BRI',
+                    bankRek: '002101089271501',
+                    bankAtasNama: 'Hendra Setiawan',
+                    gajiPokok: 3800000,
+                    tunjangan: 700000,
+                    komisiDefault: 0,
+                    potonganDefault: 0,
+                    keterangan: 'Pengelola buku kas besar, kas kecil, dan rekap kwitansi konsumen.',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    nama: 'Pak Samuji',
+                    nik: '3515081108780004',
+                    departemen: 'lapangan',
+                    jabatan: 'Mandor & Pengawas Lapangan',
+                    tipe: 'kontrak',
+                    noHp: '085233445566',
+                    tanggalMasuk: '2024-01-01',
+                    status: 'aktif',
+                    alamat: 'Desa Banjarsari RT 03/RW 02, Sidoarjo',
+                    bankName: 'BNI',
+                    bankRek: '0238475928',
+                    bankAtasNama: 'Samuji',
+                    gajiPokok: 3500000,
+                    tunjangan: 1200000,
+                    komisiDefault: 0,
+                    potonganDefault: 0,
+                    keterangan: 'Pengawas pematangan lahan, drainase, dan pembagian patok kavling.',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    nama: 'Dewi Lestari, A.Md.',
+                    nik: '3515086512960005',
+                    departemen: 'admin',
+                    jabatan: 'Administrasi Kantor & Customer Care',
+                    tipe: 'tetap',
+                    noHp: '087811223344',
+                    tanggalMasuk: '2024-04-01',
+                    status: 'aktif',
+                    alamat: 'Jl. Pahlawan Gg. 4 No. 5, Sidoarjo',
+                    bankName: 'BSI',
+                    bankRek: '7123984712',
+                    bankAtasNama: 'Dewi Lestari',
+                    gajiPokok: 3200000,
+                    tunjangan: 600000,
+                    komisiDefault: 0,
+                    potonganDefault: 0,
+                    keterangan: 'Pelayanan tamu kantor, arsip berkas, dan follow up berkas konsumen.',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+
+            for (const emp of demoEmployees) {
+                await EmployeeDB.add(emp);
+            }
+        }
+    } catch (err) {
+        console.error('Gagal inisialisasi default employees:', err);
+    }
+}
+
+// 6. Refresh Seluruh Data Karyawan, Payroll & 4 Stat Cards
+async function refreshEmployeeView() {
+    try {
+        allEmployees = await EmployeeDB.getAll();
+        allPayrolls = await PayrollDB.getAll();
+
+        if (!empFilterPeriod) {
+            empFilterPeriod = new Date().toISOString().substring(0, 7);
+        }
+
+        // 1. Total Staf & Breakdown
+        const totalCount = allEmployees.length;
+        const activeCount = allEmployees.filter(e => e.status === 'aktif').length;
+        const nonActiveCount = totalCount - activeCount;
+
+        const statTotalEl = document.getElementById('statEmpTotalCount');
+        if (statTotalEl) {
+            statTotalEl.innerHTML = `${totalCount} <span class="text-xs font-normal text-slate-400">Orang</span>`;
+        }
+
+        const statActiveEl = document.getElementById('statEmpActiveBreakdown');
+        if (statActiveEl) {
+            statActiveEl.innerHTML = `<span>${activeCount} Aktif · ${nonActiveCount} Nonaktif</span><span class="text-amber-400 font-bold">Tim Developer</span>`;
+        }
+
+        // Update nav badge jika ada
+        const navBadge = document.getElementById('navEmployeeCountBadge');
+        if (navBadge) {
+            navBadge.textContent = totalCount;
+        }
+
+        // 2. Beban Rutin THP Karyawan Aktif
+        let monthlyBudget = 0;
+        allEmployees.forEach(e => {
+            if (e.status === 'aktif') {
+                const thp = (Number(e.gajiPokok) || 0) + (Number(e.tunjangan) || 0) + (Number(e.komisiDefault) || 0) - (Number(e.potonganDefault) || 0);
+                monthlyBudget += Math.max(0, thp);
+            }
+        });
+
+        const statBudgetEl = document.getElementById('statEmpMonthlyBudget');
+        if (statBudgetEl) {
+            statBudgetEl.textContent = formatRupiah(monthlyBudget);
+        }
+
+        const statBudgetInfoEl = document.getElementById('statEmpBudgetInfo');
+        if (statBudgetInfoEl) {
+            statBudgetInfoEl.textContent = `Estimasi kewajiban gaji untuk ${activeCount} staf aktif`;
+        }
+
+        // 3. Realisasi Gaji Terbayar Bulan Ini (Kas Kecil)
+        const paidThisPeriod = allPayrolls.filter(p => p.periodeBulan === empFilterPeriod && p.status === 'paid');
+        const totalPaidAmount = paidThisPeriod.reduce((sum, p) => sum + (Number(p.totalGaji) || 0), 0);
+
+        const statPaidEl = document.getElementById('statEmpPaidThisMonth');
+        if (statPaidEl) {
+            statPaidEl.textContent = formatRupiah(totalPaidAmount);
+        }
+
+        const statPaidCountEl = document.getElementById('statEmpPaidCount');
+        if (statPaidCountEl) {
+            statPaidCountEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> ${paidThisPeriod.length} Staf Tergaji (Kas Kecil)`;
+        }
+
+        // 4. Sisa Belum Digaji Bulan Ini
+        const paidEmpIds = new Set(paidThisPeriod.map(p => p.employeeId));
+        const unpaidActiveEmployees = allEmployees.filter(e => e.status === 'aktif' && !paidEmpIds.has(e.id));
+
+        let unpaidBudget = 0;
+        unpaidActiveEmployees.forEach(e => {
+            const thp = (Number(e.gajiPokok) || 0) + (Number(e.tunjangan) || 0) + (Number(e.komisiDefault) || 0) - (Number(e.potonganDefault) || 0);
+            unpaidBudget += Math.max(0, thp);
+        });
+
+        const statUnpaidEl = document.getElementById('statEmpUnpaidBalance');
+        if (statUnpaidEl) {
+            statUnpaidEl.textContent = formatRupiah(unpaidBudget);
+        }
+
+        const statUnpaidCountEl = document.getElementById('statEmpUnpaidCount');
+        if (statUnpaidCountEl) {
+            statUnpaidCountEl.innerHTML = `<span class="w-2 h-2 rounded-full ${unpaidActiveEmployees.length > 0 ? 'bg-rose-500' : 'bg-slate-300'}"></span> ${unpaidActiveEmployees.length} Staf Belum Cair`;
+        }
+
+        filterEmployees();
+
+    } catch (err) {
+        console.error('Gagal refresh employee view:', err);
+    }
+}
+
+// 7. Filter Karyawan Berdasarkan Dropdown & Pencarian
+function filterEmployees() {
+    const deptSelect = document.getElementById('empFilterDept');
+    const statusSelect = document.getElementById('empFilterStatus');
+    const searchInput = document.getElementById('empSearchInput');
+
+    empFilterDept = deptSelect ? deptSelect.value : 'all';
+    empFilterStatus = statusSelect ? statusSelect.value : 'all';
+    empSearchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    filteredEmployees = allEmployees.filter(emp => {
+        // Filter Departemen
+        if (empFilterDept !== 'all' && emp.departemen !== empFilterDept) {
+            return false;
+        }
+        // Filter Status
+        if (empFilterStatus !== 'all' && emp.status !== empFilterStatus) {
+            return false;
+        }
+        // Filter Query
+        if (empSearchQuery) {
+            const q = empSearchQuery;
+            const matchNama = (emp.nama || '').toLowerCase().includes(q);
+            const matchNik = (emp.nik || '').toLowerCase().includes(q);
+            const matchJabatan = (emp.jabatan || '').toLowerCase().includes(q);
+            const matchNoHp = (emp.noHp || '').toLowerCase().includes(q);
+            const matchBank = (emp.bankName || '').toLowerCase().includes(q) || (emp.bankRek || '').toLowerCase().includes(q);
+            if (!matchNama && !matchNik && !matchJabatan && !matchNoHp && !matchBank) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    renderEmployeeTable();
+}
+
+// 8. Render Tabel Karyawan & Status Penggajian
+function renderEmployeeTable() {
+    const tbody = document.getElementById('employeeTableBody');
+    const emptyState = document.getElementById('emptyEmployeeState');
+    if (!tbody) return;
+
+    if (filteredEmployees.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const deptIcons = {
+        marketing: { label: 'Marketing Kavling', icon: 'fa-bullhorn', badge: 'bg-amber-100 text-amber-800 border-amber-200' },
+        admin: { label: 'Administrasi', icon: 'fa-building', badge: 'bg-blue-100 text-blue-800 border-blue-200' },
+        keuangan: { label: 'Kasir & Keuangan', icon: 'fa-coins', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+        lapangan: { label: 'Pengawas Lapangan', icon: 'fa-tractor', badge: 'bg-orange-100 text-orange-800 border-orange-200' },
+        legal: { label: 'Legalitas & AJB', icon: 'fa-scale-balanced', badge: 'bg-purple-100 text-purple-800 border-purple-200' },
+        direksi: { label: 'Direksi', icon: 'fa-user-tie', badge: 'bg-indigo-100 text-indigo-800 border-indigo-200' }
+    };
+
+    tbody.innerHTML = filteredEmployees.map((emp, index) => {
+        // Hitung THP
+        const gajiPokok = Number(emp.gajiPokok) || 0;
+        const tunjangan = Number(emp.tunjangan) || 0;
+        const komisi = Number(emp.komisiDefault) || 0;
+        const potongan = Number(emp.potonganDefault) || 0;
+        const thp = Math.max(0, (gajiPokok + tunjangan + komisi) - potongan);
+
+        // Cek slip gaji bulan berjalan
+        const paidSlip = allPayrolls.find(p => p.employeeId === emp.id && p.periodeBulan === empFilterPeriod && p.status === 'paid');
+
+        const deptMeta = deptIcons[emp.departemen] || { label: emp.departemen, icon: 'fa-briefcase', badge: 'bg-slate-100 text-slate-800 border-slate-200' };
+
+        // Nomor WA untuk link langsung
+        const cleanPhone = (emp.noHp || '').replace(/[^0-9]/g, '');
+        const waLink = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+
+        const isAktif = emp.status === 'aktif';
+
+        return `
+            <tr class="hover:bg-slate-50/80 transition-colors ${!isAktif ? 'opacity-60 bg-slate-50/40' : ''}">
+                <td class="py-3 px-4 text-center font-mono text-slate-400 font-bold">${index + 1}</td>
+                
+                <!-- Karyawan / Marketing -->
+                <td class="py-3 px-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-800 to-amber-900 text-amber-300 font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                            ${(emp.nama || 'AP').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                                <span>${escapeHtml(emp.nama)}</span>
+                                ${isAktif ? '<span class="w-2 h-2 rounded-full bg-emerald-500" title="Karyawan Aktif"></span>' : '<span class="w-2 h-2 rounded-full bg-slate-300" title="Non-Aktif"></span>'}
+                            </div>
+                            <div class="text-[11px] text-slate-400 font-mono flex items-center gap-2 mt-0.5">
+                                <span>NIK: ${escapeHtml(emp.nik || '-')}</span>
+                                ${cleanPhone ? `
+                                    <span>•</span>
+                                    <a href="https://wa.me/${waLink}" target="_blank" class="text-emerald-600 hover:text-emerald-700 flex items-center gap-1 hover:underline" title="Chat WhatsApp">
+                                        <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(emp.noHp)}
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+
+                <!-- Jabatan & Departemen -->
+                <td class="py-3 px-4">
+                    <div class="font-semibold text-slate-800">${escapeHtml(emp.jabatan || '-')}</div>
+                    <div class="mt-1">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${deptMeta.badge}">
+                            <i class="fa-solid ${deptMeta.icon}"></i> ${deptMeta.label}
+                        </span>
+                    </div>
+                </td>
+
+                <!-- Tipe & Rekening Bank -->
+                <td class="py-3 px-4">
+                    <div class="font-mono text-slate-800 font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-credit-card text-teal-600 text-[11px]"></i>
+                        <span>${escapeHtml(emp.bankName || 'BCA')} ${escapeHtml(emp.bankRek || '-')}</span>
+                    </div>
+                    <div class="text-[11px] text-slate-500 mt-0.5">
+                        a.n ${escapeHtml(emp.bankAtasNama || emp.nama)}
+                        <span class="text-slate-400">(${emp.tipe === 'tetap' ? 'Tetap' : emp.tipe === 'kontrak' ? 'Kontrak' : 'Freelance'})</span>
+                    </div>
+                </td>
+
+                <!-- Rincian Komponen Gaji -->
+                <td class="py-3 px-4 text-[11px]">
+                    <div class="text-slate-600">Pokok: <span class="font-mono font-semibold text-slate-800">${formatRupiah(gajiPokok)}</span></div>
+                    <div class="text-slate-500">Tunj: <span class="font-mono">${formatRupiah(tunjangan)}</span> ${komisi > 0 ? `| Komisi: <span class="font-mono text-emerald-600 font-semibold">${formatRupiah(komisi)}</span>` : ''}</div>
+                    ${potongan > 0 ? `<div class="text-rose-500">Pot: -<span class="font-mono">${formatRupiah(potongan)}</span></div>` : ''}
+                </td>
+
+                <!-- Gaji Bersih (THP) -->
+                <td class="py-3 px-4 text-right">
+                    <span class="text-sm font-black font-mono text-emerald-800">${formatRupiah(thp)}</span>
+                    <div class="text-[10px] text-slate-400">Take Home Pay</div>
+                </td>
+
+                <!-- Status Gaji Bulan Ini -->
+                <td class="py-3 px-4 text-center">
+                    ${paidSlip ? `
+                        <div class="inline-flex flex-col items-center">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                <i class="fa-solid fa-circle-check text-emerald-600"></i> LUNAS (Kas Kecil)
+                            </span>
+                            <span class="text-[10px] text-slate-500 font-mono mt-0.5">${formatTanggalIndo(paidSlip.tanggalBayar)}</span>
+                        </div>
+                    ` : `
+                        <div class="inline-flex flex-col items-center">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                <i class="fa-solid fa-clock text-rose-600"></i> Belum Digaji
+                            </span>
+                            <span class="text-[10px] text-slate-400 mt-0.5">${formatBulanTahun(empFilterPeriod)}</span>
+                        </div>
+                    `}
+                </td>
+
+                <!-- Aksi Penggajian -->
+                <td class="py-3 px-4 text-center">
+                    <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                        ${paidSlip ? `
+                            <button onclick="openSalarySlipModal(${paidSlip.id})" class="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-[11px] transition shadow-xs flex items-center gap-1" title="Lihat & Cetak Slip Gaji Resmi">
+                                <i class="fa-solid fa-receipt text-emerald-400"></i>
+                                <span>Slip</span>
+                            </button>
+                        ` : `
+                            <button onclick="openPaySalaryConfirmModal(${emp.id})" class="px-2.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg font-bold text-[11px] transition shadow-xs flex items-center gap-1" title="Bayar Gaji Sekarang (Potong Kas Kecil)">
+                                <i class="fa-solid fa-bolt-lightning text-amber-300"></i>
+                                <span>⚡ Bayar</span>
+                            </button>
+                        `}
+                        <button onclick="openEmployeeModal(${emp.id})" class="p-1.5 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition" title="Edit Profil & Struktur Gaji">
+                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        </button>
+                        <button onclick="deleteEmployee(${emp.id})" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Hapus Karyawan">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// 9. Modal Tambah / Edit Karyawan
+function openEmployeeModal(editId = null) {
+    const modal = document.getElementById('modalEmployeeForm');
+    const form = document.getElementById('formEmployee');
+    const title = document.getElementById('modalEmployeeTitle');
+    const formIdInput = document.getElementById('empFormId');
+    if (!modal) return;
+
+    if (form) form.reset();
+
+    if (editId) {
+        const emp = allEmployees.find(e => e.id === Number(editId));
+        if (!emp) return;
+
+        if (title) title.textContent = 'Edit Data Karyawan & Marketing';
+        if (formIdInput) formIdInput.value = emp.id;
+
+        document.getElementById('empNama').value = emp.nama || '';
+        document.getElementById('empNik').value = emp.nik || '';
+        document.getElementById('empDepartemen').value = emp.departemen || 'marketing';
+        document.getElementById('empJabatan').value = emp.jabatan || '';
+        document.getElementById('empTipe').value = emp.tipe || 'tetap';
+        document.getElementById('empNoHp').value = emp.noHp || '';
+        document.getElementById('empTanggalMasuk').value = emp.tanggalMasuk || '';
+        document.getElementById('empStatus').value = emp.status || 'aktif';
+        document.getElementById('empAlamat').value = emp.alamat || '';
+        document.getElementById('empBankName').value = emp.bankName || 'BCA';
+        document.getElementById('empBankRek').value = emp.bankRek || '';
+        document.getElementById('empBankAtasNama').value = emp.bankAtasNama || '';
+
+        document.getElementById('empGajiPokok').value = formatRupiah(emp.gajiPokok || 0);
+        document.getElementById('empTunjangan').value = formatRupiah(emp.tunjangan || 0);
+        document.getElementById('empKomisiDefault').value = formatRupiah(emp.komisiDefault || 0);
+        document.getElementById('empPotonganDefault').value = formatRupiah(emp.potonganDefault || 0);
+        document.getElementById('empKeterangan').value = emp.keterangan || '';
+    } else {
+        if (title) title.textContent = 'Tambah Profil Karyawan & Marketing';
+        if (formIdInput) formIdInput.value = '';
+
+        document.getElementById('empTanggalMasuk').value = new Date().toISOString().split('T')[0];
+        document.getElementById('empDepartemen').value = 'marketing';
+        document.getElementById('empTipe').value = 'tetap';
+        document.getElementById('empStatus').value = 'aktif';
+        document.getElementById('empBankName').value = 'BCA';
+        document.getElementById('empGajiPokok').value = '0';
+        document.getElementById('empTunjangan').value = '0';
+        document.getElementById('empKomisiDefault').value = '0';
+        document.getElementById('empPotonganDefault').value = '0';
+    }
+
+    calculateEmpTakeHomePayLive();
+    modal.classList.remove('hidden');
+}
+
+function closeEmployeeModal() {
+    const modal = document.getElementById('modalEmployeeForm');
+    if (modal) modal.classList.add('hidden');
+}
+
+// 10. Live Hitung Take Home Pay di Form
+function calculateEmpTakeHomePayLive() {
+    const gajiPokok = parseCurrencyInput(document.getElementById('empGajiPokok')?.value);
+    const tunjangan = parseCurrencyInput(document.getElementById('empTunjangan')?.value);
+    const komisi = parseCurrencyInput(document.getElementById('empKomisiDefault')?.value);
+    const potongan = parseCurrencyInput(document.getElementById('empPotonganDefault')?.value);
+
+    const thp = Math.max(0, (gajiPokok + tunjangan + komisi) - potongan);
+    const previewEl = document.getElementById('empTakeHomePayPreview');
+    if (previewEl) {
+        previewEl.textContent = formatRupiah(thp);
+    }
+}
+
+// 11. Simpan Data Karyawan
+async function handleEmployeeSubmit(event) {
+    event.preventDefault();
+
+    const formId = document.getElementById('empFormId').value;
+    const nama = document.getElementById('empNama').value.trim();
+    const nik = document.getElementById('empNik').value.trim();
+    const departemen = document.getElementById('empDepartemen').value;
+    const jabatan = document.getElementById('empJabatan').value.trim();
+    const tipe = document.getElementById('empTipe').value;
+    const noHp = document.getElementById('empNoHp').value.trim();
+    const tanggalMasuk = document.getElementById('empTanggalMasuk').value;
+    const status = document.getElementById('empStatus').value;
+    const alamat = document.getElementById('empAlamat').value.trim();
+    const bankName = document.getElementById('empBankName').value;
+    const bankRek = document.getElementById('empBankRek').value.trim();
+    const bankAtasNama = document.getElementById('empBankAtasNama').value.trim();
+
+    const gajiPokok = parseCurrencyInput(document.getElementById('empGajiPokok').value);
+    const tunjangan = parseCurrencyInput(document.getElementById('empTunjangan').value);
+    const komisiDefault = parseCurrencyInput(document.getElementById('empKomisiDefault').value);
+    const potonganDefault = parseCurrencyInput(document.getElementById('empPotonganDefault').value);
+    const keterangan = document.getElementById('empKeterangan').value.trim();
+
+    if (!nama || !nik || !jabatan || !noHp || !tanggalMasuk) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Data Belum Lengkap',
+            text: 'Mohon isi semua kolom yang bertanda bintang (*).'
+        });
+        return;
+    }
+
+    const submitBtn = document.getElementById('btnSubmitEmployee');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    }
+
+    try {
+        let fotoProfil = null;
+        let fotoKtp = null;
+        let existingEmp = null;
+
+        if (formId) {
+            existingEmp = await EmployeeDB.getById(Number(formId));
+            if (existingEmp) {
+                fotoProfil = existingEmp.fotoProfil || null;
+                fotoKtp = existingEmp.fotoKtp || null;
+            }
+        }
+
+        const fileFoto = document.getElementById('empFotoProfilFile')?.files[0];
+        const fileKtp = document.getElementById('empFotoKtpFile')?.files[0];
+
+        if (fileFoto) {
+            fotoProfil = await compressImage(fileFoto, 800, 0.85);
+        }
+        if (fileKtp) {
+            fotoKtp = await compressImage(fileKtp, 1200, 0.85);
+        }
+
+        const payload = {
+            nama,
+            nik,
+            departemen,
+            jabatan,
+            tipe,
+            noHp,
+            tanggalMasuk,
+            status,
+            alamat,
+            bankName,
+            bankRek,
+            bankAtasNama: bankAtasNama || nama,
+            gajiPokok,
+            tunjangan,
+            komisiDefault,
+            potonganDefault,
+            keterangan,
+            fotoProfil,
+            fotoKtp,
+            updatedAt: new Date().toISOString()
+        };
+
+        if (formId) {
+            payload.id = Number(formId);
+            payload.createdAt = existingEmp ? existingEmp.createdAt : new Date().toISOString();
+            await EmployeeDB.update(payload);
+            Swal.fire({
+                icon: 'success',
+                title: 'Data Karyawan Diperbarui',
+                text: `${nama} berhasil disimpan ke sistem.`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+        } else {
+            payload.createdAt = new Date().toISOString();
+            await EmployeeDB.add(payload);
+            Swal.fire({
+                icon: 'success',
+                title: 'Karyawan Baru Ditambahkan',
+                text: `${nama} telah terdaftar dalam sistem.`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        closeEmployeeModal();
+        await refreshEmployeeView();
+
+    } catch (err) {
+        console.error('Gagal simpan karyawan:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal Menyimpan Data',
+            text: err.message || 'Terjadi kesalahan sistem saat menyimpan.'
+        });
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Karyawan';
+        }
+    }
+}
+
+// 12. Hapus Karyawan
+async function deleteEmployee(id) {
+    const emp = allEmployees.find(e => e.id === Number(id));
+    if (!emp) return;
+
+    const res = await Swal.fire({
+        title: `Hapus Karyawan?`,
+        html: `Apakah Anda yakin ingin menghapus data <strong>${escapeHtml(emp.nama)}</strong>?<br><span class="text-xs text-slate-500">Riwayat slip gaji yang sudah diterbitkan akan tetap tersimpan di riwayat.</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal'
+    });
+
+    if (res.isConfirmed) {
+        try {
+            await EmployeeDB.delete(Number(id));
+            Swal.fire({
+                icon: 'success',
+                title: 'Data Karyawan Dihapus',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            await refreshEmployeeView();
+        } catch (err) {
+            console.error('Gagal hapus karyawan:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Menghapus',
+                text: 'Terjadi kendala saat menghapus data dari IndexedDB.'
+            });
+        }
+    }
+}
+
+// State pembantu untuk modal pembayaran gaji
+let currentPettyCashAvailable = 0;
+
+// 13. Buka Modal Konfirmasi Pembayaran Gaji 1-Klik
+async function openPaySalaryConfirmModal(empId) {
+    const emp = allEmployees.find(e => e.id === Number(empId));
+    if (!emp) return;
+
+    const modal = document.getElementById('modalPaySalaryConfirm');
+    if (!modal) return;
+
+    // Hitung saldo Kas Kecil saat ini
+    const pettyCashList = await PettyCashDB.getAll();
+    const totalMasuk = pettyCashList.filter(p => p.tipe === 'masuk').reduce((sum, p) => sum + (Number(p.nominal) || 0), 0);
+    const totalKeluar = pettyCashList.filter(p => p.tipe === 'keluar').reduce((sum, p) => sum + (Number(p.nominal) || 0), 0);
+    currentPettyCashAvailable = totalMasuk - totalKeluar;
+
+    // Isi identitas
+    document.getElementById('paySalaryEmpId').value = emp.id;
+    document.getElementById('paySalaryEmpName').textContent = emp.nama;
+    document.getElementById('paySalaryEmpJabatan').textContent = `${emp.jabatan} • ${emp.departemen.toUpperCase()}`;
+    document.getElementById('paySalaryPeriodBadge').textContent = formatBulanTahun(empFilterPeriod);
+    document.getElementById('paySalaryAvatar').textContent = (emp.nama || 'AP').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+    // Default tanggal hari ini
+    document.getElementById('paySalaryTanggal').value = new Date().toISOString().split('T')[0];
+
+    // Isi komponen gaji dari profil
+    document.getElementById('paySalaryGajiPokok').value = formatRupiah(emp.gajiPokok || 0);
+    document.getElementById('paySalaryTunjangan').value = formatRupiah(emp.tunjangan || 0);
+    document.getElementById('paySalaryBonus').value = formatRupiah(emp.komisiDefault || 0);
+    document.getElementById('paySalaryPotongan').value = formatRupiah(emp.potonganDefault || 0);
+    document.getElementById('paySalaryCatatan').value = `Gaji & Insentif Periode ${formatBulanTahun(empFilterPeriod)}`;
+
+    // Tampilkan info saldo kas kecil
+    document.getElementById('paySalaryPettyBalance').textContent = formatRupiah(currentPettyCashAvailable);
+
+    recalcPaySalaryModal();
+    modal.classList.remove('hidden');
+}
+
+function closePaySalaryConfirmModal() {
+    const modal = document.getElementById('modalPaySalaryConfirm');
+    if (modal) modal.classList.add('hidden');
+}
+
+// 14. Live Recalculate di Modal Bayar Gaji
+function recalcPaySalaryModal() {
+    const gajiPokok = parseCurrencyInput(document.getElementById('paySalaryGajiPokok')?.value);
+    const tunjangan = parseCurrencyInput(document.getElementById('paySalaryTunjangan')?.value);
+    const bonus = parseCurrencyInput(document.getElementById('paySalaryBonus')?.value);
+    const potongan = parseCurrencyInput(document.getElementById('paySalaryPotongan')?.value);
+
+    const totalGaji = Math.max(0, (gajiPokok + tunjangan + bonus) - potongan);
+    const afterBalance = currentPettyCashAvailable - totalGaji;
+
+    const totalEl = document.getElementById('paySalaryTotalAmount');
+    if (totalEl) totalEl.textContent = formatRupiah(totalGaji);
+
+    const afterEl = document.getElementById('paySalaryNewPettyBalance');
+    if (afterEl) {
+        afterEl.textContent = formatRupiah(afterBalance);
+        if (afterBalance < 0) {
+            afterEl.className = 'font-bold font-mono text-rose-600';
+        } else {
+            afterEl.className = 'font-bold font-mono text-emerald-700';
+        }
+    }
+
+    const warningEl = document.getElementById('paySalaryPettyWarning');
+    if (warningEl) {
+        if (afterBalance < 0) {
+            warningEl.classList.remove('hidden');
+        } else {
+            warningEl.classList.add('hidden');
+        }
+    }
+}
+
+// 15. Eksekusi Pembayaran Gaji: Potong Kas Kecil & Catat Slip Resmi
+async function executePaySalary() {
+    const empId = Number(document.getElementById('paySalaryEmpId').value);
+    const emp = allEmployees.find(e => e.id === empId);
+    if (!emp) return;
+
+    const tanggal = document.getElementById('paySalaryTanggal').value;
+    const gajiPokok = parseCurrencyInput(document.getElementById('paySalaryGajiPokok').value);
+    const tunjangan = parseCurrencyInput(document.getElementById('paySalaryTunjangan').value);
+    const bonus = parseCurrencyInput(document.getElementById('paySalaryBonus').value);
+    const potongan = parseCurrencyInput(document.getElementById('paySalaryPotongan').value);
+    const catatan = document.getElementById('paySalaryCatatan').value.trim();
+
+    const totalGaji = (gajiPokok + tunjangan + bonus) - potongan;
+    if (totalGaji <= 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Nominal Gaji Tidak Valid',
+            text: 'Total gaji yang dibayarkan harus lebih dari Rp 0.'
+        });
+        return;
+    }
+
+    // Health Check Kas Kecil
+    if (currentPettyCashAvailable < totalGaji) {
+        const confirmMinus = await Swal.fire({
+            title: 'Saldo Kas Kecil Kurang!',
+            html: `Saldo Kas Kecil saat ini <strong>${formatRupiah(currentPettyCashAvailable)}</strong>, sedangkan gaji yang harus dibayar <strong>${formatRupiah(totalGaji)}</strong>.<br><br>Apakah Anda tetap ingin mencairkan gaji ini? (Saldo Kas Kecil akan menjadi minus hingga dilakukan top up).`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            confirmButtonText: 'Tetap Lanjutkan Pembayaran',
+            cancelButtonText: 'Batal'
+        });
+        if (!confirmMinus.isConfirmed) return;
+    }
+
+    const confirmBtn = document.getElementById('btnConfirmPaySalary');
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses Kas Kecil...';
+    }
+
+    try {
+        // LANGKAH 1: Buat Transaksi Pengeluaran Otomatis di Kas Kecil (PettyCashDB)
+        const pettyExpense = {
+            tanggal: tanggal || new Date().toISOString().split('T')[0],
+            tipe: 'keluar',
+            kategori: 'gaji_karyawan',
+            nominal: totalGaji,
+            keterangan: `Pembayaran Gaji Periode ${formatBulanTahun(empFilterPeriod)} - ${emp.nama} (${emp.jabatan})`,
+            penanggungJawab: 'Kasir & Keuangan',
+            bukti: null,
+            createdAt: new Date().toISOString(),
+            refType: 'payroll',
+            refId: null
+        };
+        const pettyId = await PettyCashDB.add(pettyExpense);
+
+        // LANGKAH 2: Buat Catatan Slip Gaji Resmi di PayrollDB
+        const slipNumber = generateSlipNumber(emp.id, empFilterPeriod);
+        const payrollRecord = {
+            employeeId: emp.id,
+            employeeName: emp.nama,
+            nik: emp.nik,
+            departemen: emp.departemen,
+            jabatan: emp.jabatan,
+            noHp: emp.noHp,
+            periodeBulan: empFilterPeriod,
+            tanggalBayar: tanggal || new Date().toISOString().split('T')[0],
+            gajiPokok: gajiPokok,
+            tunjangan: tunjangan,
+            komisi: bonus,
+            potongan: potongan,
+            totalGaji: totalGaji,
+            bankName: emp.bankName || 'BCA',
+            bankRek: emp.bankRek || '-',
+            bankAtasNama: emp.bankAtasNama || emp.nama,
+            nomorSlip: slipNumber,
+            pettyCashId: pettyId,
+            status: 'paid',
+            catatan: catatan,
+            createdAt: new Date().toISOString()
+        };
+        const payrollId = await PayrollDB.add(payrollRecord);
+
+        // LANGKAH 3: Hubungkan Petty Cash dengan Slip Payroll
+        pettyExpense.id = pettyId;
+        pettyExpense.refId = payrollId;
+        await PettyCashDB.update(pettyExpense);
+
+        closePaySalaryConfirmModal();
+
+        // Refresh UI
+        await refreshPettyCashView();
+        await refreshEmployeeView();
+        if (typeof refreshDashboardView === 'function') await refreshDashboardView();
+
+        await Swal.fire({
+            icon: 'success',
+            title: '⚡ Gaji Berhasil Dibayarkan!',
+            html: `Dana sebesar <strong>${formatRupiah(totalGaji)}</strong> telah otomatis dipotong dari saldo Kas Kecil kantor.<br><br>Slip Gaji Resmi: <strong>${slipNumber}</strong>`,
+            confirmButtonText: 'Lihat Slip Gaji'
+        });
+
+        // Buka otomatis slip gaji resmi untuk dicetak/disimpan
+        openSalarySlipModal(payrollId);
+
+    } catch (err) {
+        console.error('Gagal eksekusi pembayaran gaji:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Pembayaran Gagal',
+            text: err.message || 'Terjadi kesalahan sistem saat memproses transaksi.'
+        });
+    } finally {
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-bolt-lightning text-amber-300"></i> <span>⚡ Bayar & Potong Kas Kecil Sekarang</span>';
+        }
+    }
+}
+
+// 16. Bayar Gaji Massal Bulan Ini
+async function handleBatchPaySalary() {
+    const paidSlips = allPayrolls.filter(p => p.periodeBulan === empFilterPeriod && p.status === 'paid');
+    const paidEmpIds = new Set(paidSlips.map(p => p.employeeId));
+
+    const unpaidEmployees = allEmployees.filter(e => e.status === 'aktif' && !paidEmpIds.has(e.id));
+
+    if (unpaidEmployees.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Semua Karyawan Sudah Digaji',
+            text: `Seluruh staf aktif telah dibayar untuk periode ${formatBulanTahun(empFilterPeriod)}.`
+        });
+        return;
+    }
+
+    let totalNeeded = 0;
+    unpaidEmployees.forEach(e => {
+        const thp = (Number(e.gajiPokok) || 0) + (Number(e.tunjangan) || 0) + (Number(e.komisiDefault) || 0) - (Number(e.potonganDefault) || 0);
+        totalNeeded += Math.max(0, thp);
+    });
+
+    const confirmRes = await Swal.fire({
+        title: '⚡ Konfirmasi Gaji Massal',
+        html: `
+            <div class="text-left text-xs space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <p><strong>Periode Gaji:</strong> ${formatBulanTahun(empFilterPeriod)}</p>
+                <p><strong>Jumlah Staf:</strong> ${unpaidEmployees.length} orang aktif</p>
+                <p><strong>Total Dana Diperlukan:</strong> <span class="font-mono font-bold text-emerald-700">${formatRupiah(totalNeeded)}</span></p>
+                <p class="text-[11px] text-slate-500 pt-2 border-t border-slate-200">
+                    Sistem akan secara otomatis membuat transaksi pengeluaran Kas Kecil untuk masing-masing karyawan dan mencetak slip resmi.
+                </p>
+            </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#059669',
+        confirmButtonText: `Bayar Semua (${unpaidEmployees.length} Orang)`,
+        cancelButtonText: 'Batal'
+    });
+
+    if (!confirmRes.isConfirmed) return;
+
+    Swal.fire({
+        title: 'Memproses Penggajian Massal...',
+        html: 'Mohon tunggu, sistem sedang memotong Kas Kecil dan menerbitkan slip...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    let successCount = 0;
+
+    for (const emp of unpaidEmployees) {
+        try {
+            const gajiPokok = Number(emp.gajiPokok) || 0;
+            const tunjangan = Number(emp.tunjangan) || 0;
+            const komisi = Number(emp.komisiDefault) || 0;
+            const potongan = Number(emp.potonganDefault) || 0;
+            const totalGaji = Math.max(0, (gajiPokok + tunjangan + komisi) - potongan);
+
+            if (totalGaji > 0) {
+                // Catat pengeluaran Kas Kecil
+                const pettyExpense = {
+                    tanggal: today,
+                    tipe: 'keluar',
+                    kategori: 'gaji_karyawan',
+                    nominal: totalGaji,
+                    keterangan: `Pembayaran Gaji Massal ${formatBulanTahun(empFilterPeriod)} - ${emp.nama} (${emp.jabatan})`,
+                    penanggungJawab: 'Kasir & Keuangan',
+                    bukti: null,
+                    createdAt: new Date().toISOString(),
+                    refType: 'payroll',
+                    refId: null
+                };
+                const pettyId = await PettyCashDB.add(pettyExpense);
+
+                // Catat Slip Payroll
+                const slipNumber = generateSlipNumber(emp.id, empFilterPeriod);
+                const payrollRecord = {
+                    employeeId: emp.id,
+                    employeeName: emp.nama,
+                    nik: emp.nik,
+                    departemen: emp.departemen,
+                    jabatan: emp.jabatan,
+                    noHp: emp.noHp,
+                    periodeBulan: empFilterPeriod,
+                    tanggalBayar: today,
+                    gajiPokok: gajiPokok,
+                    tunjangan: tunjangan,
+                    komisi: komisi,
+                    potongan: potongan,
+                    totalGaji: totalGaji,
+                    bankName: emp.bankName || 'BCA',
+                    bankRek: emp.bankRek || '-',
+                    bankAtasNama: emp.bankAtasNama || emp.nama,
+                    nomorSlip: slipNumber,
+                    pettyCashId: pettyId,
+                    status: 'paid',
+                    catatan: `Gaji massal otomatis periode ${formatBulanTahun(empFilterPeriod)}`,
+                    createdAt: new Date().toISOString()
+                };
+                const payrollId = await PayrollDB.add(payrollRecord);
+
+                pettyExpense.id = pettyId;
+                pettyExpense.refId = payrollId;
+                await PettyCashDB.update(pettyExpense);
+
+                successCount++;
+            }
+        } catch (err) {
+            console.error(`Gagal memproses gaji untuk ${emp.nama}:`, err);
+        }
+    }
+
+    await refreshPettyCashView();
+    await refreshEmployeeView();
+    if (typeof refreshDashboardView === 'function') await refreshDashboardView();
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Penggajian Massal Selesai!',
+        html: `Berhasil membayar gaji untuk <strong>${successCount}</strong> staf.<br>Saldo Kas Kecil telah otomatis disesuaikan.`,
+        confirmButtonText: 'Tutup'
+    });
+}
+
+let currentActiveSlip = null;
+
+// 17. Tampilkan Modal Slip Gaji Resmi
+async function openSalarySlipModal(payrollId) {
+    const slip = allPayrolls.find(p => p.id === Number(payrollId));
+    if (!slip) {
+        Swal.fire({ icon: 'error', title: 'Slip Gaji Tidak Ditemukan' });
+        return;
+    }
+
+    currentActiveSlip = slip;
+    const container = document.getElementById('salarySlipPreviewContainer');
+    const modal = document.getElementById('modalSalarySlip');
+    if (!container || !modal) return;
+
+    const emp = allEmployees.find(e => e.id === slip.employeeId) || {
+        nama: slip.employeeName,
+        nik: slip.nik,
+        jabatan: slip.jabatan,
+        departemen: slip.departemen
+    };
+
+    const gajiPokok = Number(slip.gajiPokok) || 0;
+    const tunjangan = Number(slip.tunjangan) || 0;
+    const komisi = Number(slip.komisi) || 0;
+    const potongan = Number(slip.potongan) || 0;
+    const totalBruto = gajiPokok + tunjangan + komisi;
+    const totalGaji = slip.totalGaji;
+
+    const terbilangStr = typeof terbilang === 'function' ? terbilang(totalGaji) + ' Rupiah' : '';
+
+    container.innerHTML = `
+        <!-- Kop Surat Perusahaan -->
+        <div class="border-b-2 border-slate-900 pb-3 flex justify-between items-start">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center text-xl font-black shadow-xs">
+                    APG
+                </div>
+                <div>
+                    <h2 class="text-base font-black text-slate-900 tracking-tight">ADAM PROPERTY GROUP</h2>
+                    <p class="text-[11px] text-slate-600 font-medium">Developer & Pengembang Kavling Tanah Siap Bangun</p>
+                    <p class="text-[10px] text-slate-400">Jl. Raya Kavling Baitul Makmur Regency, Jawa Timur • Telp: 0812-3456-7890</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="inline-block px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-xs font-black tracking-wider uppercase border border-emerald-300">
+                    SLIP GAJI RESMI
+                </span>
+                <p class="text-[11px] font-mono font-bold text-slate-800 mt-1">${escapeHtml(slip.nomorSlip)}</p>
+                <p class="text-[10px] text-slate-500">Periode: <strong>${formatBulanTahun(slip.periodeBulan)}</strong></p>
+            </div>
+        </div>
+
+        <!-- Identitas Karyawan & Pembayaran -->
+        <div class="grid grid-cols-2 gap-4 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
+            <div class="space-y-1">
+                <div class="flex"><span class="w-24 text-slate-500">Nama:</span> <strong class="text-slate-900">${escapeHtml(slip.employeeName)}</strong></div>
+                <div class="flex"><span class="w-24 text-slate-500">NIK:</span> <span class="font-mono text-slate-700">${escapeHtml(slip.nik || '-')}</span></div>
+                <div class="flex"><span class="w-24 text-slate-500">Jabatan:</span> <span class="text-slate-800">${escapeHtml(slip.jabatan)}</span></div>
+                <div class="flex"><span class="w-24 text-slate-500">Divisi:</span> <span class="text-slate-800 uppercase font-semibold text-[11px]">${escapeHtml(slip.departemen)}</span></div>
+            </div>
+            <div class="space-y-1 text-right sm:text-left">
+                <div class="flex sm:justify-start justify-end"><span class="w-28 text-slate-500">Tanggal Bayar:</span> <span class="font-medium text-slate-800">${formatTanggalIndo(slip.tanggalBayar)}</span></div>
+                <div class="flex sm:justify-start justify-end"><span class="w-28 text-slate-500">Metode:</span> <span class="font-medium text-slate-800">Transfer Kas Kantor</span></div>
+                <div class="flex sm:justify-start justify-end"><span class="w-28 text-slate-500">Rekening:</span> <span class="font-mono text-slate-800">${escapeHtml(slip.bankName || 'BCA')} ${escapeHtml(slip.bankRek || '-')}</span></div>
+                <div class="flex sm:justify-start justify-end"><span class="w-28 text-slate-500">Sumber Dana:</span> <span class="font-bold text-emerald-700">Kas Kecil (Petty Cash #${slip.pettyCashId || '-'})</span></div>
+            </div>
+        </div>
+
+        <!-- Rincian Penghasilan vs Potongan -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <!-- Kolom Penghasilan -->
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+                <div class="bg-emerald-50 px-3 py-1.5 border-b border-emerald-100 font-bold text-emerald-900 text-xs flex justify-between">
+                    <span>A. KOMPONEN PENGHASILAN</span>
+                    <span>NOMINAL</span>
+                </div>
+                <div class="p-3 space-y-1.5 text-xs">
+                    <div class="flex justify-between text-slate-700">
+                        <span>Gaji Pokok:</span>
+                        <span class="font-mono font-semibold">${formatRupiah(gajiPokok)}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-700">
+                        <span>Tunjangan Makan & Transport:</span>
+                        <span class="font-mono">${formatRupiah(tunjangan)}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-700">
+                        <span>Komisi / Bonus Closing Kavling:</span>
+                        <span class="font-mono text-emerald-600 font-semibold">${formatRupiah(komisi)}</span>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 flex justify-between font-bold text-slate-900">
+                        <span>Total Penghasilan Bruto:</span>
+                        <span class="font-mono text-emerald-800">${formatRupiah(totalBruto)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kolom Potongan -->
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+                <div class="bg-rose-50 px-3 py-1.5 border-b border-rose-100 font-bold text-rose-900 text-xs flex justify-between">
+                    <span>B. KOMPONEN POTONGAN</span>
+                    <span>NOMINAL</span>
+                </div>
+                <div class="p-3 space-y-1.5 text-xs">
+                    <div class="flex justify-between text-slate-700">
+                        <span>Potongan Kasbon / Absen:</span>
+                        <span class="font-mono text-rose-600">${formatRupiah(potongan)}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400 italic">
+                        <span>BPJS / Iuran Rutin:</span>
+                        <span class="font-mono">Rp 0</span>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 flex justify-between font-bold text-slate-900">
+                        <span>Total Potongan:</span>
+                        <span class="font-mono text-rose-600">-${formatRupiah(potongan)}</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Box Gaji Bersih (THP) & Terbilang -->
+        <div class="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-amber-500/10 border-2 border-emerald-400 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div>
+                <span class="text-xs font-bold text-emerald-950 uppercase tracking-wide block">Gaji Bersih Diterima (Take Home Pay):</span>
+                <p class="text-[11px] text-emerald-800 italic mt-0.5">"${terbilangStr}"</p>
+                ${slip.catatan ? `<p class="text-[10px] text-slate-500 mt-1">Catatan: ${escapeHtml(slip.catatan)}</p>` : ''}
+            </div>
+            <div class="text-right">
+                <span class="text-2xl font-black font-mono text-emerald-800">${formatRupiah(totalGaji)}</span>
+            </div>
+        </div>
+
+        <!-- Tanda Tangan Pengesahan -->
+        <div class="grid grid-cols-3 gap-2 text-center text-[10px] pt-4 border-t border-slate-200">
+            <div>
+                <p class="text-slate-500">Penerima (Karyawan),</p>
+                <div class="h-14"></div>
+                <p class="font-bold underline text-slate-800">${escapeHtml(slip.employeeName)}</p>
+                <p class="text-slate-400">${escapeHtml(slip.jabatan)}</p>
+            </div>
+            <div>
+                <p class="text-slate-500">Kasir / Keuangan,</p>
+                <div class="h-14"></div>
+                <p class="font-bold underline text-slate-800">Bagian Keuangan & Kasir</p>
+                <p class="text-slate-400">ADAM PROPERTY GROUP</p>
+            </div>
+            <div>
+                <p class="text-slate-500">Menyetujui & Mengesahkan,</p>
+                <div class="h-14"></div>
+                <p class="font-bold underline text-slate-800">Direktur Utama</p>
+                <p class="text-slate-400">ADAM PROPERTY GROUP</p>
+            </div>
+        </div>
+    `;
+
+    modal.classList.remove('hidden');
+}
+
+function closeSalarySlipModal() {
+    const modal = document.getElementById('modalSalarySlip');
+    if (modal) modal.classList.add('hidden');
+}
+
+// 18. Cetak Slip Gaji (Window Print / PDF)
+function printCurrentSalarySlip() {
+    if (!currentActiveSlip) return;
+
+    const printable = document.getElementById('printableArea');
+    const container = document.getElementById('salarySlipPreviewContainer');
+    if (!printable || !container) return;
+
+    printable.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 25px; max-width: 700px; margin: 0 auto; color: #1e293b; background: white;">
+            ${container.innerHTML}
+        </div>
+    `;
+
+    printable.classList.remove('hidden');
+    window.print();
+    printable.classList.add('hidden');
+}
+
+// 19. Riwayat Slip Gaji (Payroll History Modal)
+function openPayrollHistoryModal() {
+    const modal = document.getElementById('modalPayrollHistory');
+    if (!modal) return;
+
+    const filterSelect = document.getElementById('payrollHistoryFilterPeriod');
+    if (filterSelect && filterSelect.options.length <= 1) {
+        populateEmployeePeriodDropdowns();
+    }
+
+    modal.classList.remove('hidden');
+    filterPayrollHistory();
+}
+
+function closePayrollHistoryModal() {
+    const modal = document.getElementById('modalPayrollHistory');
+    if (modal) modal.classList.add('hidden');
+}
+
+// 20. Filter & Render Riwayat Slip Gaji
+function filterPayrollHistory() {
+    const periodSelect = document.getElementById('payrollHistoryFilterPeriod');
+    const searchInput = document.getElementById('payrollHistorySearchInput');
+
+    const selectedPeriod = periodSelect ? periodSelect.value : 'all';
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    filteredPayrolls = allPayrolls.filter(slip => {
+        if (selectedPeriod !== 'all' && slip.periodeBulan !== selectedPeriod) {
+            return false;
+        }
+        if (query) {
+            const matchName = (slip.employeeName || '').toLowerCase().includes(query);
+            const matchSlip = (slip.nomorSlip || '').toLowerCase().includes(query);
+            const matchNik = (slip.nik || '').toLowerCase().includes(query);
+            const matchJabatan = (slip.jabatan || '').toLowerCase().includes(query);
+            if (!matchName && !matchSlip && !matchNik && !matchJabatan) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    // Urutkan dari yang terbaru
+    filteredPayrolls.sort((a, b) => new Date(b.tanggalBayar || b.createdAt) - new Date(a.tanggalBayar || a.createdAt));
+
+    renderPayrollHistoryTable();
+}
+
+function renderPayrollHistoryTable() {
+    const tbody = document.getElementById('payrollHistoryTableBody');
+    const emptyState = document.getElementById('emptyPayrollHistoryState');
+    const summaryEl = document.getElementById('payrollHistoryTotalSummary');
+    if (!tbody) return;
+
+    if (filteredPayrolls.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        if (summaryEl) summaryEl.textContent = 'Total: 0 Slip Terbayar (Rp 0)';
+        return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    let totalAmount = 0;
+
+    tbody.innerHTML = filteredPayrolls.map((slip, index) => {
+        totalAmount += Number(slip.totalGaji) || 0;
+        return `
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">${index + 1}</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-800 text-[11px]">
+                    ${escapeHtml(slip.nomorSlip || '-')}
+                </td>
+                <td class="py-2.5 px-3 text-slate-600 text-[11px]">
+                    ${formatTanggalIndo(slip.tanggalBayar)}
+                </td>
+                <td class="py-2.5 px-3">
+                    <div class="font-bold text-slate-900">${escapeHtml(slip.employeeName)}</div>
+                    <div class="text-[10px] text-slate-500">${escapeHtml(slip.jabatan)} • <span class="uppercase">${escapeHtml(slip.departemen)}</span></div>
+                </td>
+                <td class="py-2.5 px-3">
+                    <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        ${formatBulanTahun(slip.periodeBulan)}
+                    </span>
+                </td>
+                <td class="py-2.5 px-3 text-right font-mono font-black text-emerald-800 text-xs">
+                    ${formatRupiah(slip.totalGaji)}
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        <i class="fa-solid fa-money-bill-1-wave"></i> Kas Kecil #${slip.pettyCashId || '-'}
+                    </span>
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <div class="flex items-center justify-center gap-1">
+                        <button onclick="openSalarySlipModal(${slip.id})" class="px-2 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1" title="Cetak Slip">
+                            <i class="fa-solid fa-print"></i> Cetak
+                        </button>
+                        <button onclick="deletePayrollRecord(${slip.id})" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Batalkan Slip & Kembalikan Kas Kecil">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    if (summaryEl) {
+        summaryEl.textContent = `Total: ${filteredPayrolls.length} Slip Terbayar • Total Pencairan: ${formatRupiah(totalAmount)}`;
+    }
+}
+
+// 21. Batalkan Slip Gaji & Refund Kas Kecil
+async function deletePayrollRecord(payrollId) {
+    const slip = allPayrolls.find(p => p.id === Number(payrollId));
+    if (!slip) return;
+
+    const res = await Swal.fire({
+        title: 'Batalkan Penggajian Ini?',
+        html: `
+            Anda akan membatalkan slip gaji <strong>${escapeHtml(slip.nomorSlip)}</strong> untuk <strong>${escapeHtml(slip.employeeName)}</strong>.<br><br>
+            <span class="text-xs text-rose-600 font-bold">PERHATIAN: Transaksi pengeluaran Kas Kecil sebesar ${formatRupiah(slip.totalGaji)} akan otomatis dihapus dan saldo Kas Kecil akan dikembalikan.</span>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Ya, Batalkan & Kembalikan Kas Kecil',
+        cancelButtonText: 'Batal'
+    });
+
+    if (!res.isConfirmed) return;
+
+    try {
+        // Hapus pengeluaran di kas kecil jika terhubung
+        if (slip.pettyCashId) {
+            try {
+                await PettyCashDB.delete(slip.pettyCashId);
+            } catch (e) {
+                console.warn('Gagal menghapus transaksi petty cash terkait:', e);
+            }
+        }
+
+        // Hapus record payroll
+        await PayrollDB.delete(slip.id);
+
+        await refreshPettyCashView();
+        await refreshEmployeeView();
+        if (typeof refreshDashboardView === 'function') await refreshDashboardView();
+
+        filterPayrollHistory();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Slip Gaji Dibatalkan',
+            text: `Pengeluaran ${formatRupiah(slip.totalGaji)} telah dikembalikan ke saldo Kas Kecil kantor.`,
+            timer: 1800,
+            showConfirmButton: false
+        });
+
+    } catch (err) {
+        console.error('Gagal batalkan payroll:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal Membatalkan',
+            text: err.message || 'Terjadi kesalahan sistem saat membatalkan transaksi.'
+        });
+    }
 }

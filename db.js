@@ -1,6 +1,6 @@
-// db.js - Layer Database IndexedDB & Image Helper untuk Adam Property (Versi 6: Inventaris Kantor & Aset Tetap)
+// db.js - Layer Database IndexedDB & Image Helper untuk Adam Property (Versi 7: Data Karyawan & Marketing dengan Payroll Kas Kecil)
 const DB_NAME = 'AdamKavlingDB';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 let dbInstance = null;
 
@@ -92,6 +92,27 @@ function initDB() {
                 invStore.createIndex('lokasi', 'lokasi', { unique: false });
                 invStore.createIndex('tanggalPerolehan', 'tanggalPerolehan', { unique: false });
                 invStore.createIndex('penanggungJawab', 'penanggungJawab', { unique: false });
+            }
+
+            // 10. Store Data Karyawan & Marketing
+            if (!db.objectStoreNames.contains('employees')) {
+                const empStore = db.createObjectStore('employees', { keyPath: 'id', autoIncrement: true });
+                empStore.createIndex('nik', 'nik', { unique: false });
+                empStore.createIndex('nama', 'nama', { unique: false });
+                empStore.createIndex('departemen', 'departemen', { unique: false });
+                empStore.createIndex('jabatan', 'jabatan', { unique: false });
+                empStore.createIndex('status', 'status', { unique: false });
+                empStore.createIndex('tipe', 'tipe', { unique: false });
+            }
+
+            // 11. Store Riwayat Penggajian (Payroll & Slip Gaji)
+            if (!db.objectStoreNames.contains('payrolls')) {
+                const payrollStore = db.createObjectStore('payrolls', { keyPath: 'id', autoIncrement: true });
+                payrollStore.createIndex('employeeId', 'employeeId', { unique: false });
+                payrollStore.createIndex('periodeBulan', 'periodeBulan', { unique: false });
+                payrollStore.createIndex('tanggalBayar', 'tanggalBayar', { unique: false });
+                payrollStore.createIndex('pettyCashId', 'pettyCashId', { unique: false });
+                payrollStore.createIndex('status', 'status', { unique: false });
             }
         };
 
@@ -844,6 +865,156 @@ const InventoryDB = {
     }
 };
 
+// Helper Operasi CRUD Data Karyawan & Marketing
+const EmployeeDB = {
+    async getAll() {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('employees', 'readonly');
+            const store = tx.objectStore('employees');
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async getById(id) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('employees', 'readonly');
+            const store = tx.objectStore('employees');
+            const request = store.get(Number(id));
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async add(data) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('employees', 'readwrite');
+            const store = tx.objectStore('employees');
+            data.gajiPokok = Number(data.gajiPokok) || 0;
+            data.tunjangan = Number(data.tunjangan) || 0;
+            data.komisiDefault = Number(data.komisiDefault) || 0;
+            data.potonganDefault = Number(data.potonganDefault) || 0;
+            data.status = data.status || 'aktif';
+            data.createdAt = new Date().toISOString();
+            data.updatedAt = new Date().toISOString();
+            const request = store.add(data);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async update(id, data) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('employees', 'readwrite');
+            const store = tx.objectStore('employees');
+            data.id = Number(id);
+            data.gajiPokok = Number(data.gajiPokok) || 0;
+            data.tunjangan = Number(data.tunjangan) || 0;
+            data.komisiDefault = Number(data.komisiDefault) || 0;
+            data.potonganDefault = Number(data.potonganDefault) || 0;
+            data.updatedAt = new Date().toISOString();
+            const request = store.put(data);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async delete(id) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('employees', 'readwrite');
+            const store = tx.objectStore('employees');
+            const request = store.delete(Number(id));
+            request.onsuccess = () => resolve(true);
+            request.onerror = () => reject(request.error);
+        });
+    }
+};
+
+// Helper Operasi CRUD Riwayat Penggajian (Payroll & Slip Gaji)
+const PayrollDB = {
+    async getAll() {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('payrolls', 'readonly');
+            const store = tx.objectStore('payrolls');
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async getById(id) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('payrolls', 'readonly');
+            const store = tx.objectStore('payrolls');
+            const request = store.get(Number(id));
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async getByEmployeeId(empId) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('payrolls', 'readonly');
+            const store = tx.objectStore('payrolls');
+            const index = store.index('employeeId');
+            const request = index.getAll(Number(empId));
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async add(data) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('payrolls', 'readwrite');
+            const store = tx.objectStore('payrolls');
+            data.employeeId = Number(data.employeeId);
+            data.gajiPokok = Number(data.gajiPokok) || 0;
+            data.tunjangan = Number(data.tunjangan) || 0;
+            data.bonusKomisi = Number(data.bonusKomisi) || 0;
+            data.potongan = Number(data.potongan) || 0;
+            data.totalGaji = Number(data.totalGaji) || (data.gajiPokok + data.tunjangan + data.bonusKomisi - data.potongan);
+            data.createdAt = new Date().toISOString();
+            const request = store.add(data);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async update(id, data) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('payrolls', 'readwrite');
+            const store = tx.objectStore('payrolls');
+            data.id = Number(id);
+            data.updatedAt = new Date().toISOString();
+            const request = store.put(data);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async delete(id) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('payrolls', 'readwrite');
+            const store = tx.objectStore('payrolls');
+            const request = store.delete(Number(id));
+            request.onsuccess = () => resolve(true);
+            request.onerror = () => reject(request.error);
+        });
+    }
+};
+
 // Helper Kompresi Gambar
 function compressImage(file, maxWidth = 1500, quality = 0.82) {
     return new Promise((resolve, reject) => {
@@ -894,6 +1065,8 @@ const BackupManager = {
         const cashbook = await CashbookDB.getAll();
         const pettyCash = await PettyCashDB.getAll();
         const inventory = await InventoryDB.getAll();
+        const employees = await EmployeeDB.getAll();
+        const payrolls = await PayrollDB.getAll();
 
         const data = {
             version: DB_VERSION,
@@ -907,7 +1080,9 @@ const BackupManager = {
             landPayments,
             cashbook,
             pettyCash,
-            inventory
+            inventory,
+            employees,
+            payrolls
         };
 
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -997,6 +1172,22 @@ const BackupManager = {
                 const invStore = txInv.objectStore('inventory');
                 invStore.clear();
                 for (const item of data.inventory) invStore.put(item);
+            }
+
+            // 10. Employees (Karyawan & Marketing)
+            if (data.employees && Array.isArray(data.employees)) {
+                const txEmp = db.transaction('employees', 'readwrite');
+                const empStore = txEmp.objectStore('employees');
+                empStore.clear();
+                for (const emp of data.employees) empStore.put(emp);
+            }
+
+            // 11. Payrolls (Riwayat Penggajian)
+            if (data.payrolls && Array.isArray(data.payrolls)) {
+                const txPayr = db.transaction('payrolls', 'readwrite');
+                const payrStore = txPayr.objectStore('payrolls');
+                payrStore.clear();
+                for (const pr of data.payrolls) payrStore.put(pr);
             }
 
             return true;
