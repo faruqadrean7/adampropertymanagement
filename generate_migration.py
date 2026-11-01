@@ -354,6 +354,20 @@ sql_lines = [
     "-- SEED REAL OPERATIONAL DATA - CLUSTER BAITUL MAKMUR",
     "-- ==============================================================================",
     "",
+    "-- 0. SCHEMA COMPATIBILITY CHECK",
+    "ALTER TABLE public.petty_cash ADD COLUMN IF NOT EXISTS penerima TEXT;",
+    "ALTER TABLE public.petty_cash ADD COLUMN IF NOT EXISTS sumber_dana TEXT;",
+    "ALTER TABLE public.petty_cash ADD COLUMN IF NOT EXISTS sumber_tujuan TEXT;",
+    "ALTER TABLE public.petty_cash ADD COLUMN IF NOT EXISTS metode TEXT DEFAULT 'Kas Tunai';",
+    "ALTER TABLE public.petty_cash ADD COLUMN IF NOT EXISTS saldo_akhir NUMERIC DEFAULT 0;",
+    "",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS kode_barang TEXT;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS penanggung_jawab TEXT;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS sumber_perolehan TEXT;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS tanggal_beli DATE DEFAULT CURRENT_DATE;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS tanggal_perolehan DATE;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS keterangan TEXT;",
+    "",
     "-- 1. PROJECTS",
     f"INSERT INTO public.projects (id, nama, lokasi, deskripsi, created_at)",
     f"VALUES ('{project_id}', 'Baitul Makmur', 'Jl. Punden Gg 3 RT 42 RW 03, Jatikerto, Kec. Kromengan, Kab. Malang, Jawa Timur', 'Cluster Baitul Makmur (BM1). Luas Total 5.620 m², SHM, Siap Jual.', '2026-09-01')",
@@ -408,17 +422,20 @@ for c in cashbook:
 sql_lines.append("\n-- 7. PETTY CASH (79 ROWS)")
 for p in petty_cash:
     ket_clean = p['keterangan'].replace("'", "''")
+    pen_clean = p['penerima'].replace("'", "''")
+    sumber_dana = p.get('sumberDana') or 'kas_besar'
     sql_lines.append(
-        f"INSERT INTO public.petty_cash (id, tanggal, tipe, kategori, keterangan, nominal, penerima, sumber_dana) "
-        f"VALUES ('{p['id']}', '{p['tanggal']}', '{p['tipe']}', '{p['kategori']}', '{ket_clean}', {p['nominal']}, '{p['penerima']}', '{p.get('sumberDana') or 'kas_besar'}') "
+        f"INSERT INTO public.petty_cash (id, tanggal, tipe, kategori, keterangan, nominal, penerima, sumber_tujuan, sumber_dana, metode, saldo_akhir) "
+        f"VALUES ('{p['id']}', '{p['tanggal']}', '{p['tipe']}', '{p['kategori']}', '{ket_clean}', {p['nominal']}, '{pen_clean}', '{pen_clean}', '{sumber_dana}', 'Kas Tunai', 0) "
         f"ON CONFLICT (id) DO NOTHING;"
     )
 
 sql_lines.append("\n-- 8. INVENTORY (10 ITEMS)")
 for inv in inventory:
+    ket_clean = inv['keterangan'].replace("'", "''")
     sql_lines.append(
-        f"INSERT INTO public.inventory (id, kode_barang, nama_barang, kategori, jumlah, satuan, kondisi, lokasi, tanggal_perolehan, nilai_perolehan, sumber_perolehan, keterangan) "
-        f"VALUES ('{inv['id']}', '{inv['kode']}', '{inv['nama']}', '{inv['kategori']}', {inv['jumlah']}, '{inv['satuan']}', '{inv['kondisi']}', '{inv['lokasi']}', '{inv['tanggal']}', {inv['nilaiPerolehan']}, '{inv['sumberDana']}', '{inv['keterangan']}') "
+        f"INSERT INTO public.inventory (id, nama_barang, kategori, jumlah, satuan, kondisi, lokasi, tanggal_beli, tanggal_perolehan, nilai_perolehan, kode_barang, sumber_perolehan, penanggung_jawab, keterangan) "
+        f"VALUES ('{inv['id']}', '{inv['nama']}', '{inv['kategori']}', {inv['jumlah']}, '{inv['satuan']}', '{inv['kondisi']}', '{inv['lokasi']}', '{inv['tanggal']}', '{inv['tanggal']}', {inv['nilaiPerolehan']}, '{inv['kode']}', '{inv['sumberDana']}', '{inv['penanggungJawab']}', '{ket_clean}') "
         f"ON CONFLICT (id) DO NOTHING;"
     )
 
