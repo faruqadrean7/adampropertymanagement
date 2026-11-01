@@ -40,7 +40,10 @@ export interface Customer {
   id: string;
   nama: string;
   nik: string;
+  noKk?: string;
   telepon: string;
+  tempatTanggalLahir?: string;
+  pekerjaan?: string;
   alamat: string;
   kavlingId: string | null;
   kavlingKode?: string;

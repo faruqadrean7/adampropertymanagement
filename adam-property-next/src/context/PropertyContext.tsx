@@ -64,13 +64,18 @@ interface PropertyContextType {
   addCustomer: (data: {
     nama: string;
     nik: string;
+    noKk?: string;
     telepon: string;
+    tempatTanggalLahir?: string;
+    pekerjaan?: string;
     alamat: string;
     kavlingId: string;
     totalHarga: number;
     uangMuka: number;
     metodeBayar: 'tunai' | 'transfer' | 'barter';
     rincianBarter?: string;
+    ktpImage?: string | null;
+    kkImage?: string | null;
   }) => void;
   addCustomerPayment: (data: Omit<Payment, 'id'>) => void;
   addLandDebt: (data: {
@@ -229,13 +234,18 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   const addCustomer = (data: {
     nama: string;
     nik: string;
+    noKk?: string;
     telepon: string;
+    tempatTanggalLahir?: string;
+    pekerjaan?: string;
     alamat: string;
     kavlingId: string;
     totalHarga: number;
     uangMuka: number;
     metodeBayar: 'tunai' | 'transfer' | 'barter';
     rincianBarter?: string;
+    ktpImage?: string | null;
+    kkImage?: string | null;
   }) => {
     const custId = `cust-${Date.now()}`;
     const targetKav = kavlings.find(k => k.id === data.kavlingId);
@@ -247,7 +257,10 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       id: custId,
       nama: data.nama,
       nik: data.nik,
+      noKk: data.noKk,
       telepon: data.telepon,
+      tempatTanggalLahir: data.tempatTanggalLahir,
+      pekerjaan: data.pekerjaan,
       alamat: data.alamat,
       kavlingId: data.kavlingId,
       kavlingKode: kavKode,
@@ -256,7 +269,9 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       totalMasuk: data.uangMuka,
       sisaPiutang: sisa,
       statusBayar: isLunas ? 'lunas' : 'belum_lunas',
-      tanggalBeli: new Date().toISOString().split('T')[0]
+      tanggalBeli: new Date().toISOString().split('T')[0],
+      ktpImage: data.ktpImage,
+      kkImage: data.kkImage
     };
 
     setCustomers(prev => [...prev, newCustomer]);
