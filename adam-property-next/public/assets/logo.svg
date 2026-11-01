@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&amp;display=swap');
+      .brand-title {
+        font-family: 'Plus Jakarta Sans', 'Montserrat', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 800;
+        font-size: 28px;
+        fill: #0f172a;
+        letter-spacing: -0.4px;
+      }
+      .brand-country {
+        font-family: 'Plus Jakarta Sans', 'Montserrat', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 800;
+        font-size: 28px;
+        fill: #881337;
+        letter-spacing: -0.4px;
+      }
+      .brand-sub {
+        font-family: 'Plus Jakarta Sans', 'Montserrat', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 500;
+        font-size: 18px;
+        fill: #1e293b;
+        letter-spacing: 0.2px;
+      }
+      .house-stroke {
+        stroke: #0f172a;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+      .house-fill {
+        fill: #0f172a;
+      }
+    </style>
+  </defs>
+
+  <!-- Symbol: House & Ground Contour (100x100 box at x: 8, y: 10) -->
+  <g transform="translate(8, 10)">
+    <!-- Chimney -->
+    <rect x="29" y="16" width="6.5" height="19" class="house-fill" rx="1" />
+    
+    <!-- Roof Peak: (56, 17), Left Eave: (16, 50), Right Eave: (96, 50) -->
+    <path d="M 16 50 L 56 17 L 96 50" class="house-stroke" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Outer Walls: Left (25, 50) to (25, 80), Right (87, 50) to (87, 95) -->
+    <path d="M 25 50 L 25 78" class="house-stroke" stroke-width="6.5" stroke-linecap="round" />
+    <path d="M 87 50 L 87 95" class="house-stroke" stroke-width="6.5" stroke-linecap="round" />
+    
+    <!-- Middle Floor Beam: (25, 73) to (87, 73) -->
+    <path d="M 25 73 L 87 73" class="house-stroke" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Upper Windows -->
+    <rect x="34" y="56" width="16" height="12" rx="2" class="house-stroke" stroke-width="4.5" />
+    <rect x="62" y="56" width="16" height="12" rx="2" class="house-stroke" stroke-width="4.5" />
+    
+    <!-- Lower Left Window -->
+    <rect x="34" y="80" width="16" height="12" rx="2" class="house-stroke" stroke-width="4.5" />
+    
+    <!-- Lower Right Door -->
+    <rect x="62" y="80" width="16" height="20" rx="2" class="house-stroke" stroke-width="4.5" />
+    
+    <!-- Ground Contour Foundation -->
+    <!-- Left step: (12, 92) to (34, 92), ramp down to (48, 100), flat under door to (96, 100), base thickness down to y=105 -->
+    <path d="M 12 92 L 35 92 Q 41 92 45 96 L 49 99 Q 53 101 58 101 L 96 101 L 96 106 L 12 106 Z" class="house-fill" />
+  </g>
+
+  <!-- Typography -->
+  <text x="125" y="44" class="brand-title">PT Adam Property</text>
+  <text x="125" y="76" class="brand-country">Indonesia</text>
+  <text x="125" y="104" class="brand-sub">Developer Utama</text>
+</svg>

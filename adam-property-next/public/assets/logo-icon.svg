@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
+  <defs>
+    <style>
+      .house-stroke-icon {
+        stroke: #0f172a;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+      .house-fill-icon {
+        fill: #0f172a;
+      }
+    </style>
+  </defs>
+
+  <g transform="translate(6, 4)">
+    <!-- Chimney -->
+    <rect x="33" y="16" width="7.5" height="21" class="house-fill-icon" rx="1.5" />
+    
+    <!-- Roof Peak: (60, 17), Left Eave: (18, 52), Right Eave: (102, 52) -->
+    <path d="M 18 52 L 60 17 L 102 52" class="house-stroke-icon" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Outer Walls -->
+    <path d="M 27 52 L 27 82" class="house-stroke-icon" stroke-width="7" stroke-linecap="round" />
+    <path d="M 93 52 L 93 100" class="house-stroke-icon" stroke-width="7" stroke-linecap="round" />
+    
+    <!-- Middle Floor Beam -->
+    <path d="M 27 77 L 93 77" class="house-stroke-icon" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Upper Windows -->
+    <rect x="37" y="58" width="17" height="13" rx="2" class="house-stroke-icon" stroke-width="5" />
+    <rect x="66" y="58" width="17" height="13" rx="2" class="house-stroke-icon" stroke-width="5" />
+    
+    <!-- Lower Left Window -->
+    <rect x="37" y="84" width="17" height="13" rx="2" class="house-stroke-icon" stroke-width="5" />
+    
+    <!-- Lower Right Door -->
+    <rect x="66" y="84" width="17" height="21" rx="2" class="house-stroke-icon" stroke-width="5" />
+    
+    <!-- Ground Contour Foundation -->
+    <path d="M 14 96 L 38 96 Q 44 96 48 100 L 52 103 Q 56 105 62 105 L 102 105 L 102 110 L 14 110 Z" class="house-fill-icon" />
+  </g>
+</svg>

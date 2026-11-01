@@ -1,0 +1,692 @@
+'use client';
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  NavTab,
+  Project,
+  Kavling,
+  Customer,
+  Payment,
+  LandDebt,
+  LandPayment,
+  CashbookItem,
+  PettyCashItem,
+  InventoryItem,
+  Employee,
+  SalaryPayment
+} from '@/types';
+import {
+  INITIAL_PROJECTS,
+  INITIAL_KAVLINGS,
+  INITIAL_CUSTOMERS,
+  INITIAL_PAYMENTS,
+  INITIAL_LAND_DEBTS,
+  INITIAL_LAND_PAYMENTS,
+  INITIAL_CASHBOOK,
+  INITIAL_PETTY_CASH,
+  INITIAL_INVENTORY,
+  INITIAL_EMPLOYEES,
+  INITIAL_SALARY_PAYMENTS
+} from '@/lib/mockData';
+
+interface PropertyContextType {
+  activeTab: NavTab;
+  setActiveTab: (tab: NavTab) => void;
+  selectedProjectId: string;
+  setSelectedProjectId: (id: string) => void;
+  projects: Project[];
+  kavlings: Kavling[];
+  customers: Customer[];
+  payments: Payment[];
+  landDebts: LandDebt[];
+  landPayments: LandPayment[];
+  cashbook: CashbookItem[];
+  pettyCash: PettyCashItem[];
+  inventory: InventoryItem[];
+  employees: Employee[];
+  salaryPayments: SalaryPayment[];
+
+  // Actions
+  addProject: (data: { nama: string; lokasi: string; deskripsi?: string }) => void;
+  addKavling: (data: Omit<Kavling, 'id'>) => void;
+  addBatchKavling: (
+    blok: string,
+    prefix: string,
+    start: number,
+    count: number,
+    luas: number,
+    dimensi: string,
+    harga: number,
+    tipe: string,
+    projectId: string
+  ) => void;
+  updateKavlingStatus: (id: string, status: 'terbuka' | 'booking' | 'terjual') => void;
+  addCustomer: (data: {
+    nama: string;
+    nik: string;
+    telepon: string;
+    alamat: string;
+    kavlingId: string;
+    totalHarga: number;
+    uangMuka: number;
+    metodeBayar: 'tunai' | 'transfer' | 'barter';
+    rincianBarter?: string;
+  }) => void;
+  addCustomerPayment: (data: Omit<Payment, 'id'>) => void;
+  addLandDebt: (data: {
+    projectId: string;
+    namaPetani: string;
+    telepon: string;
+    luasTanah: string;
+    alasHak: string;
+    hargaKesepakatan: number;
+    dpDibayar: number;
+    alamatLahan?: string;
+    keterangan?: string;
+  }) => void;
+  addLandPayment: (data: Omit<LandPayment, 'id'>) => void;
+  addCashbookItem: (data: Omit<CashbookItem, 'id'>) => void;
+  topUpPettyCash: (nominal: number, sumberDana: 'kas_besar' | 'investor', keterangan: string, penerima?: string) => void;
+  addPettyExpense: (data: {
+    kategori: PettyCashItem['kategori'];
+    penerima: string;
+    keterangan: string;
+    nominal: number;
+    metode?: string;
+  }) => void;
+  addInventoryItem: (data: Omit<InventoryItem, 'id'>) => void;
+  deleteInventoryItem: (id: string) => void;
+  addEmployee: (data: Omit<Employee, 'id'>) => void;
+  payEmployeeSalary: (employeeId: string, bulan: string, catatan?: string) => { success: boolean; message: string };
+  payAllActiveSalaries: (bulan: string) => { count: number; total: number; message: string };
+  syncAllToCashbook: () => void;
+
+  // Computed Financials
+  totalSalesValue: number;
+  totalCashIn: number;
+  totalCashOut: number;
+  cashbookBalance: number;
+  pettyCashIn: number;
+  pettyCashOut: number;
+  pettyCashBalance: number;
+  totalReceivables: number;
+  totalFarmerDebt: number;
+  totalAssetValue: number;
+}
+
+const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
+
+export function PropertyProvider({ children }: { children: React.ReactNode }) {
+  const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
+
+  // Core Data States
+  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
+  const [kavlings, setKavlings] = useState<Kavling[]>(INITIAL_KAVLINGS);
+  const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
+  const [payments, setPayments] = useState<Payment[]>(INITIAL_PAYMENTS);
+  const [landDebts, setLandDebts] = useState<LandDebt[]>(INITIAL_LAND_DEBTS);
+  const [landPayments, setLandPayments] = useState<LandPayment[]>(INITIAL_LAND_PAYMENTS);
+  const [cashbook, setCashbook] = useState<CashbookItem[]>(INITIAL_CASHBOOK);
+  const [pettyCash, setPettyCash] = useState<PettyCashItem[]>(INITIAL_PETTY_CASH);
+  const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
+  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
+  const [salaryPayments, setSalaryPayments] = useState<SalaryPayment[]>(INITIAL_SALARY_PAYMENTS);
+
+  // Financial Calculations
+  const totalSalesValue = kavlings
+    .filter(k => k.status !== 'terbuka' && (selectedProjectId === 'all' || k.projectId === selectedProjectId))
+    .reduce((sum, k) => sum + k.harga, 0);
+
+  const totalCashIn = cashbook
+    .filter(c => c.tipe === 'masuk' && (selectedProjectId === 'all' || !c.projectId || c.projectId === selectedProjectId))
+    .reduce((sum, c) => sum + c.nominal, 0);
+
+  const totalCashOut = cashbook
+    .filter(c => c.tipe === 'keluar' && (selectedProjectId === 'all' || !c.projectId || c.projectId === selectedProjectId))
+    .reduce((sum, c) => sum + c.nominal, 0);
+
+  const cashbookBalance = totalCashIn - totalCashOut;
+
+  const pettyCashIn = pettyCash
+    .filter(p => p.tipe === 'masuk')
+    .reduce((sum, p) => sum + p.nominal, 0);
+
+  const pettyCashOut = pettyCash
+    .filter(p => p.tipe === 'keluar')
+    .reduce((sum, p) => sum + p.nominal, 0);
+
+  const pettyCashBalance = pettyCashIn - pettyCashOut;
+
+  const totalReceivables = customers
+    .filter(c => selectedProjectId === 'all' || !c.projectId || c.projectId === selectedProjectId)
+    .reduce((sum, c) => sum + c.sisaPiutang, 0);
+
+  const totalFarmerDebt = landDebts
+    .filter(l => selectedProjectId === 'all' || l.projectId === selectedProjectId)
+    .reduce((sum, l) => sum + l.sisaHutang, 0);
+
+  const totalAssetValue = inventory.reduce((sum, item) => sum + (item.nilaiPerolehan * item.jumlah), 0);
+
+  // 1. Projects
+  const addProject = (data: { nama: string; lokasi: string; deskripsi?: string }) => {
+    const newProject: Project = {
+      id: `proj-${Date.now()}`,
+      nama: data.nama,
+      lokasi: data.lokasi,
+      deskripsi: data.deskripsi,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    setProjects(prev => [...prev, newProject]);
+  };
+
+  // 2. Kavling
+  const addKavling = (data: Omit<Kavling, 'id'>) => {
+    const newKav: Kavling = {
+      ...data,
+      id: `kav-${Date.now()}`
+    };
+    setKavlings(prev => [...prev, newKav]);
+  };
+
+  const addBatchKavling = (
+    blok: string,
+    prefix: string,
+    start: number,
+    count: number,
+    luas: number,
+    dimensi: string,
+    harga: number,
+    tipe: string,
+    projectId: string
+  ) => {
+    const newLots: Kavling[] = [];
+    for (let i = 0; i < count; i++) {
+      const lotNum = start + i;
+      const nomor = `${prefix ? prefix + '-' : ''}${lotNum < 10 ? '0' + lotNum : lotNum}`;
+      newLots.push({
+        id: `kav-${Date.now()}-${i}`,
+        projectId,
+        blok,
+        nomor,
+        luas,
+        dimensi,
+        harga,
+        tipe,
+        status: 'terbuka',
+        customerId: null,
+        customerNama: null
+      });
+    }
+    setKavlings(prev => [...prev, ...newLots]);
+  };
+
+  const updateKavlingStatus = (id: string, status: 'terbuka' | 'booking' | 'terjual') => {
+    setKavlings(prev => prev.map(k => (k.id === id ? { ...k, status } : k)));
+  };
+
+  // 3. Customer & Payment (with auto-sync to Cashbook)
+  const addCustomer = (data: {
+    nama: string;
+    nik: string;
+    telepon: string;
+    alamat: string;
+    kavlingId: string;
+    totalHarga: number;
+    uangMuka: number;
+    metodeBayar: 'tunai' | 'transfer' | 'barter';
+    rincianBarter?: string;
+  }) => {
+    const custId = `cust-${Date.now()}`;
+    const targetKav = kavlings.find(k => k.id === data.kavlingId);
+    const kavKode = targetKav ? `${targetKav.blok} - ${targetKav.nomor}` : 'Kavling';
+    const isLunas = data.uangMuka >= data.totalHarga;
+    const sisa = Math.max(0, data.totalHarga - data.uangMuka);
+
+    const newCustomer: Customer = {
+      id: custId,
+      nama: data.nama,
+      nik: data.nik,
+      telepon: data.telepon,
+      alamat: data.alamat,
+      kavlingId: data.kavlingId,
+      kavlingKode: kavKode,
+      projectId: targetKav?.projectId,
+      totalHarga: data.totalHarga,
+      totalMasuk: data.uangMuka,
+      sisaPiutang: sisa,
+      statusBayar: isLunas ? 'lunas' : 'belum_lunas',
+      tanggalBeli: new Date().toISOString().split('T')[0]
+    };
+
+    setCustomers(prev => [...prev, newCustomer]);
+
+    // Update kavling status
+    setKavlings(prev =>
+      prev.map(k =>
+        k.id === data.kavlingId
+          ? { ...k, status: isLunas ? 'terjual' : 'booking', customerId: custId, customerNama: data.nama }
+          : k
+      )
+    );
+
+    // If DP exists, create payment
+    if (data.uangMuka > 0) {
+      const payId = `pay-${Date.now()}`;
+      const newPay: Payment = {
+        id: payId,
+        customerId: custId,
+        customerNama: data.nama,
+        kavlingKode: kavKode,
+        tanggal: new Date().toISOString().split('T')[0],
+        nominal: data.uangMuka,
+        metodeBayar: data.metodeBayar,
+        tujuan: isLunas ? 'Pelunasan Pembelian Kavling' : 'Uang Muka (DP)',
+        rincianBarter: data.rincianBarter
+      };
+      setPayments(prev => [...prev, newPay]);
+
+      // Auto-sync to Cashbook
+      const cashItem: CashbookItem = {
+        id: `cash-${Date.now()}`,
+        tanggal: new Date().toISOString().split('T')[0],
+        tipe: 'masuk',
+        kategori: data.metodeBayar === 'barter' ? 'jual_kavling_barter' : 'jual_kavling',
+        sumber: `Customer: ${data.nama}`,
+        keterangan: `${newPay.tujuan} (${kavKode})`,
+        nominal: data.uangMuka,
+        metode: data.metodeBayar === 'tunai' ? 'Tunai Kasir' : data.metodeBayar === 'transfer' ? 'Transfer Bank' : 'Barter Material',
+        projectId: targetKav?.projectId,
+        refType: 'customer_payment',
+        refId: payId
+      };
+      setCashbook(prev => [...prev, cashItem]);
+    }
+  };
+
+  const addCustomerPayment = (data: Omit<Payment, 'id'>) => {
+    const payId = `pay-${Date.now()}`;
+    const newPay: Payment = { ...data, id: payId };
+    setPayments(prev => [...prev, newPay]);
+
+    // Update customer balance
+    setCustomers(prev =>
+      prev.map(c => {
+        if (c.id === data.customerId) {
+          const newMasuk = c.totalMasuk + data.nominal;
+          const newSisa = Math.max(0, c.totalHarga - newMasuk);
+          const isLunas = newSisa <= 0;
+          
+          if (isLunas && c.kavlingId) {
+            setKavlings(lots => lots.map(k => (k.id === c.kavlingId ? { ...k, status: 'terjual' } : k)));
+          }
+
+          return {
+            ...c,
+            totalMasuk: newMasuk,
+            sisaPiutang: newSisa,
+            statusBayar: isLunas ? 'lunas' : 'belum_lunas'
+          };
+        }
+        return c;
+      })
+    );
+
+    // Auto-sync to Cashbook
+    const targetCust = customers.find(c => c.id === data.customerId);
+    const cashItem: CashbookItem = {
+      id: `cash-${Date.now()}`,
+      tanggal: data.tanggal,
+      tipe: 'masuk',
+      kategori: data.metodeBayar === 'barter' ? 'jual_kavling_barter' : 'jual_kavling',
+      sumber: `Customer: ${targetCust?.nama || 'Customer'}`,
+      keterangan: `${data.tujuan} (${data.kavlingKode || ''})`,
+      nominal: data.nominal,
+      metode: data.metodeBayar === 'tunai' ? 'Tunai Kasir' : data.metodeBayar === 'transfer' ? 'Transfer Bank' : 'Barter Material',
+      projectId: targetCust?.projectId,
+      refType: 'customer_payment',
+      refId: payId
+    };
+    setCashbook(prev => [...prev, cashItem]);
+  };
+
+  // 4. Land Debts (with auto-deduction from Cashbook)
+  const addLandDebt = (data: {
+    projectId: string;
+    namaPetani: string;
+    telepon: string;
+    luasTanah: string;
+    alasHak: string;
+    hargaKesepakatan: number;
+    dpDibayar: number;
+    alamatLahan?: string;
+    keterangan?: string;
+  }) => {
+    const landId = `land-${Date.now()}`;
+    const proj = projects.find(p => p.id === data.projectId);
+    const sisa = Math.max(0, data.hargaKesepakatan - data.dpDibayar);
+    const isLunas = sisa <= 0;
+
+    const newLand: LandDebt = {
+      id: landId,
+      projectId: data.projectId,
+      projectNama: proj?.nama || 'Proyek Lahan',
+      namaPetani: data.namaPetani,
+      telepon: data.telepon,
+      luasTanah: data.luasTanah,
+      alasHak: data.alasHak,
+      hargaKesepakatan: data.hargaKesepakatan,
+      dpDibayar: data.dpDibayar,
+      totalCicilan: 0,
+      sisaHutang: sisa,
+      status: isLunas ? 'lunas' : 'belum_lunas',
+      alamatLahan: data.alamatLahan,
+      keterangan: data.keterangan
+    };
+
+    setLandDebts(prev => [...prev, newLand]);
+
+    if (data.dpDibayar > 0) {
+      const lpayId = `lpay-${Date.now()}`;
+      const newLpay: LandPayment = {
+        id: lpayId,
+        landDebtId: landId,
+        tanggal: new Date().toISOString().split('T')[0],
+        nominal: data.dpDibayar,
+        metode: 'Transfer Bank',
+        keterangan: `DP Pembebasan Lahan Petani Bpk. ${data.namaPetani}`
+      };
+      setLandPayments(prev => [...prev, newLpay]);
+
+      // Outflow in Cashbook
+      const cashOut: CashbookItem = {
+        id: `cash-${Date.now()}`,
+        tanggal: new Date().toISOString().split('T')[0],
+        tipe: 'keluar',
+        kategori: 'lahan_petani',
+        sumber: `Petani: ${data.namaPetani}`,
+        keterangan: `DP Pembebasan Lahan ${data.luasTanah} (${proj?.nama || ''})`,
+        nominal: data.dpDibayar,
+        metode: 'Transfer Bank BCA',
+        projectId: data.projectId,
+        refType: 'land_payment',
+        refId: lpayId
+      };
+      setCashbook(prev => [...prev, cashOut]);
+    }
+  };
+
+  const addLandPayment = (data: Omit<LandPayment, 'id'>) => {
+    const lpayId = `lpay-${Date.now()}`;
+    const newLpay: LandPayment = { ...data, id: lpayId };
+    setLandPayments(prev => [...prev, newLpay]);
+
+    // Update land debt
+    setLandDebts(prev =>
+      prev.map(l => {
+        if (l.id === data.landDebtId) {
+          const newCicilan = l.totalCicilan + data.nominal;
+          const newSisa = Math.max(0, l.hargaKesepakatan - l.dpDibayar - newCicilan);
+          return {
+            ...l,
+            totalCicilan: newCicilan,
+            sisaHutang: newSisa,
+            status: newSisa <= 0 ? 'lunas' : 'belum_lunas'
+          };
+        }
+        return l;
+      })
+    );
+
+    // Record in cashbook
+    const targetLand = landDebts.find(l => l.id === data.landDebtId);
+    const cashOut: CashbookItem = {
+      id: `cash-${Date.now()}`,
+      tanggal: data.tanggal,
+      tipe: 'keluar',
+      kategori: 'lahan_petani',
+      sumber: `Petani: ${targetLand?.namaPetani || 'Petani'}`,
+      keterangan: `Cicilan Lahan: ${data.keterangan}`,
+      nominal: data.nominal,
+      metode: data.metode,
+      projectId: targetLand?.projectId,
+      refType: 'land_payment',
+      refId: lpayId
+    };
+    setCashbook(prev => [...prev, cashOut]);
+  };
+
+  // 5. Cashbook Direct
+  const addCashbookItem = (data: Omit<CashbookItem, 'id'>) => {
+    const newItem: CashbookItem = { ...data, id: `cash-${Date.now()}` };
+    setCashbook(prev => [newItem, ...prev]);
+  };
+
+  // 6. Petty Cash
+  const topUpPettyCash = (
+    nominal: number,
+    sumberDana: 'kas_besar' | 'investor',
+    keterangan: string,
+    penerima: string = 'Kasir Kantor Operasional'
+  ) => {
+    const today = new Date().toISOString().split('T')[0];
+    const pettyId = `petty-${Date.now()}`;
+
+    // Add Inflow to Petty Cash
+    const newPetty: PettyCashItem = {
+      id: pettyId,
+      tanggal: today,
+      tipe: 'masuk',
+      kategori: sumberDana === 'kas_besar' ? 'topup_kas_besar' : 'investor',
+      sumberDana,
+      penerima,
+      keterangan,
+      nominal,
+      metode: 'Tunai Kasir',
+      refType: sumberDana === 'kas_besar' ? 'kas_besar' : 'manual'
+    };
+    setPettyCash(prev => [newPetty, ...prev]);
+
+    // Mirror Outflow in Kas Besar if from kas_besar
+    if (sumberDana === 'kas_besar') {
+      const cashOut: CashbookItem = {
+        id: `cash-${Date.now()}`,
+        tanggal: today,
+        tipe: 'keluar',
+        kategori: 'operasional',
+        sumber: `Top Up Kas Kecil (${penerima})`,
+        keterangan: `Pencairan dana harian petty cash kantor: ${keterangan}`,
+        nominal,
+        metode: 'Tarik Tunai Bank',
+        refType: 'kas_besar',
+        refId: pettyId
+      };
+      setCashbook(prev => [cashOut, ...prev]);
+    }
+  };
+
+  const addPettyExpense = (data: {
+    kategori: PettyCashItem['kategori'];
+    penerima: string;
+    keterangan: string;
+    nominal: number;
+    metode?: string;
+  }) => {
+    const newPetty: PettyCashItem = {
+      id: `petty-${Date.now()}`,
+      tanggal: new Date().toISOString().split('T')[0],
+      tipe: 'keluar',
+      kategori: data.kategori,
+      penerima: data.penerima,
+      keterangan: data.keterangan,
+      nominal: data.nominal,
+      metode: data.metode || 'Tunai Kas Kecil'
+    };
+    setPettyCash(prev => [newPetty, ...prev]);
+  };
+
+  // 7. Inventory Items
+  const addInventoryItem = (data: Omit<InventoryItem, 'id'>) => {
+    const newItem: InventoryItem = { ...data, id: `inv-${Date.now()}` };
+    setInventory(prev => [newItem, ...prev]);
+  };
+
+  const deleteInventoryItem = (id: string) => {
+    setInventory(prev => prev.filter(i => i.id !== id));
+  };
+
+  // 8. Employees & Payroll
+  const addEmployee = (data: Omit<Employee, 'id'>) => {
+    const newEmp: Employee = { ...data, id: `emp-${Date.now()}` };
+    setEmployees(prev => [...prev, newEmp]);
+  };
+
+  const payEmployeeSalary = (employeeId: string, bulan: string, catatan?: string) => {
+    const emp = employees.find(e => e.id === employeeId);
+    if (!emp) return { success: false, message: 'Karyawan tidak ditemukan.' };
+
+    const thp = emp.gajiPokok + emp.tunjanganJabatan + emp.tunjanganMakan + emp.komisiPenjualan - emp.potongan;
+    if (thp <= 0) return { success: false, message: 'Nominal gaji tidak valid.' };
+
+    // Check Petty Cash Balance
+    if (pettyCashBalance < thp) {
+      return {
+        success: false,
+        message: `Saldo Kas Kecil tidak mencukupi (Tersedia: Rp ${pettyCashBalance.toLocaleString('id-ID')}, Dibutuhkan: Rp ${thp.toLocaleString('id-ID')}). Silakan Top Up Kas Kecil terlebih dahulu.`
+      };
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const pettyId = `petty-${Date.now()}`;
+
+    // 1. Deduct from Petty Cash
+    const pettyExp: PettyCashItem = {
+      id: pettyId,
+      tanggal: today,
+      tipe: 'keluar',
+      kategori: 'gaji_karyawan',
+      penerima: `${emp.nama} (${emp.jabatan})`,
+      keterangan: `Pembayaran Gaji Periode ${bulan} - ${catatan || 'Rutin'}`,
+      nominal: thp,
+      metode: 'Tunai Kasir',
+      refType: 'payroll'
+    };
+    setPettyCash(prev => [pettyExp, ...prev]);
+
+    // 2. Record Salary Payment Slip
+    const newSlip: SalaryPayment = {
+      id: `slip-${Date.now()}`,
+      employeeId: emp.id,
+      employeeNama: emp.nama,
+      jabatan: emp.jabatan,
+      bulan,
+      tanggalBayar: today,
+      gajiPokok: emp.gajiPokok,
+      tunjanganJabatan: emp.tunjanganJabatan,
+      tunjanganMakan: emp.tunjanganMakan,
+      komisi: emp.komisiPenjualan,
+      potongan: emp.potongan,
+      thp,
+      catatan,
+      status: 'terbayar',
+      pettyCashId: pettyId
+    };
+    setSalaryPayments(prev => [newSlip, ...prev]);
+
+    return {
+      success: true,
+      message: `Gaji untuk ${emp.nama} (Rp ${thp.toLocaleString('id-ID')}) berhasil dibayarkan dan otomatis memotong Kas Kecil!`
+    };
+  };
+
+  const payAllActiveSalaries = (bulan: string) => {
+    const activeEmps = employees.filter(e => e.status === 'aktif');
+    let paidCount = 0;
+    let totalPaid = 0;
+
+    for (const emp of activeEmps) {
+      // Check if already paid this month
+      const alreadyPaid = salaryPayments.some(s => s.employeeId === emp.id && s.bulan === bulan);
+      if (!alreadyPaid) {
+        const res = payEmployeeSalary(emp.id, bulan, `Payroll Massal Periode ${bulan}`);
+        if (res.success) {
+          paidCount++;
+          const thp = emp.gajiPokok + emp.tunjanganJabatan + emp.tunjanganMakan + emp.komisiPenjualan - emp.potongan;
+          totalPaid += thp;
+        }
+      }
+    }
+
+    return {
+      count: paidCount,
+      total: totalPaid,
+      message: `Berhasil menggaji ${paidCount} karyawan dengan total Rp ${totalPaid.toLocaleString('id-ID')}.`
+    };
+  };
+
+  const syncAllToCashbook = () => {
+    // Reconcile and confirm synchronization
+    console.log('Central Cashbook auto-synchronized with sales and petty cash.');
+  };
+
+  return (
+    <PropertyContext.Provider
+      value={{
+        activeTab,
+        setActiveTab,
+        selectedProjectId,
+        setSelectedProjectId,
+        projects,
+        kavlings,
+        customers,
+        payments,
+        landDebts,
+        landPayments,
+        cashbook,
+        pettyCash,
+        inventory,
+        employees,
+        salaryPayments,
+
+        addProject,
+        addKavling,
+        addBatchKavling,
+        updateKavlingStatus,
+        addCustomer,
+        addCustomerPayment,
+        addLandDebt,
+        addLandPayment,
+        addCashbookItem,
+        topUpPettyCash,
+        addPettyExpense,
+        addInventoryItem,
+        deleteInventoryItem,
+        addEmployee,
+        payEmployeeSalary,
+        payAllActiveSalaries,
+        syncAllToCashbook,
+
+        totalSalesValue,
+        totalCashIn,
+        totalCashOut,
+        cashbookBalance,
+        pettyCashIn,
+        pettyCashOut,
+        pettyCashBalance,
+        totalReceivables,
+        totalFarmerDebt,
+        totalAssetValue
+      }}
+    >
+      {children}
+    </PropertyContext.Provider>
+  );
+}
+
+export function useProperty() {
+  const context = useContext(PropertyContext);
+  if (!context) {
+    throw new Error('useProperty must be used within a PropertyProvider');
+  }
+  return context;
+}

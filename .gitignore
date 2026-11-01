@@ -7,6 +7,14 @@ ehthumbs_vista.db
 [Dd]esktop.ini
 .DS_Store
 
+# Node & Next.js
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+.env*.local
+
 # Editor / IDE
 .vscode/
 .idea/
