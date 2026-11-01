@@ -347,8 +347,8 @@ export default function InventoryView() {
 
       {/* Modal Preview Stiker Barcode Aset */}
       {selectedSticker && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 text-center space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar">
             <div className="border-2 border-dashed border-slate-300 p-4 rounded-xl bg-slate-50">
               <div className="flex items-center justify-center gap-2 mb-2 pb-2 border-b border-slate-200">
                 <img src="/assets/logo-icon.svg" alt="Logo" className="w-6 h-6 object-contain" />

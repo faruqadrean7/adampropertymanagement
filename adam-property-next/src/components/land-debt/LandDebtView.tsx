@@ -411,8 +411,8 @@ export default function LandDebtView() {
 
       {/* Modal Bayar Cicilan ke Petani */}
       {selectedLandForPay && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-start pb-3 mb-4 border-b border-slate-100">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Bayar Cicilan Lahan Petani</h3>

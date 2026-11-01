@@ -366,8 +366,8 @@ export default function EmployeeView() {
 
       {/* Modal Detail Slip Gaji */}
       {selectedSlip && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar">
             <div className="text-center border-b border-slate-200 pb-3">
               <img src="/assets/logo-icon.svg" alt="Logo" className="w-8 h-8 mx-auto mb-1 object-contain" />
               <h3 className="font-black text-sm text-slate-900">PT ADAM PROPERTY INDONESIA</h3>
