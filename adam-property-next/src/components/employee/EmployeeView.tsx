@@ -144,10 +144,10 @@ export default function EmployeeView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full min-w-0">
       {/* Management Read-Only Banner */}
       {isReadOnly && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 sm:p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2">
             <UserCheck className="w-4 h-4 text-amber-700 shrink-0" />
             <span>
@@ -161,46 +161,48 @@ export default function EmployeeView() {
       )}
 
       {/* Header Banner */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-white p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center text-sm font-bold">
-              <UserCheck className="w-5 h-5" />
+            <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center text-sm font-bold shrink-0">
+              <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-              Manajemen Karyawan, Tim Marketing & Payroll Gaji
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              Karyawan, Marketing & Payroll Gaji
             </h2>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-[11px] sm:text-xs text-slate-500 mt-1 hidden sm:block">
             Pencatatan profil staf, komisi penjualan kavling, dan pembayaran gaji 1-klik otomatis memotong saldo Kas Kecil kantor.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-between md:justify-end">
           {canFullAccess && (
             <>
               <button
                 onClick={handleBatchPay}
-                className="flex-1 sm:flex-none px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg sm:rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm cursor-pointer shrink-0"
                 title="Bayar Gaji Semua Karyawan yang Belum Digaji Bulan Ini"
               >
-                <Zap className="w-4 h-4 text-amber-300" />
-                <span>⚡ Gaji Massal Bulan Ini</span>
+                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                <span className="hidden sm:inline">⚡ Gaji Massal Bulan Ini</span>
+                <span className="sm:hidden">⚡ Gaji Massal</span>
               </button>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex-1 sm:flex-none px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg sm:rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm cursor-pointer shrink-0"
               >
-                <Plus className="w-4 h-4" />
-                <span>+ Tambah Karyawan</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">+ Tambah Karyawan</span>
+                <span className="sm:hidden">+ Karyawan</span>
               </button>
             </>
           )}
           <button
             onClick={() => setShowSlipHistoryModal(true)}
-            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+            className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg sm:rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm cursor-pointer shrink-0"
           >
-            <Receipt className="w-4 h-4" />
+            <Receipt className="w-3.5 h-3.5" />
             <span>Riwayat Slip</span>
           </button>
           <ExportButtons getData={getExportData} />
@@ -208,71 +210,70 @@ export default function EmployeeView() {
       </div>
 
       {/* 4 Financial & Payroll Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-amber-950 p-5 rounded-2xl border border-slate-800 text-white shadow-xs flex flex-col justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-slate-900 via-slate-800 to-amber-950 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-800 text-white shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-              <span className="font-medium text-amber-400">Total Tim Karyawan</span>
-              <UserCheck className="w-4 h-4 text-amber-400" />
+              <span className="font-medium text-amber-400 text-[10px] sm:text-xs">Total Tim Karyawan</span>
+              <UserCheck className="w-4 h-4 text-amber-400 shrink-0" />
             </div>
-            <h3 className="text-2xl font-black text-amber-300 font-mono">
+            <h3 className="text-base sm:text-2xl font-black text-amber-300 font-mono truncate">
               {employees.length} <span className="text-xs font-normal text-slate-400">Orang</span>
             </h3>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300">
+          <div className="mt-2 sm:mt-3 pt-1.5 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[9px] sm:text-[11px] text-slate-300 truncate">
             <span>{employees.filter(e => e.status === 'aktif').length} Aktif &bull; {employees.filter(e => e.status !== 'aktif').length} Nonaktif</span>
-            <span className="text-amber-400 font-bold">Tim Developer</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
-              <span className="font-semibold">Beban Gaji Rutin Bulanan</span>
-              <CreditCard className="w-4 h-4 text-indigo-600" />
+              <span className="font-semibold text-[10px] sm:text-xs truncate">Beban Gaji Rutin</span>
+              <CreditCard className="w-4 h-4 text-indigo-600 shrink-0" />
             </div>
-            <h3 className="text-2xl font-black text-slate-900 font-mono">
+            <h3 className="text-base sm:text-2xl font-black text-slate-900 font-mono truncate">
               Rp {totalMonthlyBudget.toLocaleString('id-ID')}
             </h3>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-500">
-            Kewajiban gaji pokok & tunjangan
+          <div className="mt-2 sm:mt-3 pt-1.5 sm:pt-2.5 border-t border-slate-100 text-[9px] sm:text-[11px] text-slate-500 truncate">
+            Gaji pokok & tunjangan
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
-              <span className="font-semibold text-emerald-700">Realisasi Gaji Terbayar</span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span className="font-semibold text-emerald-700 text-[10px] sm:text-xs truncate">Gaji Terbayar</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             </div>
-            <h3 className="text-2xl font-black text-emerald-600 font-mono">
+            <h3 className="text-base sm:text-2xl font-black text-emerald-600 font-mono truncate">
               Rp {totalPaidThisMonth.toLocaleString('id-ID')}
             </h3>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-emerald-600 font-semibold">
+          <div className="mt-2 sm:mt-3 pt-1.5 sm:pt-2.5 border-t border-slate-100 text-[9px] sm:text-[11px] text-emerald-600 font-semibold truncate">
             Bulan {currentMonth}
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-violet-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl border border-violet-200 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
-              <span className="font-semibold text-violet-700">Saldo Kas Kecil Tersedia</span>
-              <Coins className="w-4 h-4 text-violet-600" />
+              <span className="font-semibold text-violet-700 text-[10px] sm:text-xs truncate">Kas Kecil Sedia</span>
+              <Coins className="w-4 h-4 text-violet-600 shrink-0" />
             </div>
-            <h3 className="text-2xl font-black text-violet-700 font-mono">
+            <h3 className="text-base sm:text-2xl font-black text-violet-700 font-mono truncate">
               Rp {pettyCashBalance.toLocaleString('id-ID')}
             </h3>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-violet-600 font-semibold">
-            Sumber dana penggajian staf
+          <div className="mt-2 sm:mt-3 pt-1.5 sm:pt-2.5 border-t border-slate-100 text-[9px] sm:text-[11px] text-violet-600 font-semibold truncate">
+            Dana kasir kantor
           </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-3 justify-between items-center">
+      <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -280,15 +281,15 @@ export default function EmployeeView() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari nama, NIK, jabatan..."
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50 focus:bg-white"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
+        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
           <select
             value={filterDept}
             onChange={(e) => setFilterDept(e.target.value)}
-            className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-semibold"
+            className="text-xs border border-slate-200 rounded-lg sm:rounded-xl px-2.5 py-1.5 sm:py-2 bg-slate-50 font-semibold"
           >
             <option value="all">Semua Departemen</option>
             <option value="marketing">Sales & Marketing</option>
@@ -302,14 +303,14 @@ export default function EmployeeView() {
             type="month"
             value={currentMonth}
             onChange={(e) => setCurrentMonth(e.target.value)}
-            className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-bold font-mono"
+            className="text-xs border border-slate-200 rounded-lg sm:rounded-xl px-2.5 py-1.5 sm:py-2 bg-slate-50 font-bold font-mono"
           />
         </div>
       </div>
 
       {/* Employee & Payroll Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full min-w-0">
+        <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">

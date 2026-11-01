@@ -252,10 +252,10 @@ export default function KavlingView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full min-w-0">
       {/* Management Read-Only Banner */}
       {isReadOnly && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 sm:p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2">
             <Eye className="w-4 h-4 text-amber-700 shrink-0" />
             <span>
@@ -269,12 +269,12 @@ export default function KavlingView() {
       )}
 
       {/* Top Bar Controls */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div className="flex items-center gap-3 flex-wrap">
+      <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full lg:w-auto justify-between lg:justify-start">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 shrink-0">
               <Building2 className="w-4 h-4 text-emerald-600" />
-              Induk Kavling:
+              Induk:
             </span>
             <select
               value={selectedProjectId}
@@ -289,7 +289,7 @@ export default function KavlingView() {
                   setSelectedProjectId(e.target.value);
                 }
               }}
-              className="px-3.5 py-2 border-2 border-emerald-600/30 rounded-xl text-sm font-bold text-slate-800 bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 border-2 border-emerald-600/30 rounded-xl text-xs sm:text-sm font-bold text-slate-800 bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer max-w-[200px] sm:max-w-none truncate"
             >
               <option value="all">Semua Lahan Proyek</option>
               {projects.map(p => (
@@ -305,7 +305,7 @@ export default function KavlingView() {
         </div>
 
         {/* Action Buttons depending on Role */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full lg:w-auto justify-between lg:justify-end">
           {isReadOnly ? (
             <div className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold flex items-center gap-1.5 border border-slate-200">
               <Eye className="w-3.5 h-3.5 text-slate-400" />
@@ -317,31 +317,34 @@ export default function KavlingView() {
                 <>
                   <button
                     onClick={() => setShowProjectModal(true)}
-                    className="px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-2xs cursor-pointer"
+                    className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg sm:rounded-xl transition flex items-center gap-1 active:scale-95 shadow-2xs cursor-pointer shrink-0"
                   >
                     <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>+ Induk Proyek Baru</span>
+                    <span className="hidden sm:inline">+ Induk Proyek Baru</span>
+                    <span className="sm:hidden">+ Induk</span>
                   </button>
                   <button
                     onClick={handleOpenBatchModal}
-                    className="px-3.5 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                    className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg sm:rounded-xl transition flex items-center gap-1 active:scale-95 cursor-pointer shrink-0"
                   >
                     <Zap className="w-3.5 h-3.5 text-amber-500" />
-                    <span>+ Buat Blok Sekaligus</span>
+                    <span className="hidden sm:inline">+ Buat Blok Sekaligus</span>
+                    <span className="sm:hidden">+ Batch Blok</span>
                   </button>
                   <button
                     onClick={handleOpenAddModal}
-                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] rounded-lg sm:rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>+ Tambah Kavling Baru</span>
+                    <span className="hidden sm:inline">+ Tambah Kavling Baru</span>
+                    <span className="sm:hidden">+ Kavling</span>
                   </button>
                 </>
               )}
               {user?.role === 'admin' && (
-                <div className="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-800 text-xs font-semibold flex items-center gap-1.5 border border-blue-200">
-                  <Receipt className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Admin Pembayaran: Pantau Kavling Untuk Transaksi</span>
+                <div className="px-2.5 py-1 rounded-xl bg-blue-50 text-blue-800 text-[11px] font-semibold flex items-center gap-1 border border-blue-200">
+                  <Receipt className="w-3 h-3 text-blue-600" />
+                  <span>Admin Pembayaran</span>
                 </div>
               )}
             </>
@@ -351,54 +354,54 @@ export default function KavlingView() {
       </div>
 
       {/* 4 Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3">
-          <div className="w-11 h-11 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center text-lg shrink-0">
-            <Layers className="w-5 h-5" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center text-base sm:text-lg shrink-0">
+            <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Total Kavling</p>
-            <h3 className="text-xl font-bold text-slate-800 font-mono">{totalLots}</h3>
-            <p className="text-[11px] text-slate-400">{activeProject?.nama || 'Semua Lahan'}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-emerald-200 shadow-xs flex items-center gap-3">
-          <div className="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0">
-            <DoorOpen className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Kavling Terbuka</p>
-            <h3 className="text-xl font-bold text-emerald-600 font-mono">{openLots}</h3>
-            <p className="text-[11px] text-emerald-600 font-medium">Siap Ditawarkan</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Total Kavling</p>
+            <h3 className="text-base sm:text-xl font-bold text-slate-800 font-mono truncate">{totalLots}</h3>
+            <p className="text-[9px] sm:text-[11px] text-slate-400 truncate">{activeProject?.nama || 'Semua Lahan'}</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-amber-200 shadow-xs flex items-center gap-3">
-          <div className="w-11 h-11 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0">
-            <Clock className="w-5 h-5" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-emerald-200 shadow-xs flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-base sm:text-lg shrink-0">
+            <DoorOpen className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Kavling Booking</p>
-            <h3 className="text-xl font-bold text-amber-600 font-mono">{bookingLots}</h3>
-            <p className="text-[11px] text-amber-600 font-medium">Terbayar DP</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Kavling Terbuka</p>
+            <h3 className="text-base sm:text-xl font-bold text-emerald-600 font-mono truncate">{openLots}</h3>
+            <p className="text-[9px] sm:text-[11px] text-emerald-600 font-medium truncate">Siap Jual</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-rose-200 shadow-xs flex items-center gap-3">
-          <div className="w-11 h-11 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-lg shrink-0">
-            <CheckCircle2 className="w-5 h-5" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-amber-200 shadow-xs flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-base sm:text-lg shrink-0">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Kavling Terjual</p>
-            <h3 className="text-xl font-bold text-rose-600 font-mono">{soldLots}</h3>
-            <p className="text-[11px] text-rose-600 font-medium">Pelunasan Sah</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Kavling Booking</p>
+            <h3 className="text-base sm:text-xl font-bold text-amber-600 font-mono truncate">{bookingLots}</h3>
+            <p className="text-[9px] sm:text-[11px] text-amber-600 font-medium truncate">Terbayar DP</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-rose-200 shadow-xs flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-base sm:text-lg shrink-0">
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Kavling Terjual</p>
+            <h3 className="text-base sm:text-xl font-bold text-rose-600 font-mono truncate">{soldLots}</h3>
+            <p className="text-[9px] sm:text-[11px] text-rose-600 font-medium truncate">Pelunasan Sah</p>
           </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-3 justify-between items-center">
+      <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input

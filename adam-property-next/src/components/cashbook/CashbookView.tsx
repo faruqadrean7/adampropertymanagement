@@ -127,10 +127,10 @@ export default function CashbookView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full min-w-0">
       {/* Management Read-Only Banner */}
       {isReadOnly && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 sm:p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2">
             <Vault className="w-4 h-4 text-amber-700 shrink-0" />
             <span>
@@ -144,42 +144,44 @@ export default function CashbookView() {
       )}
 
       {/* Header Banner */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col gap-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-white p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold uppercase tracking-wider">
-                General Ledger & Liquidity
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+              <span className="px-2 sm:px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
+                General Ledger
               </span>
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Auto-Sync Penjualan Aktif
+              <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" /> Auto-Sync Aktif
               </span>
             </div>
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Vault className="w-5 h-5 text-emerald-600" />
-              Buku Kas Besar & Arus Modal Investor
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <Vault className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 shrink-0" />
+              Buku Kas Besar & Modal
             </h2>
-            <p className="text-xs text-slate-500">
-              Sentral mutasi keuangan real-time: Pembayaran kavling otomatis tercatat di sini bersama modal investor dan pengeluaran proyek.
+            <p className="text-[11px] sm:text-xs text-slate-500 hidden sm:block">
+              Sentral mutasi keuangan: Pembayaran kavling otomatis tercatat di sini bersama modal investor dan pengeluaran proyek.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full md:w-auto justify-between md:justify-end">
             {!isReadOnly && (
               <>
                 <button
                   onClick={() => setShowInvestorModal(true)}
-                  className="px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold rounded-lg sm:rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
                 >
                   <Briefcase className="w-3.5 h-3.5" />
-                  <span>+ Dana Investor</span>
+                  <span className="hidden sm:inline">+ Dana Investor</span>
+                  <span className="sm:hidden">+ Investor</span>
                 </button>
                 <button
                   onClick={() => setShowExpenseModal(true)}
-                  className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg sm:rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>+ Kas Keluar</span>
+                  <span className="hidden sm:inline">+ Kas Keluar</span>
+                  <span className="sm:hidden">+ Keluar</span>
                 </button>
               </>
             )}
@@ -188,42 +190,42 @@ export default function CashbookView() {
         </div>
 
         {/* Toolbar Filters */}
-        <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="pt-2 sm:pt-3 border-t border-slate-100 grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
           <div>
-            <label className="text-[11px] font-bold text-slate-600 block mb-1">Filter Kategori:</label>
+            <label className="text-[10px] sm:text-[11px] font-bold text-slate-600 block mb-1">Filter Kategori:</label>
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white"
+              className="w-full text-xs border border-slate-300 rounded-lg sm:rounded-xl px-2 py-1.5 bg-slate-50 focus:bg-white"
             >
               <option value="all">Semua Kategori</option>
-              <option value="jual_kavling">💰 Penjualan Kavling (Auto)</option>
-              <option value="investor">🤝 Modal Investor & Pemodal</option>
-              <option value="lahan_petani">🌾 Bayar Lahan Petani (Auto)</option>
-              <option value="operasional">🛠️ Operasional & Proyek</option>
+              <option value="jual_kavling">💰 Penjualan Kavling</option>
+              <option value="investor">🤝 Modal Investor</option>
+              <option value="lahan_petani">🌾 Bayar Lahan Petani</option>
+              <option value="operasional">🛠️ Operasional</option>
               <option value="lainnya">📦 Lain-lain</option>
             </select>
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-slate-600 block mb-1">Arus Mutasi:</label>
+            <label className="text-[10px] sm:text-[11px] font-bold text-slate-600 block mb-1">Arus Mutasi:</label>
             <select
               value={filterTipe}
               onChange={(e) => setFilterTipe(e.target.value as any)}
-              className="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white"
+              className="w-full text-xs border border-slate-300 rounded-lg sm:rounded-xl px-2 py-1.5 bg-slate-50 focus:bg-white"
             >
-              <option value="all">Semua (Masuk & Keluar)</option>
-              <option value="masuk">🟢 Uang Masuk Saja</option>
-              <option value="keluar">🔴 Uang Keluar Saja</option>
+              <option value="all">Semua Arus</option>
+              <option value="masuk">🟢 Uang Masuk</option>
+              <option value="keluar">🔴 Uang Keluar</option>
             </select>
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-slate-600 block mb-1">Filter Proyek:</label>
+            <label className="text-[10px] sm:text-[11px] font-bold text-slate-600 block mb-1">Filter Proyek:</label>
             <select
               value={filterProject}
               onChange={(e) => setFilterProject(e.target.value)}
-              className="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 focus:bg-white"
+              className="w-full text-xs border border-slate-300 rounded-lg sm:rounded-xl px-2 py-1.5 bg-slate-50 focus:bg-white"
             >
               <option value="all">Semua Lahan</option>
               {projects.map(p => (
@@ -233,92 +235,92 @@ export default function CashbookView() {
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-slate-600 block mb-1">Pencarian Mutasi:</label>
+            <label className="text-[10px] sm:text-[11px] font-bold text-slate-600 block mb-1">Pencarian:</label>
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Sumber, keterangan..."
-                className="w-full text-xs border border-slate-300 rounded-xl pl-8 pr-2.5 py-1.5 bg-slate-50 focus:bg-white"
+                placeholder="Sumber, ket..."
+                className="w-full text-xs border border-slate-300 rounded-lg sm:rounded-xl pl-7 sm:pl-8 pr-2 py-1.5 bg-slate-50 focus:bg-white"
               />
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
             </div>
           </div>
         </div>
       </div>
 
       {/* 5 Financial Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-emerald-200 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0 border border-emerald-100">
-            <ArrowDownLeft className="w-5 h-5" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-emerald-200 shadow-xs flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base sm:text-lg shrink-0 border border-emerald-100">
+            <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Total Kas Masuk</p>
-            <h3 className="text-base font-black text-emerald-600 truncate font-mono">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Kas Masuk</p>
+            <h3 className="text-xs sm:text-base font-black text-emerald-600 truncate font-mono">
               Rp {totalCashIn.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[10px] text-slate-400">Penerimaan Real</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 truncate">Penerimaan Real</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-teal-200 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center text-lg shrink-0 border border-teal-100">
-            <Home className="w-5 h-5" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-teal-200 shadow-xs flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center text-base sm:text-lg shrink-0 border border-teal-100">
+            <Home className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Jual Kavling</p>
-            <h3 className="text-base font-black text-teal-700 truncate font-mono">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Jual Kavling</p>
+            <h3 className="text-xs sm:text-base font-black text-teal-700 truncate font-mono">
               Rp {totalLotSales.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[10px] text-teal-600 font-medium">Auto-Sync Penjualan</p>
+            <p className="text-[9px] sm:text-[10px] text-teal-600 font-medium truncate">Auto-Sync</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-indigo-200 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg shrink-0 border border-indigo-100">
-            <Briefcase className="w-5 h-5" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-indigo-200 shadow-xs flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base sm:text-lg shrink-0 border border-indigo-100">
+            <Briefcase className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Modal Investor</p>
-            <h3 className="text-base font-black text-indigo-600 truncate font-mono">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Investor</p>
+            <h3 className="text-xs sm:text-base font-black text-indigo-600 truncate font-mono">
               Rp {totalInvestor.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[10px] text-indigo-500 font-medium">Suntikan Modal</p>
+            <p className="text-[9px] sm:text-[10px] text-indigo-500 font-medium truncate">Suntikan Modal</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-rose-200 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shrink-0 border border-rose-100">
-            <ArrowUpRight className="w-5 h-5" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-rose-200 shadow-xs flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-base sm:text-lg shrink-0 border border-rose-100">
+            <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Total Kas Keluar</p>
-            <h3 className="text-base font-black text-rose-600 truncate font-mono">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Kas Keluar</p>
+            <h3 className="text-xs sm:text-base font-black text-rose-600 truncate font-mono">
               Rp {totalCashOut.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[10px] text-slate-400">Petani + Operasional</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 truncate">Petani + Operasional</p>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 p-4 rounded-xl border border-slate-800 text-white shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-white/10 text-emerald-400 flex items-center justify-center text-lg shrink-0 border border-white/20">
-            <Vault className="w-5 h-5" />
+        <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 p-3 sm:p-4 rounded-xl border border-slate-800 text-white shadow-xs flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-white/10 text-emerald-400 flex items-center justify-center text-base sm:text-lg shrink-0 border border-white/20">
+            <Vault className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] text-emerald-400 font-semibold uppercase">Saldo Kas Besar</p>
-            <h3 className="text-base font-black text-white truncate font-mono">
+            <p className="text-[10px] sm:text-[11px] text-emerald-400 font-semibold uppercase truncate">Saldo Kas Besar</p>
+            <h3 className="text-xs sm:text-base font-black text-white truncate font-mono">
               Rp {cashbookBalance.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[10px] text-slate-300">Likuiditas Sentral</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-300 truncate">Likuiditas Sentral</p>
           </div>
         </div>
       </div>
 
       {/* General Ledger Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full min-w-0">
+        <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[950px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">

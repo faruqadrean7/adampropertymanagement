@@ -195,39 +195,41 @@ export default function LandDebtView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full min-w-0">
       {/* Header & Per-Lahan Selector */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+      <div className="bg-white p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-              <Tractor className="w-5 h-5 text-amber-600" />
-              Manajemen Hutang Tanah ke Petani / Pemilik Lahan
+            <h2 className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+              <Tractor className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0" />
+              <span>Hutang Tanah ke Petani</span>
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-[11px] sm:text-xs text-slate-500 hidden sm:block">
               Pencatatan pembebasan lahan mentah, perjanjian jual beli notaris, dan cicilan bertahap.
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto justify-between sm:justify-end">
             {canFullAccess && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg sm:rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ Beli Lahan Petani Baru</span>
+                <span className="hidden sm:inline">+ Beli Lahan Petani Baru</span>
+                <span className="sm:hidden">+ Beli Lahan</span>
               </button>
             )}
             {isReadOnly && (
-              <div className="px-3.5 py-1.5 bg-amber-100/90 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 select-none">
+              <div className="px-2.5 sm:px-3.5 py-1.5 bg-amber-100/90 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 select-none shrink-0">
                 <Eye className="w-3.5 h-3.5 text-amber-700" />
-                <span>Monitoring Lahan (Read-Only)</span>
+                <span className="hidden sm:inline">Monitoring Lahan (Read-Only)</span>
+                <span className="sm:hidden">Pantau</span>
               </div>
             )}
             {user?.role === 'admin' && (
-              <div className="px-3 py-1.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                <Coins className="w-3.5 h-3.5 text-blue-600" />
-                <span>Admin: Hak Akses Cicilan Pembayaran Lahan</span>
+              <div className="px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-xl text-[11px] font-semibold flex items-center gap-1">
+                <Coins className="w-3 h-3 text-blue-600" />
+                <span>Admin Kasir</span>
               </div>
             )}
             <ExportButtons getData={getExportData} />
@@ -235,19 +237,19 @@ export default function LandDebtView() {
         </div>
 
         {/* DROPDOWN FILTER PILIH LAHAN AGAR TIDAK TERCAMPUR */}
-        <div className="p-3.5 bg-gradient-to-r from-amber-50 via-amber-50/70 to-orange-50 rounded-xl border border-amber-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <div className="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xs font-bold shadow-xs">
-              <MapPin className="w-4 h-4" />
+        <div className="p-3 sm:p-3.5 bg-gradient-to-r from-amber-50 via-amber-50/70 to-orange-50 rounded-xl border border-amber-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900 block">
-                Pilih Lahan Proyek yang Dikelola (Filter Terpisah):
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-amber-900 block">
+                Filter Lahan Proyek:
               </span>
               <select
                 value={selectedProjectId}
                 onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="mt-0.5 px-3 py-1.5 border-2 border-amber-400 rounded-lg text-xs font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-2xs"
+                className="mt-0.5 px-2.5 py-1 border-2 border-amber-400 rounded-lg text-xs font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-2xs max-w-[200px] sm:max-w-none truncate"
               >
                 <option value="all">Semua Lahan (Rekap Gabungan)</option>
                 {projects.map(p => (
@@ -257,69 +259,69 @@ export default function LandDebtView() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-semibold text-amber-950 bg-white/80 px-3 py-1.5 rounded-lg border border-amber-200 shadow-2xs">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Fokus Lahan: <b className="text-amber-800">{activeProjectLabel}</b></span>
+          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-amber-950 bg-white/80 px-2.5 py-1 rounded-lg border border-amber-200 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+            <span className="truncate">Fokus: <b className="text-amber-800">{activeProjectLabel}</b></span>
           </div>
         </div>
       </div>
 
       {/* 4 Financial Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0">
-            <Tractor className="w-6 h-6" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-lg sm:text-xl shrink-0">
+            <Tractor className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Pemilik Lahan</p>
-            <h3 className="text-xl font-bold text-slate-800 font-mono">{filteredLands.length}</h3>
-            <p className="text-[11px] text-slate-400">Petani / Penjual Tanah</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Pemilik Lahan</p>
+            <h3 className="text-base sm:text-xl font-bold text-slate-800 font-mono truncate">{filteredLands.length}</h3>
+            <p className="text-[9px] sm:text-[11px] text-slate-400 truncate">Petani / Penjual</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
-            <Coins className="w-6 h-6" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg sm:text-xl shrink-0">
+            <Coins className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Total Nilai Tanah</p>
-            <h3 className="text-xl font-bold text-slate-800 font-mono">
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Nilai Tanah</p>
+            <h3 className="text-xs sm:text-xl font-bold text-slate-800 font-mono truncate">
               Rp {totalNilaiTanah.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[11px] text-slate-400">Kesepakatan Akta Notaris</p>
+            <p className="text-[9px] sm:text-[11px] text-slate-400 truncate">Akta Notaris</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
-            <FileCheck2 className="w-6 h-6" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg sm:text-xl shrink-0">
+            <FileCheck2 className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Sudah Dibayar</p>
-            <h3 className="text-xl font-bold text-emerald-600 font-mono">
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Sudah Dibayar</p>
+            <h3 className="text-xs sm:text-xl font-bold text-emerald-600 font-mono truncate">
               Rp {totalTerbayar.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[11px] text-emerald-600 font-medium">DP + Cicilan Terbayar</p>
+            <p className="text-[9px] sm:text-[11px] text-emerald-600 font-medium truncate">DP + Cicilan</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-rose-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xl shrink-0">
-            <Clock className="w-6 h-6" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-rose-200 shadow-xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-lg sm:text-xl shrink-0">
+            <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Sisa Hutang Petani</p>
-            <h3 className="text-xl font-bold text-rose-600 font-mono">
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Sisa Hutang</p>
+            <h3 className="text-xs sm:text-xl font-bold text-rose-600 font-mono truncate">
               Rp {totalSisaHutang.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[11px] text-slate-400">Kewajiban Belum Terbayar</p>
+            <p className="text-[9px] sm:text-[11px] text-slate-400 truncate">Kewajiban Belum Bayar</p>
           </div>
         </div>
       </div>
 
       {/* Table Data Lahan Petani */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full min-w-0">
+        <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[950px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">

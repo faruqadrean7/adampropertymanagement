@@ -101,10 +101,10 @@ export default function PettyCashView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full min-w-0">
       {/* Management Read-Only Banner */}
       {isReadOnly && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 sm:p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2">
             <Coins className="w-4 h-4 text-amber-700 shrink-0" />
             <span>
@@ -118,41 +118,43 @@ export default function PettyCashView() {
       )}
 
       {/* Header Banner */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-white p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 text-[11px] font-bold uppercase tracking-wider">
-              Petty Cash Management
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+            <span className="px-2 sm:px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
+              Petty Cash
             </span>
-            <span className="text-[11px] font-semibold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-md border border-violet-200">
-              Operasional Harian & Gaji Staff
+            <span className="text-[10px] sm:text-[11px] font-semibold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-md border border-violet-200">
+              Operasional Harian
             </span>
           </div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Coins className="w-5 h-5 text-violet-600" />
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 shrink-0" />
             Buku Kas Kecil Kantor (Petty Cash)
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-[11px] sm:text-xs text-slate-500 hidden sm:block">
             Pengelolaan dana kasir operasional: ATK, konsumsi, bensin survey lahan, utilitas, dan payroll gaji karyawan.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full md:w-auto justify-between md:justify-end">
           {!isReadOnly && (
             <>
               <button
                 onClick={() => setShowTopupModal(true)}
-                className="px-3.5 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-bold rounded-lg sm:rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
               >
                 <ArrowDownLeft className="w-3.5 h-3.5" />
-                <span>+ Top Up Kas Kecil</span>
+                <span className="hidden sm:inline">+ Top Up Kas Kecil</span>
+                <span className="sm:hidden">+ Top Up</span>
               </button>
               <button
                 onClick={() => setShowExpenseModal(true)}
-                className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg sm:rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
               >
                 <ShoppingCart className="w-3.5 h-3.5" />
-                <span>+ Belanja Harian</span>
+                <span className="hidden sm:inline">+ Belanja Harian</span>
+                <span className="sm:hidden">+ Belanja</span>
               </button>
             </>
           )}
@@ -161,112 +163,112 @@ export default function PettyCashView() {
       </div>
 
       {/* 4 Financial Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-violet-950 p-5 rounded-2xl border border-slate-800 text-white shadow-xs flex flex-col justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-slate-900 via-slate-800 to-violet-950 p-3 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-800 text-white shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-              <span className="font-semibold text-violet-400 uppercase tracking-wider">Saldo Kas Kecil Fisik</span>
-              <Coins className="w-4 h-4 text-violet-400" />
+              <span className="font-semibold text-violet-400 uppercase tracking-wider text-[10px] sm:text-xs">Saldo Kas Kecil Fisik</span>
+              <Coins className="w-4 h-4 text-violet-400 shrink-0" />
             </div>
-            <h3 className="text-2xl font-black text-white font-mono">
+            <h3 className="text-base sm:text-2xl font-black text-white font-mono truncate">
               Rp {pettyCashBalance.toLocaleString('id-ID')}
             </h3>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-white/10 text-[10px] text-slate-300">
-            Tersedia di brankas kasir kantor
+          <div className="mt-2 sm:mt-3 pt-1.5 sm:pt-2.5 border-t border-white/10 text-[9px] sm:text-[10px] text-slate-300 truncate">
+            Tersedia di brankas kasir
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-violet-200 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center text-lg shrink-0 border border-violet-100">
-            <ArrowDownLeft className="w-5 h-5" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-violet-200 shadow-xs flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center text-base sm:text-lg shrink-0 border border-violet-100">
+            <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Total Top Up Masuk</p>
-            <h3 className="text-base font-black text-violet-700 truncate font-mono">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Top Up Masuk</p>
+            <h3 className="text-xs sm:text-base font-black text-violet-700 truncate font-mono">
               Rp {pettyCashIn.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[10px] text-slate-400">Dari Kas Besar & Investor</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 truncate">Kas Besar/Investor</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-rose-200 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shrink-0 border border-rose-100">
-            <ArrowUpRight className="w-5 h-5" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-rose-200 shadow-xs flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-base sm:text-lg shrink-0 border border-rose-100">
+            <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Total Belanja Keluar</p>
-            <h3 className="text-base font-black text-rose-600 truncate font-mono">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Belanja Keluar</p>
+            <h3 className="text-xs sm:text-base font-black text-rose-600 truncate font-mono">
               Rp {pettyCashOut.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[10px] text-slate-400">Operasional + Payroll</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 truncate">Operasional + Gaji</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-indigo-200 shadow-xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg shrink-0 border border-indigo-100">
-            <Users className="w-5 h-5" />
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-indigo-200 shadow-xs flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base sm:text-lg shrink-0 border border-indigo-100">
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Gaji dari Kas Kecil</p>
-            <h3 className="text-base font-black text-indigo-600 truncate font-mono">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Gaji dari Petty</p>
+            <h3 className="text-xs sm:text-base font-black text-indigo-600 truncate font-mono">
               Rp {totalPayrollFromPetty.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[10px] text-indigo-500 font-medium">Auto Potong Gaji Staf</p>
+            <p className="text-[9px] sm:text-[10px] text-indigo-500 font-medium truncate">Payroll Staf</p>
           </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-3 justify-between items-center">
+      <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari penerima / keperluan belanja..."
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+            placeholder="Cari penerima / keperluan..."
+            className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-slate-50 focus:bg-white"
           />
         </div>
 
         <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto p-1 bg-slate-100 rounded-xl text-xs font-semibold">
           <button
             onClick={() => setFilterCat('all')}
-            className={`px-3 py-1.5 rounded-lg transition ${filterCat === 'all' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition text-xs shrink-0 ${filterCat === 'all' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600'}`}
           >
             Semua
           </button>
           <button
             onClick={() => setFilterCat('atk')}
-            className={`px-3 py-1.5 rounded-lg transition ${filterCat === 'atk' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition text-xs shrink-0 ${filterCat === 'atk' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600'}`}
           >
             ATK
           </button>
           <button
             onClick={() => setFilterCat('bensin')}
-            className={`px-3 py-1.5 rounded-lg transition ${filterCat === 'bensin' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition text-xs shrink-0 ${filterCat === 'bensin' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600'}`}
           >
-            Bensin Survey
+            Bensin
           </button>
           <button
             onClick={() => setFilterCat('konsumsi')}
-            className={`px-3 py-1.5 rounded-lg transition ${filterCat === 'konsumsi' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition text-xs shrink-0 ${filterCat === 'konsumsi' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600'}`}
           >
             Konsumsi
           </button>
           <button
             onClick={() => setFilterCat('gaji_karyawan')}
-            className={`px-3 py-1.5 rounded-lg transition ${filterCat === 'gaji_karyawan' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition text-xs shrink-0 ${filterCat === 'gaji_karyawan' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600'}`}
           >
-            Gaji Staf
+            Gaji
           </button>
         </div>
       </div>
 
       {/* Petty Cash Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full min-w-0">
+        <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">

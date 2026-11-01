@@ -153,7 +153,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="contoh: it.manager@adamproperty.co.id"
+                  placeholder="Masukkan email Anda"
                   className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition shadow-2xs"
                 />
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -169,7 +169,7 @@ export default function LoginPage() {
                   href="#forgot"
                   onClick={(e) => {
                     e.preventDefault();
-                    alert('Untuk reset kata sandi, hubungi IT Administrator atau Manajemen PT Adam Property Indonesia.');
+                    alert('Untuk reset kata sandi, hubungi IT Administrator PT Adam Property Indonesia.');
                   }}
                   className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
                 >
@@ -233,7 +233,7 @@ export default function LoginPage() {
           <div className="pt-6 border-t border-slate-200 text-center space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Sistem Hak Akses Berlapis (Management &bull; IT &bull; Admin Kasir)</span>
+              <span>Sistem Enterprise Terenkripsi &bull; Akses Terbatas</span>
             </div>
             <p className="text-[10px] text-slate-400">
               Hak cipta &copy; 2026 PT Adam Property Indonesia. Akses hanya untuk staf dan manajemen yang berwenang.

@@ -44,7 +44,7 @@ function MainApp() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row antialiased">
+    <div className="min-h-screen flex flex-col lg:flex-row antialiased w-full overflow-x-hidden">
       {/* Sidebar Navigation */}
       <Sidebar 
         isOpen={sidebarOpen} 
@@ -52,14 +52,14 @@ function MainApp() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen w-full overflow-x-hidden">
         {/* Top Header */}
         <TopBar 
           onToggleSidebar={() => setSidebarOpen(true)} 
         />
 
         {/* Dynamic Module View */}
-        <main className="p-4 sm:p-6 lg:p-8 flex-1 w-full max-w-[1600px] mx-auto">
+        <main className="p-3 sm:p-6 lg:p-8 flex-1 w-full max-w-[1600px] mx-auto min-w-0">
           {renderActiveView()}
         </main>
 

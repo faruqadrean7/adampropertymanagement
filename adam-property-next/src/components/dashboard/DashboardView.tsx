@@ -197,158 +197,160 @@ export default function DashboardView() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full min-w-0">
       {/* Executive Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-6 rounded-2xl text-white shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-slate-700/60">
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-4 sm:p-6 rounded-xl sm:rounded-2xl text-white shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 border border-slate-700/60">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold border border-emerald-400/30">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold border border-emerald-400/30 shrink-0">
               <TrendingUp className="w-4 h-4" />
             </span>
-            <h2 className="text-xl font-black text-white tracking-tight">Executive Business Analytics</h2>
+            <h2 className="text-base sm:text-xl font-black text-white tracking-tight">Executive Business Analytics</h2>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-              Next.js Edition
+              Enterprise
             </span>
           </div>
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-slate-300 hidden sm:block">
             Monitoring penjualan kavling, arus kas likuiditas, piutang customer, kewajiban tanah petani & valuasi aset.
           </p>
         </div>
 
         {/* Project Selector & Actions */}
-        <div className="flex items-center gap-2.5 flex-wrap w-full md:w-auto">
-          <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/15 text-xs">
-            <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-1.5 bg-white/10 px-2.5 sm:px-3 py-1.5 rounded-xl border border-white/15 text-xs max-w-[200px] sm:max-w-none">
+            <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <select
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer"
+              className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer truncate"
             >
-              <option value="all" className="text-slate-900 font-semibold">Semua Lahan Proyek</option>
+              <option value="all" className="text-slate-900 font-semibold">Semua Lahan</option>
               {projects.map(p => (
                 <option key={p.id} value={p.id} className="text-slate-900 font-semibold">{p.nama}</option>
               ))}
             </select>
           </div>
 
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-          >
-            <RotateCw className="w-3.5 h-3.5" />
-            <span>Refresh</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-lg sm:rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm shrink-0"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
 
-          <ExportButtons getData={getExportData} />
+            <ExportButtons getData={getExportData} />
+          </div>
         </div>
       </div>
 
       {/* 6 Executive KPI Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3.5">
         {/* KPI 1: Omzet Penjualan */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition">
+        <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition">
           <div>
-            <div className="flex items-center justify-between text-slate-400 text-[11px] mb-1">
-              <span className="font-bold uppercase tracking-wider text-slate-500">Omzet Penjualan</span>
-              <span className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
-                <DollarSign className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between text-slate-400 text-[10px] sm:text-[11px] mb-1">
+              <span className="font-bold uppercase tracking-wider text-slate-500 truncate">Omzet</span>
+              <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs shrink-0">
+                <DollarSign className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </span>
             </div>
-            <h4 className="text-base font-black text-slate-900 font-mono tracking-tight">
+            <h4 className="text-xs sm:text-base font-black text-slate-900 font-mono tracking-tight truncate">
               Rp {totalSalesValue.toLocaleString('id-ID')}
             </h4>
           </div>
-          <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 truncate">
+          <div className="mt-2 pt-1.5 sm:pt-2 border-t border-slate-100 text-[9px] sm:text-[10px] text-slate-500 truncate">
             {soldCount + bookingCount} Unit Terjual/Booking
           </div>
         </div>
 
         {/* KPI 2: Kas Masuk Real */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-teal-300 transition">
+        <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-teal-300 transition">
           <div>
-            <div className="flex items-center justify-between text-slate-400 text-[11px] mb-1">
-              <span className="font-bold uppercase tracking-wider text-teal-700">Kas Masuk Real</span>
-              <span className="w-6 h-6 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-xs">
-                <ArrowDownLeft className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between text-slate-400 text-[10px] sm:text-[11px] mb-1">
+              <span className="font-bold uppercase tracking-wider text-teal-700 truncate">Kas Masuk</span>
+              <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-xs shrink-0">
+                <ArrowDownLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </span>
             </div>
-            <h4 className="text-base font-black text-teal-700 font-mono tracking-tight">
+            <h4 className="text-xs sm:text-base font-black text-teal-700 font-mono tracking-tight truncate">
               Rp {totalCashIn.toLocaleString('id-ID')}
             </h4>
           </div>
-          <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-teal-600 font-semibold flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span> DP & Modal Investor
+          <div className="mt-2 pt-1.5 sm:pt-2 border-t border-slate-100 text-[9px] sm:text-[10px] text-teal-600 font-semibold truncate flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0"></span> DP & Investor
           </div>
         </div>
 
         {/* KPI 3: Piutang Berjalan */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-amber-300 transition">
+        <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-amber-300 transition">
           <div>
-            <div className="flex items-center justify-between text-slate-400 text-[11px] mb-1">
-              <span className="font-bold uppercase tracking-wider text-amber-700">Piutang Berjalan</span>
-              <span className="w-6 h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
-                <Clock className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between text-slate-400 text-[10px] sm:text-[11px] mb-1">
+              <span className="font-bold uppercase tracking-wider text-amber-700 truncate">Piutang</span>
+              <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs shrink-0">
+                <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </span>
             </div>
-            <h4 className="text-base font-black text-amber-600 font-mono tracking-tight">
+            <h4 className="text-xs sm:text-base font-black text-amber-600 font-mono tracking-tight truncate">
               Rp {totalReceivables.toLocaleString('id-ID')}
             </h4>
           </div>
-          <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 truncate">
+          <div className="mt-2 pt-1.5 sm:pt-2 border-t border-slate-100 text-[9px] sm:text-[10px] text-slate-500 truncate">
             Sisa cicilan customer
           </div>
         </div>
 
         {/* KPI 4: Hutang ke Petani */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-rose-300 transition">
+        <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-rose-300 transition">
           <div>
-            <div className="flex items-center justify-between text-slate-400 text-[11px] mb-1">
-              <span className="font-bold uppercase tracking-wider text-rose-700">Hutang Petani</span>
-              <span className="w-6 h-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
-                <Tractor className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between text-slate-400 text-[10px] sm:text-[11px] mb-1">
+              <span className="font-bold uppercase tracking-wider text-rose-700 truncate">Hutang Lahan</span>
+              <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs shrink-0">
+                <Tractor className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </span>
             </div>
-            <h4 className="text-base font-black text-rose-600 font-mono tracking-tight">
+            <h4 className="text-xs sm:text-base font-black text-rose-600 font-mono tracking-tight truncate">
               Rp {totalFarmerDebt.toLocaleString('id-ID')}
             </h4>
           </div>
-          <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-rose-600 font-semibold truncate">
-            Kewajiban tanah mentah
+          <div className="mt-2 pt-1.5 sm:pt-2 border-t border-slate-100 text-[9px] sm:text-[10px] text-rose-600 font-semibold truncate">
+            Kewajiban petani
           </div>
         </div>
 
         {/* KPI 5: Okupansi Kavling */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition">
+        <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition">
           <div>
-            <div className="flex items-center justify-between text-slate-400 text-[11px] mb-1">
-              <span className="font-bold uppercase tracking-wider text-indigo-700">Okupansi Kavling</span>
-              <span className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+            <div className="flex items-center justify-between text-slate-400 text-[10px] sm:text-[11px] mb-1">
+              <span className="font-bold uppercase tracking-wider text-indigo-700 truncate">Okupansi</span>
+              <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs shrink-0">
                 <PieIcon className="w-3.5 h-3.5" />
               </span>
             </div>
-            <h4 className="text-base font-black text-indigo-600 font-mono tracking-tight">
+            <h4 className="text-xs sm:text-base font-black text-indigo-600 font-mono tracking-tight truncate">
               {occupancyRate}%
             </h4>
           </div>
-          <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 truncate">
+          <div className="mt-2 pt-1.5 sm:pt-2 border-t border-slate-100 text-[9px] sm:text-[10px] text-slate-500 truncate">
             {soldCount} Terjual • {openCount} Terbuka
           </div>
         </div>
 
         {/* KPI 6: Kas Likuid Total */}
-        <div className="bg-gradient-to-br from-slate-900 to-emerald-950 p-4 rounded-2xl border border-slate-800 text-white shadow-xs flex flex-col justify-between">
+        <div className="bg-gradient-to-br from-slate-900 to-emerald-950 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-800 text-white shadow-xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between text-slate-400 text-[11px] mb-1">
-              <span className="font-bold uppercase tracking-wider text-emerald-400">Total Kas Likuid</span>
-              <span className="w-6 h-6 rounded-lg bg-white/10 text-emerald-300 flex items-center justify-center text-xs">
-                <Vault className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between text-slate-400 text-[10px] sm:text-[11px] mb-1">
+              <span className="font-bold uppercase tracking-wider text-emerald-400 truncate">Total Likuid</span>
+              <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-white/10 text-emerald-300 flex items-center justify-center text-xs shrink-0">
+                <Vault className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </span>
             </div>
-            <h4 className="text-base font-black text-emerald-300 font-mono tracking-tight">
+            <h4 className="text-xs sm:text-base font-black text-emerald-300 font-mono tracking-tight truncate">
               Rp {totalLiquidity.toLocaleString('id-ID')}
             </h4>
           </div>
-          <div className="mt-2 pt-2 border-t border-white/10 text-[10px] text-slate-300 truncate">
+          <div className="mt-2 pt-1.5 sm:pt-2 border-t border-white/10 text-[9px] sm:text-[10px] text-slate-300 truncate">
             Kas Besar + Kas Kecil
           </div>
         </div>
