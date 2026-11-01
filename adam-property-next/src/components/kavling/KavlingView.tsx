@@ -12,7 +12,9 @@ import {
   Clock, 
   Layers, 
   Tag, 
-  Maximize2 
+  Maximize2,
+  X,
+  MapPin
 } from 'lucide-react';
 import { Kavling } from '@/types';
 
@@ -22,6 +24,7 @@ export default function KavlingView() {
     selectedProjectId, 
     setSelectedProjectId, 
     kavlings, 
+    addProject,
     addKavling, 
     addBatchKavling,
     updateKavlingStatus 
@@ -31,11 +34,18 @@ export default function KavlingView() {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Modals state
+  const [showProjectModal, setShowProjectModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [selectedKavling, setSelectedKavling] = useState<Kavling | null>(null);
 
+  // Form states for Add Induk Kavling / Project
+  const [projNama, setProjNama] = useState('');
+  const [projLokasi, setProjLokasi] = useState('');
+  const [projDeskripsi, setProjDeskripsi] = useState('');
+
   // Form states for Add Single Kavling
+  const [formProjectId, setFormProjectId] = useState('');
   const [formBlok, setFormBlok] = useState('Blok A');
   const [formNomor, setFormNomor] = useState('A-04');
   const [formLuas, setFormLuas] = useState(84);
@@ -45,6 +55,7 @@ export default function KavlingView() {
   const [formKeterangan, setFormKeterangan] = useState('Siap bangun, hadap timur');
 
   // Form states for Batch Kavling
+  const [batchProjectId, setBatchProjectId] = useState('');
   const [batchBlok, setBatchBlok] = useState('Blok B');
   const [batchPrefix, setBatchPrefix] = useState('B');
   const [batchStart, setBatchStart] = useState(1);
@@ -68,9 +79,37 @@ export default function KavlingView() {
   const bookingLots = kavlings.filter(k => (selectedProjectId === 'all' || k.projectId === selectedProjectId) && k.status === 'booking').length;
   const soldLots = kavlings.filter(k => (selectedProjectId === 'all' || k.projectId === selectedProjectId) && k.status === 'terjual').length;
 
+  const handleProjectSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projNama.trim() || !projLokasi.trim()) {
+      alert('Nama dan lokasi proyek wajib diisi!');
+      return;
+    }
+    const newProj = addProject({
+      nama: projNama.trim(),
+      lokasi: projLokasi.trim(),
+      deskripsi: projDeskripsi.trim() || undefined
+    });
+    setSelectedProjectId(newProj.id);
+    setShowProjectModal(false);
+    setProjNama('');
+    setProjLokasi('');
+    setProjDeskripsi('');
+  };
+
+  const handleOpenAddModal = () => {
+    setFormProjectId(selectedProjectId !== 'all' ? selectedProjectId : (projects[0]?.id || ''));
+    setShowAddModal(true);
+  };
+
+  const handleOpenBatchModal = () => {
+    setBatchProjectId(selectedProjectId !== 'all' ? selectedProjectId : (projects[0]?.id || ''));
+    setShowBatchModal(true);
+  };
+
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const projId = selectedProjectId === 'all' ? (projects[0]?.id || 'proj-1') : selectedProjectId;
+    const projId = formProjectId || (selectedProjectId === 'all' ? (projects[0]?.id || 'proj-1') : selectedProjectId);
     addKavling({
       projectId: projId,
       blok: formBlok,
@@ -89,7 +128,7 @@ export default function KavlingView() {
 
   const handleBatchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const projId = selectedProjectId === 'all' ? (projects[0]?.id || 'proj-1') : selectedProjectId;
+    const projId = batchProjectId || (selectedProjectId === 'all' ? (projects[0]?.id || 'proj-1') : selectedProjectId);
     addBatchKavling(
       batchBlok,
       batchPrefix,
@@ -109,34 +148,61 @@ export default function KavlingView() {
       {/* Top Bar Controls */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
               <Building2 className="w-4 h-4 text-emerald-600" />
               Induk Kavling:
             </span>
             <select
               value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value === '__NEW_PROJECT__') {
+                  setShowProjectModal(true);
+                } else {
+                  setSelectedProjectId(e.target.value);
+                }
+              }}
               className="px-3.5 py-2 border-2 border-emerald-600/30 rounded-xl text-sm font-bold text-slate-800 bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
             >
               <option value="all">Semua Lahan Proyek</option>
               {projects.map(p => (
                 <option key={p.id} value={p.id}>{p.nama}</option>
               ))}
+              <option value="__NEW_PROJECT__" className="text-emerald-700 font-bold bg-emerald-50">
+                + Tambah Induk Proyek Baru...
+              </option>
             </select>
+
+            {/* Quick Add Induk Proyek Button */}
+            <button
+              type="button"
+              onClick={() => setShowProjectModal(true)}
+              className="px-3 py-2 bg-emerald-100 hover:bg-emerald-200 active:scale-95 text-emerald-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs border border-emerald-300"
+              title="Tambah Kawasan / Induk Kavling Baru"
+            >
+              <Plus className="w-3.5 h-3.5 text-emerald-700" />
+              <span>+ Induk Baru</span>
+            </button>
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setShowBatchModal(true)}
-            className="px-3.5 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition flex items-center gap-1.5"
+            onClick={() => setShowProjectModal(true)}
+            className="px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
+          >
+            <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>+ Induk Proyek Baru</span>
+          </button>
+          <button
+            onClick={handleOpenBatchModal}
+            className="px-3.5 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition flex items-center gap-1.5 active:scale-95"
           >
             <Zap className="w-3.5 h-3.5 text-amber-500" />
             <span>+ Buat Blok Sekaligus</span>
           </button>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={handleOpenAddModal}
             className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] rounded-xl shadow-xs transition flex items-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
@@ -416,10 +482,42 @@ export default function KavlingView() {
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
-            <h3 className="text-base font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">
-              + Tambah Unit Kavling Baru
-            </h3>
+            <div className="flex items-center justify-between pb-2 mb-4 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900">
+                + Tambah Unit Kavling Baru
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleAddSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Induk Kavling / Proyek *</label>
+                <div className="flex gap-2">
+                  <select
+                    value={formProjectId}
+                    onChange={(e) => setFormProjectId(e.target.value)}
+                    className="flex-1 border border-slate-300 rounded-xl px-3 py-2 bg-white font-semibold text-slate-800"
+                    required
+                  >
+                    {projects.map(p => (
+                      <option key={p.id} value={p.id}>{p.nama} ({p.lokasi})</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowProjectModal(true)}
+                    className="px-2.5 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-xl text-xs font-bold transition whitespace-nowrap"
+                  >
+                    + Induk Baru
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Blok Kavling *</label>
@@ -527,14 +625,46 @@ export default function KavlingView() {
       {showBatchModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
-            <h3 className="text-base font-bold text-slate-900 mb-2">
-              ⚡ Buat Blok Kavling Sekaligus (Batch)
-            </h3>
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900">
+                ⚡ Buat Blok Kavling Sekaligus (Batch)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowBatchModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <p className="text-xs text-slate-500 mb-4">
               Otomatis membuat nomor urut kavling massal dalam 1 blok.
             </p>
 
             <form onSubmit={handleBatchSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Induk Kavling / Proyek *</label>
+                <div className="flex gap-2">
+                  <select
+                    value={batchProjectId}
+                    onChange={(e) => setBatchProjectId(e.target.value)}
+                    className="flex-1 border border-slate-300 rounded-xl px-3 py-2 bg-white font-semibold text-slate-800"
+                    required
+                  >
+                    {projects.map(p => (
+                      <option key={p.id} value={p.id}>{p.nama} ({p.lokasi})</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowProjectModal(true)}
+                    className="px-2.5 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-xl text-xs font-bold transition whitespace-nowrap"
+                  >
+                    + Induk Baru
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Nama Blok</label>
@@ -630,6 +760,103 @@ export default function KavlingView() {
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-bold shadow-xs"
                 >
                   Generate {batchCount} Kavling
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tambah Induk Kavling / Master Proyek Baru */}
+      {showProjectModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Tambah Induk Kavling / Master Proyek
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Daftarkan kawasan proyek perumahan / kavling tanah baru
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowProjectModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleProjectSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Nama Induk Proyek / Kawasan *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={projNama}
+                  onChange={(e) => setProjNama(e.target.value)}
+                  placeholder="Contoh: Baitul Makmur Regency 2 / Griya Sakinah"
+                  className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Lokasi / Alamat Proyek *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    value={projLokasi}
+                    onChange={(e) => setProjLokasi(e.target.value)}
+                    placeholder="Contoh: Jl. Sukodono No. 12, Kaliwungu Selatan, Kendal"
+                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 pl-9 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Deskripsi / Catatan Proyek (Opsional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={projDeskripsi}
+                  onChange={(e) => setProjDeskripsi(e.target.value)}
+                  placeholder="Contoh: Pengembangan kawasan seluas 1.5 Ha, rencana 45 unit kavling siap bangun SHM Split."
+                  className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800 flex items-start gap-2">
+                <span className="font-bold text-emerald-700">✓ Auto-Pilih:</span>
+                <span>Setelah disimpan, sistem akan langsung beralih ke proyek baru ini agar Anda bisa langsung menambahkan unit kavling.</span>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowProjectModal(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-xs transition active:scale-95"
+                >
+                  Simpan Induk Proyek
                 </button>
               </div>
             </form>

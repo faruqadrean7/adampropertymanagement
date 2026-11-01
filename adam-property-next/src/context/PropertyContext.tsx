@@ -47,7 +47,7 @@ interface PropertyContextType {
   salaryPayments: SalaryPayment[];
 
   // Actions
-  addProject: (data: { nama: string; lokasi: string; deskripsi?: string }) => void;
+  addProject: (data: { nama: string; lokasi: string; deskripsi?: string }) => Project;
   addKavling: (data: Omit<Kavling, 'id'>) => void;
   addBatchKavling: (
     blok: string,
@@ -197,7 +197,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   const totalAssetValue = inventory.reduce((sum, item) => sum + (item.nilaiPerolehan * item.jumlah), 0);
 
   // 1. Projects
-  const addProject = (data: { nama: string; lokasi: string; deskripsi?: string }) => {
+  const addProject = (data: { nama: string; lokasi: string; deskripsi?: string }): Project => {
     const newProject: Project = {
       id: `proj-${Date.now()}`,
       nama: data.nama,
@@ -206,6 +206,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString().split('T')[0]
     };
     setProjects(prev => [...prev, newProject]);
+    return newProject;
   };
 
   // 2. Kavling
