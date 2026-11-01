@@ -99,6 +99,7 @@ interface PropertyContextType {
     }
   ) => void;
   addCustomerPayment: (data: Omit<Payment, 'id'>) => void;
+  updatePaymentReceipt: (paymentId: string, kwitansiImage: string | null) => void;
   addLandDebt: (data: {
     projectId: string;
     namaPetani: string;
@@ -419,6 +420,12 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const updatePaymentReceipt = (paymentId: string, kwitansiImage: string | null) => {
+    setPayments(prev =>
+      prev.map(p => (p.id === paymentId ? { ...p, kwitansiImage } : p))
+    );
+  };
+
   // 4. Land Debts (with auto-deduction from Cashbook)
   const addLandDebt = (data: {
     projectId: string;
@@ -723,6 +730,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         updateKavlingStatus,
         addCustomer,
         addCustomerPayment,
+        updatePaymentReceipt,
         updateCustomerDocuments,
         addLandDebt,
         addLandPayment,

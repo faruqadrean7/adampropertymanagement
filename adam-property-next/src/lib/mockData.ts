@@ -192,6 +192,18 @@ export const INITIAL_CUSTOMERS: Customer[] = [
   }
 ];
 
+const makeMockSvg = (title: string, subtitle: string, color: string) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">
+    <rect width="600" height="380" fill="${color}" rx="12"/>
+    <rect x="20" y="20" width="560" height="340" fill="none" stroke="white" stroke-width="2" stroke-dasharray="6,6" opacity="0.4"/>
+    <circle cx="300" cy="140" r="45" fill="white" opacity="0.2"/>
+    <text x="300" y="215" font-family="Arial" font-size="22" font-weight="bold" fill="white" text-anchor="middle">${title}</text>
+    <text x="300" y="245" font-family="Arial" font-size="14" fill="white" opacity="0.8" text-anchor="middle">${subtitle}</text>
+    <text x="300" y="280" font-family="Arial" font-size="12" fill="white" opacity="0.6" text-anchor="middle">PT ADAM PROPERTY INDONESIA</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+};
+
 export const INITIAL_PAYMENTS: Payment[] = [
   {
     id: 'pay-1',
@@ -214,7 +226,8 @@ export const INITIAL_PAYMENTS: Payment[] = [
     nominal: 60000000,
     metodeBayar: 'transfer',
     tujuan: 'Uang Muka (DP 50%)',
-    keterangan: 'Transfer via BCA KlikBCA Bisnis'
+    keterangan: 'Transfer via BCA KlikBCA Bisnis',
+    kwitansiImage: makeMockSvg('KWITANSI RESMI PEMBAYARAN', 'Uang Muka (DP 50%) Rp 60.000.000 • Bpk. Bambang Sutrisno (Blok A - A-01)', '#047857')
   },
   {
     id: 'pay-3',
@@ -225,7 +238,8 @@ export const INITIAL_PAYMENTS: Payment[] = [
     nominal: 60000000,
     metodeBayar: 'transfer',
     tujuan: 'Pelunasan Kavling 100%',
-    keterangan: 'Pelunasan sisa 50% dan serah terima akta PPJB'
+    keterangan: 'Pelunasan sisa 50% dan serah terima akta PPJB',
+    kwitansiImage: makeMockSvg('KWITANSI RESMI PELUNASAN', 'Pelunasan 100% Rp 60.000.000 • Bpk. Bambang Sutrisno (Blok A - A-01)', '#0f766e')
   },
   {
     id: 'pay-4',
