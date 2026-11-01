@@ -1,6 +1,6 @@
-// db.js - Layer Database IndexedDB & Image Helper untuk Adam Property (Versi 4: Kas Besar & Investor Arus Kas)
+// db.js - Layer Database IndexedDB & Image Helper untuk Adam Property (Versi 5: Kas Kecil & Petty Cash)
 const DB_NAME = 'AdamKavlingDB';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 let dbInstance = null;
 
@@ -70,6 +70,17 @@ function initDB() {
                 cashStore.createIndex('refType', 'refType', { unique: false });
                 cashStore.createIndex('refId', 'refId', { unique: false });
                 cashStore.createIndex('projectId', 'projectId', { unique: false });
+            }
+
+            // 8. Store Kas Kecil Kantor (Petty Cash Operasional Harian)
+            if (!db.objectStoreNames.contains('petty_cash')) {
+                const pettyStore = db.createObjectStore('petty_cash', { keyPath: 'id', autoIncrement: true });
+                pettyStore.createIndex('tanggal', 'tanggal', { unique: false });
+                pettyStore.createIndex('tipe', 'tipe', { unique: false }); // 'masuk' (top up) | 'keluar' (pengeluaran harian)
+                pettyStore.createIndex('kategori', 'kategori', { unique: false });
+                pettyStore.createIndex('sumberDana', 'sumberDana', { unique: false }); // 'kas_besar' | 'investor' | 'manual'
+                pettyStore.createIndex('refType', 'refType', { unique: false });
+                pettyStore.createIndex('refId', 'refId', { unique: false });
             }
         };
 
@@ -651,6 +662,107 @@ const CashbookDB = {
     }
 };
 
+// ========================================================
+// OPERASI DATABASE: KAS KECIL (PETTY CASH OPERASIONAL KANTOR)
+// ========================================================
+const PettyCashDB = {
+    async getAll() {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('petty_cash', 'readonly');
+            const store = tx.objectStore('petty_cash');
+            const request = store.getAll();
+            request.onsuccess = () => {
+                const results = request.result || [];
+                // Urutkan tanggal terbaru ke terlama, jika tanggal sama urutkan ID terbesar
+                results.sort((a, b) => {
+                    const diff = new Date(b.tanggal) - new Date(a.tanggal);
+                    if (diff !== 0) return diff;
+                    return (b.id || 0) - (a.id || 0);
+                });
+                resolve(results);
+            };
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async getById(id) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('petty_cash', 'readonly');
+            const store = tx.objectStore('petty_cash');
+            const request = store.get(Number(id));
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async add(entryData) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('petty_cash', 'readwrite');
+            const store = tx.objectStore('petty_cash');
+            const record = {
+                ...entryData,
+                nominal: Number(entryData.nominal) || 0,
+                tipe: entryData.tipe || 'keluar', // 'masuk' (top up) atau 'keluar' (pengeluaran)
+                sumberDana: entryData.sumberDana || (entryData.tipe === 'masuk' ? 'kas_besar' : null),
+                kategori: entryData.kategori || 'operasional_lain',
+                refType: entryData.refType || 'manual',
+                refId: entryData.refId ? Number(entryData.refId) : null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            const request = store.add(record);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async update(id, entryData) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('petty_cash', 'readwrite');
+            const store = tx.objectStore('petty_cash');
+            const record = {
+                ...entryData,
+                id: Number(id),
+                nominal: Number(entryData.nominal) || 0,
+                updatedAt: new Date().toISOString()
+            };
+            const request = store.put(record);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async delete(id) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('petty_cash', 'readwrite');
+            const store = tx.objectStore('petty_cash');
+            const request = store.delete(Number(id));
+            request.onsuccess = () => resolve(true);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async deleteByRef(refType, refId) {
+        const db = await initDB();
+        const items = await PettyCashDB.getAll();
+        const targets = items.filter(it => it.refType === refType && Number(it.refId) === Number(refId));
+        if (targets.length === 0) return true;
+
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('petty_cash', 'readwrite');
+            const store = tx.objectStore('petty_cash');
+            targets.forEach(t => store.delete(t.id));
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+};
+
 // Helper Kompresi Gambar
 function compressImage(file, maxWidth = 1500, quality = 0.82) {
     return new Promise((resolve, reject) => {
@@ -699,6 +811,7 @@ const BackupManager = {
         const landDebts = await LandDebtDB.getAll();
         const landPayments = await LandPaymentDB.getAll();
         const cashbook = await CashbookDB.getAll();
+        const pettyCash = await PettyCashDB.getAll();
 
         const data = {
             version: DB_VERSION,
@@ -710,7 +823,8 @@ const BackupManager = {
             payments,
             landDebts,
             landPayments,
-            cashbook
+            cashbook,
+            pettyCash
         };
 
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -784,6 +898,14 @@ const BackupManager = {
                 const cbStore = txCash.objectStore('cashbook');
                 cbStore.clear();
                 for (const cb of data.cashbook) cbStore.put(cb);
+            }
+
+            // 8. Petty Cash (Kas Kecil)
+            if (data.pettyCash && Array.isArray(data.pettyCash)) {
+                const txPetty = db.transaction('petty_cash', 'readwrite');
+                const pcStore = txPetty.objectStore('petty_cash');
+                pcStore.clear();
+                for (const pc of data.pettyCash) pcStore.put(pc);
             }
 
             return true;

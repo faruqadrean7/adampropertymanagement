@@ -1,6 +1,6 @@
-// app.js - Logika Enterprise ADAM PROPERTY GROUP (Kavling, Customer, Barter Material, Hutang Petani & Kas Besar)
+// app.js - Logika Enterprise ADAM PROPERTY GROUP (Kavling, Customer, Barter Material, Hutang Petani, Kas Besar & Kas Kecil)
 
-let currentTab = 'kavling'; // 'kavling', 'customer', 'land_debt', atau 'cashbook'
+let currentTab = 'kavling'; // 'kavling', 'customer', 'land_debt', 'cashbook', atau 'petty_cash'
 let allProjects = [];
 let selectedProjectId = null;
 let allKavlings = [];
@@ -19,6 +19,16 @@ let cashFilterTipe = 'all';
 let cashFilterProject = 'all';
 let cashFilterMetode = 'all';
 let cashSearchQuery = '';
+
+// State Kas Kecil (Petty Cash Operasional Harian Kantor)
+let allPettyCash = [];
+let filteredPettyCash = [];
+let currentPettyCashEntry = null;
+let pettyFilterKategori = 'all';
+let pettyFilterTipe = 'all';
+let pettyFilterSumber = 'all';
+let pettyFilterProject = 'all';
+let pettySearchQuery = '';
 
 let currentFilter = 'all'; // Filter customer: 'all', 'unpaid', 'paid'
 let searchQuery = '';
@@ -48,10 +58,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (invDateInput) invDateInput.value = today;
         const expDateInput = document.getElementById('expTanggal');
         if (expDateInput) expDateInput.value = today;
+        const pettyTopupDate = document.getElementById('pettyTopupTanggal');
+        if (pettyTopupDate) pettyTopupDate.value = today;
+        const pettyExpDate = document.getElementById('pettyExpTanggal');
+        if (pettyExpDate) pettyExpDate.value = today;
 
         // Auto-sync jika ada pembayaran customer / cicilan lahan yang belum masuk Kas Besar
         await syncAllToCashbook();
         await refreshCashbookView();
+        await refreshPettyCashView();
 
     } catch (error) {
         console.error('Gagal inisialisasi aplikasi:', error);
@@ -83,9 +98,10 @@ async function initializeData() {
     await refreshCustomerList();
     await refreshLandDebtList();
     await refreshCashbookView();
+    await refreshPettyCashView();
 }
 
-// Navigasi Tab Utama (Company Feels: 4 Modul Terintegrasi)
+// Navigasi Tab Utama (Company Feels: 5 Modul Terintegrasi)
 function switchMainTab(tab) {
     currentTab = tab;
 
@@ -93,16 +109,18 @@ function switchMainTab(tab) {
     const navCustomer = document.getElementById('navTabCustomer');
     const navLandDebt = document.getElementById('navTabLandDebt');
     const navCashbook = document.getElementById('navTabCashbook');
+    const navPettyCash = document.getElementById('navTabPettyCash');
 
     const viewKavling = document.getElementById('viewKavling');
     const viewCustomer = document.getElementById('viewCustomer');
     const viewLandDebt = document.getElementById('viewLandDebt');
     const viewCashbook = document.getElementById('viewCashbook');
+    const viewPettyCash = document.getElementById('viewPettyCash');
 
     const headerActionText = document.getElementById('headerPrimaryActionText');
 
     // Reset tab styles
-    [navKavling, navCustomer, navLandDebt, navCashbook].forEach(el => {
+    [navKavling, navCustomer, navLandDebt, navCashbook, navPettyCash].forEach(el => {
         if (el) el.className = 'corp-tab-inactive px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap';
     });
 
@@ -110,6 +128,7 @@ function switchMainTab(tab) {
     if (viewCustomer) viewCustomer.classList.add('hidden');
     if (viewLandDebt) viewLandDebt.classList.add('hidden');
     if (viewCashbook) viewCashbook.classList.add('hidden');
+    if (viewPettyCash) viewPettyCash.classList.add('hidden');
 
     if (tab === 'kavling') {
         if (navKavling) navKavling.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
@@ -131,6 +150,11 @@ function switchMainTab(tab) {
         if (viewCashbook) viewCashbook.classList.remove('hidden');
         if (headerActionText) headerActionText.textContent = '+ Dana Investor';
         refreshCashbookView();
+    } else if (tab === 'petty_cash') {
+        if (navPettyCash) navPettyCash.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
+        if (viewPettyCash) viewPettyCash.classList.remove('hidden');
+        if (headerActionText) headerActionText.textContent = '+ Top Up Kas Kecil';
+        refreshPettyCashView();
     }
 }
 
@@ -143,6 +167,8 @@ function handlePrimaryAction() {
         openLandDebtModal();
     } else if (currentTab === 'cashbook') {
         openInvestorModal();
+    } else if (currentTab === 'petty_cash') {
+        openPettyTopupModal();
     }
 }
 
@@ -158,6 +184,8 @@ function renderProjectDropdowns() {
     const invProjectId = document.getElementById('invProjectId');
     const expProjectId = document.getElementById('expProjectId');
     const cashFilterProject = document.getElementById('cashFilterProject');
+    const pettyFilterProject = document.getElementById('pettyFilterProject');
+    const pettyExpProjectId = document.getElementById('pettyExpProjectId');
 
     const optionsHtml = allProjects.map(p => `
         <option value="${p.id}" ${p.id === selectedProjectId ? 'selected' : ''}>
@@ -181,6 +209,19 @@ function renderProjectDropdowns() {
         filterHtml += `<option value="holding">Kas Umum / Holding</option>`;
         filterHtml += allProjects.map(p => `<option value="${p.id}">${escapeHtml(p.nama)}</option>`).join('');
         cashFilterProject.innerHTML = filterHtml;
+    }
+
+    if (pettyFilterProject) {
+        let filterHtml = `<option value="all">Semua Alokasi</option>`;
+        filterHtml += `<option value="kantor_pusat">🏢 Kantor Pusat</option>`;
+        filterHtml += allProjects.map(p => `<option value="${p.id}">📍 ${escapeHtml(p.nama)}</option>`).join('');
+        pettyFilterProject.innerHTML = filterHtml;
+    }
+
+    if (pettyExpProjectId) {
+        let selectHtml = `<option value="kantor_pusat">🏢 Operasional Kantor Pusat Developer</option>`;
+        selectHtml += allProjects.map(p => `<option value="${p.id}">📍 Proyek: ${escapeHtml(p.nama)}</option>`).join('');
+        pettyExpProjectId.innerHTML = selectHtml;
     }
 
     renderLandProjectDropdown();
@@ -2640,6 +2681,118 @@ async function loadDemoData() {
         buktiImage: demoNotaAlatBerat
     });
 
+    // 7. Data Kas Kecil Kantor (Petty Cash Operasional Harian)
+    const demoNotaAtk = createDummyDoc('NOTA PEMBELIAN ATK', 'Toko Buku Karunia', '#1e293b');
+    const demoNotaBensin = createDummyDoc('STRUK SPBU PERTAMINA', 'Bensin Mobil Operasional', '#b91c1c');
+    const demoKwitansiMaterai = createDummyDoc('BUKTI BELANJA MATERAI', 'Kantor Pos Kendal', '#0369a1');
+
+    // 7a. Top Up Kas Kecil dari Kas Besar (Rp 5.000.000)
+    const pettyTopup1Id = await PettyCashDB.add({
+        tanggal: '2026-08-05',
+        tipe: 'masuk',
+        sumberDana: 'kas_besar',
+        kategori: 'topup_kas_besar',
+        penerima: 'Sekretaris & Kasir Kantor',
+        keterangan: 'Top Up Dana Kas Kecil Operasional Harian dari Kas Besar Developer',
+        nominal: 5000000,
+        metode: 'Tunai (Penarikan Bank Tunai)',
+        projectId: null,
+        refType: 'kas_besar',
+        buktiImage: demoSlipTransfer
+    });
+
+    // Mirror outflow in Kas Besar
+    await CashbookDB.add({
+        tanggal: '2026-08-05',
+        tipe: 'keluar',
+        kategori: 'operasional',
+        sumber: 'Top Up Kas Kecil (Kasir Kantor)',
+        keterangan: 'Pencairan Dana Kas Kecil Operasional Harian Kantor (Petty Cash)',
+        nominal: 5000000,
+        metode: 'Tunai (Penarikan Bank Tunai)',
+        rekening: 'Transfer Bank BCA',
+        projectId: null,
+        refType: 'petty_cash_topup',
+        refId: pettyTopup1Id,
+        buktiImage: demoSlipTransfer
+    });
+
+    // 7b. Top Up Kas Kecil Tambahan dari Investor Bpk. H. Mahmud (Rp 2.000.000)
+    await PettyCashDB.add({
+        tanggal: '2026-08-20',
+        tipe: 'masuk',
+        sumberDana: 'investor',
+        kategori: 'topup_investor',
+        penerima: 'Sekretaris & Kasir Kantor',
+        keterangan: 'Dana Kas Kecil Tambahan dari Investor Bpk. H. Mahmud untuk Jamuan Rapat & Tamu Penting',
+        nominal: 2000000,
+        metode: 'Kas Fisik Laci Kantor',
+        projectId: null,
+        refType: 'investor',
+        buktiImage: demoSlipTransfer
+    });
+
+    // 7c. Belanja Operasional Harian Kas Kecil
+    await PettyCashDB.add({
+        tanggal: '2026-08-06',
+        tipe: 'keluar',
+        kategori: 'atk',
+        penerima: 'Toko Buku & ATK Karunia',
+        keterangan: 'Kertas HVS F4 2 rim, pulpen Faster 1 pack, spidol whiteboard & map gantung arsip customer',
+        nominal: 375000,
+        metode: 'Tunai Kas Kecil',
+        projectId: null,
+        buktiImage: demoNotaAtk
+    });
+
+    await PettyCashDB.add({
+        tanggal: '2026-08-10',
+        tipe: 'keluar',
+        kategori: 'materai',
+        penerima: 'Kantor Pos Kendal',
+        keterangan: 'Materai 10.000 sebanyak 20 lembar untuk dokumen PPJB / AJB customer dan perjanjian notaris',
+        nominal: 200000,
+        metode: 'Tunai Kas Kecil',
+        projectId: null,
+        buktiImage: demoKwitansiMaterai
+    });
+
+    await PettyCashDB.add({
+        tanggal: '2026-08-18',
+        tipe: 'keluar',
+        kategori: 'transport',
+        penerima: 'SPBU Pertamina 44.513.02',
+        keterangan: 'Bensin Pertamax mobil operasional kantor untuk survey lokasi kavling bersama customer',
+        nominal: 150000,
+        metode: 'Tunai Kas Kecil',
+        projectId: baitulId,
+        buktiImage: demoNotaBensin
+    });
+
+    await PettyCashDB.add({
+        tanggal: '2026-08-22',
+        tipe: 'keluar',
+        kategori: 'konsumsi',
+        penerima: 'Warung Bu Siti & Toko Snack',
+        keterangan: 'Konsumsi makan siang dan snack rapat koordinasi pengukuran kavling & pematokan batas tanah',
+        nominal: 220000,
+        metode: 'Tunai Kas Kecil',
+        projectId: baitulId,
+        buktiImage: demoKwitansi
+    });
+
+    await PettyCashDB.add({
+        tanggal: '2026-08-28',
+        tipe: 'keluar',
+        kategori: 'kebersihan',
+        penerima: 'Minimarket & Depot Air',
+        keterangan: 'Kopi Kapal Api 2 bungkus, teh celup, gula pasir 2 kg, sabun cuci tangan & 2 galon air minum',
+        nominal: 135000,
+        metode: 'Tunai Kas Kecil',
+        projectId: null,
+        buktiImage: demoNotaAtk
+    });
+
     // Auto-sync seluruh pembayaran customer & cicilan petani ke Kas Besar
     await syncAllToCashbook();
 
@@ -2650,11 +2803,12 @@ async function loadDemoData() {
     await refreshCustomerList();
     await refreshLandDebtList();
     await refreshCashbookView();
+    await refreshPettyCashView();
 
     Swal.fire({
         icon: 'success',
         title: 'Data Sampel Perusahaan Dimuat!',
-        text: 'Data Kas Besar, Modal Investor, Auto-Sync Penjualan Kavling, Hutang Petani & Barter Material siap diuji.',
+        text: 'Data Kas Kecil, Top Up Kas Besar/Investor, Belanja Harian, Kas Besar, dan Site Plan siap dipelajari.',
         confirmButtonColor: '#059669'
     });
 }
@@ -3451,7 +3605,6 @@ function printCurrentCashVoucher() {
     window.print();
     printable.classList.add('hidden');
 }
-
 // 13. Cetak Laporan Rekapitulasi Mutasi Buku Kas Besar
 function printCashbookReport() {
     const printable = document.getElementById('printableArea');
@@ -3566,6 +3719,746 @@ function printCashbookReport() {
                     <div style="height: 60px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Direktur Utama</p>
                     <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    printable.classList.remove('hidden');
+    window.print();
+    printable.classList.add('hidden');
+}
+
+
+// ========================================================
+// MODUL KAS KECIL KANTOR (PETTY CASH OPERASIONAL HARIAN)
+// ========================================================
+
+// 1. Render & Refresh Tampilan Kas Kecil
+async function refreshPettyCashView() {
+    allPettyCash = await PettyCashDB.getAll();
+
+    let totalIn = 0;
+    let totalOut = 0;
+    let thisMonthOut = 0;
+    let fromKasBesarNominal = 0;
+    let fromInvestorNominal = 0;
+    let expenseCount = 0;
+
+    const currentYearMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+    for (const item of allPettyCash) {
+        const nom = Number(item.nominal) || 0;
+        if (item.tipe === 'masuk') {
+            totalIn += nom;
+            if (item.sumberDana === 'investor' || item.kategori === 'topup_investor') {
+                fromInvestorNominal += nom;
+            } else {
+                fromKasBesarNominal += nom;
+            }
+        } else if (item.tipe === 'keluar') {
+            totalOut += nom;
+            expenseCount++;
+            if (item.tanggal && item.tanggal.startsWith(currentYearMonth)) {
+                thisMonthOut += nom;
+            }
+        }
+    }
+
+    const currentBalance = totalIn - totalOut;
+
+    // Update DOM Cards
+    const elBalance = document.getElementById('statPettyCurrentBalance');
+    const elNavBadge = document.getElementById('pettyNavBalanceBadge');
+    const elHealthBadge = document.getElementById('statPettyHealthBadge');
+    const elTotalIn = document.getElementById('statPettyTotalIn');
+    const elTotalOut = document.getElementById('statPettyTotalOut');
+    const elThisMonth = document.getElementById('statPettyThisMonthOut');
+    const elMonthLabel = document.getElementById('statPettyMonthLabel');
+    const elBreakdown = document.getElementById('statPettyTopupBreakdown');
+    const elExpenseCount = document.getElementById('statPettyExpenseCount');
+
+    if (elBalance) elBalance.textContent = formatRupiah(currentBalance);
+    if (elNavBadge) elNavBadge.textContent = formatRupiah(currentBalance);
+
+    if (elHealthBadge) {
+        if (currentBalance > 1000000) {
+            elHealthBadge.className = 'mt-0.5 inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-bold';
+            elHealthBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Saldo Kasir Aman';
+        } else if (currentBalance > 0) {
+            elHealthBadge.className = 'mt-0.5 inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 font-bold';
+            elHealthBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Saldo Menipis, Siapkan Top Up';
+        } else {
+            elHealthBadge.className = 'mt-0.5 inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30 font-bold';
+            elHealthBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span> Kasir Habis / Perlu Top Up';
+        }
+    }
+
+    if (elTotalIn) elTotalIn.textContent = formatRupiah(totalIn);
+    if (elBreakdown) elBreakdown.textContent = `${formatRupiah(fromKasBesarNominal)} Kas Besar • ${formatRupiah(fromInvestorNominal)} Investor`;
+    if (elTotalOut) elTotalOut.textContent = formatRupiah(totalOut);
+    if (elExpenseCount) elExpenseCount.textContent = `${expenseCount} belanja harian`;
+    if (elThisMonth) elThisMonth.textContent = formatRupiah(thisMonthOut);
+    if (elMonthLabel) {
+        const monthName = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        elMonthLabel.textContent = `Bulan ${monthName}`;
+    }
+
+    filterPettyCash();
+}
+
+// 2. Filter Mutasi Kas Kecil
+function filterPettyCash() {
+    const selKategori = document.getElementById('pettyFilterKategori')?.value || 'all';
+    const selTipe = document.getElementById('pettyFilterTipe')?.value || 'all';
+    const selSumber = document.getElementById('pettyFilterSumber')?.value || 'all';
+    const selProject = document.getElementById('pettyFilterProject')?.value || 'all';
+    const searchVal = (document.getElementById('pettySearchInput')?.value || '').toLowerCase().trim();
+
+    pettyFilterKategori = selKategori;
+    pettyFilterTipe = selTipe;
+    pettyFilterSumber = selSumber;
+    pettyFilterProject = selProject;
+    pettySearchQuery = searchVal;
+
+    filteredPettyCash = allPettyCash.filter(item => {
+        // Filter Kategori
+        if (selKategori !== 'all' && item.kategori !== selKategori) return false;
+
+        // Filter Tipe (Masuk / Keluar)
+        if (selTipe !== 'all' && item.tipe !== selTipe) return false;
+
+        // Filter Sumber
+        if (selSumber !== 'all' && item.sumberDana !== selSumber) return false;
+
+        // Filter Alokasi / Proyek
+        if (selProject !== 'all') {
+            if (selProject === 'kantor_pusat' && item.projectId !== null && item.projectId !== 'kantor_pusat') return false;
+            if (selProject !== 'kantor_pusat' && String(item.projectId) !== String(selProject)) return false;
+        }
+
+        // Filter Search Query
+        if (searchVal) {
+            const penerima = (item.penerima || '').toLowerCase();
+            const ket = (item.keterangan || '').toLowerCase();
+            const nominalStr = String(item.nominal || '');
+            if (!penerima.includes(searchVal) && !ket.includes(searchVal) && !nominalStr.includes(searchVal)) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    renderPettyCashTable();
+}
+
+// 3. Render Tabel Kas Kecil
+function renderPettyCashTable() {
+    const tbody = document.getElementById('pettyCashTableBody');
+    const emptyState = document.getElementById('emptyPettyCashState');
+    const countBadge = document.getElementById('pettyFilteredCount');
+
+    if (countBadge) {
+        countBadge.textContent = `${filteredPettyCash.length} Data Terfilter`;
+    }
+
+    if (!tbody) return;
+
+    if (filteredPettyCash.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const projectMap = new Map();
+    allProjects.forEach(p => projectMap.set(p.id, p.nama));
+
+    tbody.innerHTML = filteredPettyCash.map((item, idx) => {
+        const isMasuk = item.tipe === 'masuk';
+
+        // Badge Kategori
+        let catBadge = '';
+        if (item.kategori === 'topup_kas_besar') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 text-[10px] font-bold inline-flex items-center gap-1 border border-violet-200">
+                <i class="fa-solid fa-building-columns"></i> Top Up Kas Besar <span class="bg-violet-200/80 text-violet-950 px-1 rounded text-[9px]">AUTO</span>
+            </span>`;
+        } else if (item.kategori === 'topup_investor') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold inline-flex items-center gap-1 border border-indigo-200">
+                <i class="fa-solid fa-user-tie"></i> Top Up Investor
+            </span>`;
+        } else if (item.kategori === 'atk') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold inline-flex items-center gap-1 border border-blue-200">
+                <i class="fa-solid fa-paperclip"></i> ATK & Kertas
+            </span>`;
+        } else if (item.kategori === 'konsumsi') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold inline-flex items-center gap-1 border border-amber-200">
+                <i class="fa-solid fa-mug-hot"></i> Konsumsi & Tamu
+            </span>`;
+        } else if (item.kategori === 'transport') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 text-[10px] font-bold inline-flex items-center gap-1 border border-cyan-200">
+                <i class="fa-solid fa-gas-pump"></i> Bensin & Tol
+            </span>`;
+        } else if (item.kategori === 'utilitas') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 text-[10px] font-bold inline-flex items-center gap-1 border border-yellow-200">
+                <i class="fa-solid fa-bolt"></i> Listrik & WiFi
+            </span>`;
+        } else if (item.kategori === 'kebersihan') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold inline-flex items-center gap-1 border border-emerald-200">
+                <i class="fa-solid fa-broom"></i> Kebersihan & Kopi
+            </span>`;
+        } else if (item.kategori === 'materai') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-bold inline-flex items-center gap-1 border border-purple-200">
+                <i class="fa-solid fa-stamp"></i> Materai & Pos
+            </span>`;
+        } else if (item.kategori === 'maintenance') {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[10px] font-bold inline-flex items-center gap-1 border border-slate-300">
+                <i class="fa-solid fa-wrench"></i> Maintenance
+            </span>`;
+        } else {
+            catBadge = `<span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold inline-flex items-center gap-1 border border-rose-200">
+                <i class="fa-solid fa-receipt"></i> Belanja Harian
+            </span>`;
+        }
+
+        // Alokasi
+        let alokasiName = 'Kantor Pusat';
+        if (item.projectId && item.projectId !== 'kantor_pusat') {
+            alokasiName = projectMap.get(Number(item.projectId)) || 'Proyek';
+        }
+
+        // Bukti Image Button
+        let buktiBtn = `<span class="text-slate-300">-</span>`;
+        if (item.buktiImage) {
+            buktiBtn = `<button onclick="openLightbox('${item.buktiImage}', 'Bukti Kas Kecil - ${escapeHtml(item.penerima)}')" class="w-8 h-8 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 inline-flex items-center justify-center transition" title="Lihat Struk/Nota">
+                <i class="fa-solid fa-receipt text-xs"></i>
+            </button>`;
+        }
+
+        // Masuk vs Keluar
+        let masukText = `<span class="text-slate-300">-</span>`;
+        let keluarText = `<span class="text-slate-300">-</span>`;
+
+        if (isMasuk) {
+            masukText = `<span class="font-bold text-emerald-600 font-mono">+ ${formatRupiah(item.nominal)}</span>`;
+        } else {
+            keluarText = `<span class="font-bold text-rose-600 font-mono">- ${formatRupiah(item.nominal)}</span>`;
+        }
+
+        return `
+            <tr class="hover:bg-slate-50/80 transition">
+                <td class="py-3 px-3.5 text-center text-slate-400 font-mono">${idx + 1}</td>
+                <td class="py-3 px-3.5 whitespace-nowrap text-slate-700 font-medium">
+                    ${formatTanggalIndo(item.tanggal)}
+                </td>
+                <td class="py-3 px-3.5 whitespace-nowrap">
+                    ${catBadge}
+                </td>
+                <td class="py-3 px-3.5">
+                    <span class="font-bold text-slate-800 block">${escapeHtml(item.penerima)}</span>
+                    <span class="text-[11px] text-slate-400">${isMasuk ? (item.sumberDana === 'investor' ? 'Dari Investor' : 'Dari Kas Besar') : 'Penerima Uang'}</span>
+                </td>
+                <td class="py-3 px-3.5 text-slate-600 max-w-xs truncate" title="${escapeHtml(item.keterangan)}">
+                    ${escapeHtml(item.keterangan)}
+                </td>
+                <td class="py-3 px-3.5 whitespace-nowrap text-slate-600">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100">
+                        ${escapeHtml(alokasiName)}
+                    </span>
+                </td>
+                <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                    ${masukText}
+                </td>
+                <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                    ${keluarText}
+                </td>
+                <td class="py-3 px-3.5 text-center">
+                    ${buktiBtn}
+                </td>
+                <td class="py-3 px-3.5 text-center">
+                    <div class="flex items-center justify-center gap-1">
+                        <button onclick="openPettyDetailModal(${item.id})" class="p-1.5 text-slate-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition" title="Lihat & Cetak Bon">
+                            <i class="fa-solid fa-file-invoice text-xs"></i>
+                        </button>
+                        <button onclick="deletePettyCashEntry(${item.id})" class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition" title="Hapus Catatan">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// 4. Modal Top Up Kas Kecil
+function openPettyTopupModal() {
+    const today = new Date().toISOString().split('T')[0];
+    const elDate = document.getElementById('pettyTopupTanggal');
+    if (elDate) elDate.value = today;
+    document.getElementById('pettyTopupSumber').value = 'kas_besar';
+    togglePettyInvestorField('kas_besar');
+    document.getElementById('pettyTopupNominal').value = '';
+    document.getElementById('pettyTopupPenerima').value = 'Kasir / Admin Kantor';
+    document.getElementById('pettyTopupKeterangan').value = '';
+    document.getElementById('pettyTopupBuktiFile').value = '';
+
+    const modal = document.getElementById('modalPettyTopup');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closePettyTopupModal() {
+    const modal = document.getElementById('modalPettyTopup');
+    if (modal) modal.classList.add('hidden');
+}
+
+function togglePettyInvestorField(sumber) {
+    const group = document.getElementById('pettyTopupInvestorGroup');
+    if (!group) return;
+    if (sumber === 'investor') {
+        group.classList.remove('hidden');
+    } else {
+        group.classList.add('hidden');
+    }
+}
+
+async function handlePettyTopupSubmit(event) {
+    event.preventDefault();
+
+    const tanggal = document.getElementById('pettyTopupTanggal').value;
+    const sumberDana = document.getElementById('pettyTopupSumber').value;
+    const investorName = document.getElementById('pettyTopupInvestorName')?.value.trim() || '';
+    const nominal = parseCurrencyInput(document.getElementById('pettyTopupNominal').value);
+    const penerima = document.getElementById('pettyTopupPenerima').value.trim();
+    const metode = document.getElementById('pettyTopupMetode').value;
+    const keterangan = document.getElementById('pettyTopupKeterangan').value.trim();
+
+    if (!tanggal || nominal <= 0 || !penerima) {
+        Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Mohon isi tanggal, nominal top up, dan penerima.' });
+        return;
+    }
+
+    if (sumberDana === 'investor' && !investorName) {
+        Swal.fire({ icon: 'warning', title: 'Nama Investor Diperlukan', text: 'Mohon isi nama investor yang memberikan dana petty cash.' });
+        return;
+    }
+
+    const buktiFile = document.getElementById('pettyTopupBuktiFile').files[0];
+    let buktiImage = null;
+    if (buktiFile) {
+        buktiImage = await compressImage(buktiFile, 1500, 0.85);
+    }
+
+    const submitBtn = document.getElementById('btnSubmitPettyTopup');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+        let kategori = 'topup_kas_besar';
+        let desc = 'Top Up Dana Kas Kecil dari Kas Besar Developer';
+        let displayPenerima = `Kasir: ${penerima} (Dari Kas Besar)`;
+
+        if (sumberDana === 'investor') {
+            kategori = 'topup_investor';
+            desc = `Top Up Kas Kecil dari Investor: ${investorName}`;
+            displayPenerima = `Kasir: ${penerima} (Dari Investor: ${investorName})`;
+        } else if (sumberDana === 'manual') {
+            kategori = 'saldo_awal';
+            desc = `Setoran Tunai / Saldo Awal Kasir`;
+            displayPenerima = `Kasir: ${penerima}`;
+        }
+
+        if (keterangan) desc += ` - ${keterangan}`;
+
+        const newPettyId = await PettyCashDB.add({
+            tanggal,
+            tipe: 'masuk',
+            sumberDana,
+            kategori,
+            penerima: displayPenerima,
+            keterangan: desc,
+            nominal,
+            metode,
+            projectId: null,
+            refType: sumberDana === 'kas_besar' ? 'kas_besar' : 'manual',
+            buktiImage
+        });
+
+        // AUTO-SYNC: Jika sumber dana dari Kas Besar, catat otomatis arus kas keluar di Kas Besar!
+        if (sumberDana === 'kas_besar') {
+            await CashbookDB.add({
+                tanggal,
+                tipe: 'keluar',
+                kategori: 'operasional',
+                sumber: `Top Up Kas Kecil (${penerima})`,
+                keterangan: `Pencairan Dana Kas Kecil Operasional Harian Kantor: ${keterangan || 'Operasional Kasir'}`,
+                nominal,
+                metode,
+                rekening: metode,
+                projectId: null,
+                refType: 'petty_cash_topup',
+                refId: newPettyId,
+                buktiImage
+            });
+            await refreshCashbookView();
+        }
+
+        closePettyTopupModal();
+        await refreshPettyCashView();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Top Up Kas Kecil Berhasil!',
+            text: `Saldo kas kecil bertambah Rp ${new Intl.NumberFormat('id-ID').format(nominal)}. ${sumberDana === 'kas_besar' ? 'Otomatis tercatat di Kas Besar.' : ''}`,
+            timer: 2000,
+            showConfirmButton: false
+        });
+
+    } catch (err) {
+        console.error('Error top up kas kecil:', err);
+        Swal.fire({ icon: 'error', title: 'Gagal Menyimpan Top Up' });
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Top Up Kas Kecil';
+    }
+}
+
+// 5. Modal Belanja Harian (Kas Keluar Kas Kecil)
+function openPettyExpenseModal() {
+    const today = new Date().toISOString().split('T')[0];
+    const elDate = document.getElementById('pettyExpTanggal');
+    if (elDate) elDate.value = today;
+    document.getElementById('pettyExpPenerima').value = '';
+    document.getElementById('pettyExpNominal').value = '';
+    document.getElementById('pettyExpKeterangan').value = '';
+    document.getElementById('pettyExpBuktiFile').value = '';
+
+    const modal = document.getElementById('modalPettyExpense');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closePettyExpenseModal() {
+    const modal = document.getElementById('modalPettyExpense');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function handlePettyExpenseSubmit(event) {
+    event.preventDefault();
+
+    const tanggal = document.getElementById('pettyExpTanggal').value;
+    const kategori = document.getElementById('pettyExpKategori').value;
+    const penerima = document.getElementById('pettyExpPenerima').value.trim();
+    const nominal = parseCurrencyInput(document.getElementById('pettyExpNominal').value);
+    const projectId = document.getElementById('pettyExpProjectId').value;
+    const keterangan = document.getElementById('pettyExpKeterangan').value.trim();
+
+    if (!tanggal || !penerima || nominal <= 0 || !keterangan) {
+        Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Mohon isi semua data pengeluaran dan rincian barang belanjaan.' });
+        return;
+    }
+
+    const buktiFile = document.getElementById('pettyExpBuktiFile').files[0];
+    let buktiImage = null;
+    if (buktiFile) {
+        buktiImage = await compressImage(buktiFile, 1500, 0.85);
+    }
+
+    const submitBtn = document.getElementById('btnSubmitPettyExpense');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+        await PettyCashDB.add({
+            tanggal,
+            tipe: 'keluar',
+            kategori,
+            penerima,
+            keterangan,
+            nominal,
+            metode: 'Tunai Kas Kecil',
+            projectId: projectId === 'kantor_pusat' ? null : Number(projectId),
+            refType: 'manual',
+            buktiImage
+        });
+
+        closePettyExpenseModal();
+        await refreshPettyCashView();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Pengeluaran Dicatat!',
+            text: `Belanja kas kecil senilai Rp ${new Intl.NumberFormat('id-ID').format(nominal)} berhasil dibukukan.`,
+            timer: 1800,
+            showConfirmButton: false
+        });
+
+    } catch (err) {
+        console.error('Error simpan belanja kas kecil:', err);
+        Swal.fire({ icon: 'error', title: 'Gagal Menyimpan Belanja' });
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Belanja Harian';
+    }
+}
+
+// 6. Hapus Catatan Kas Kecil
+async function deletePettyCashEntry(id) {
+    const res = await Swal.fire({
+        title: 'Hapus Catatan Kas Kecil Ini?',
+        text: 'Data transaksi ini akan dihapus dari buku kas kecil.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Ya, Hapus'
+    });
+
+    if (res.isConfirmed) {
+        // Jika top up dari kas besar, hapus juga pengeluaran di kas besar
+        await CashbookDB.deleteByRef('petty_cash_topup', id);
+        await PettyCashDB.delete(id);
+        await refreshPettyCashView();
+        await refreshCashbookView();
+        Swal.fire({ icon: 'success', title: 'Mutasi Dihapus', timer: 1200, showConfirmButton: false });
+    }
+}
+
+// 7. Modal Detail & Bon Pengeluaran Kas Kecil
+async function openPettyDetailModal(id) {
+    const entry = await PettyCashDB.getById(id);
+    if (!entry) return;
+
+    currentPettyCashEntry = entry;
+
+    const isMasuk = entry.tipe === 'masuk';
+    document.getElementById('pettyDetailTitle').textContent = isMasuk ? 'Bukti Penerimaan Kas Kecil (BPKK)' : 'Bukti Pengeluaran Kas Kecil (BKKK)';
+    document.getElementById('pettyDetailRefText').textContent = `#PC-${String(entry.id).padStart(4, '0')} | ${formatTanggalIndo(entry.tanggal)}`;
+
+    const elNom = document.getElementById('pettyDetailNominalText');
+    if (isMasuk) {
+        elNom.textContent = `+ ${formatRupiah(entry.nominal)}`;
+        elNom.className = 'font-black text-emerald-600 text-base';
+    } else {
+        elNom.textContent = `- ${formatRupiah(entry.nominal)}`;
+        elNom.className = 'font-black text-rose-600 text-base';
+    }
+
+    document.getElementById('pettyDetailPenerimaText').textContent = entry.penerima || '-';
+    
+    let catText = 'Pengeluaran Belanja';
+    if (entry.kategori === 'topup_kas_besar') catText = 'Top Up dari Kas Besar';
+    else if (entry.kategori === 'topup_investor') catText = 'Top Up dari Investor';
+    else if (entry.kategori === 'atk') catText = 'ATK & Fotokopi';
+    else if (entry.kategori === 'konsumsi') catText = 'Konsumsi & Tamu';
+    else if (entry.kategori === 'transport') catText = 'Bensin & Transport';
+    else if (entry.kategori === 'utilitas') catText = 'Listrik & WiFi';
+    else if (entry.kategori === 'kebersihan') catText = 'Kebersihan & Kopi';
+    else if (entry.kategori === 'materai') catText = 'Materai & Pos';
+    else if (entry.kategori === 'maintenance') catText = 'Maintenance Kantor';
+    document.getElementById('pettyDetailKategoriText').textContent = catText;
+
+    let alokasi = 'Kantor Pusat Developer';
+    if (entry.projectId) {
+        const p = allProjects.find(pr => pr.id === entry.projectId);
+        if (p) alokasi = `Proyek: ${p.nama}`;
+    }
+    document.getElementById('pettyDetailAlokasiText').textContent = alokasi;
+    document.getElementById('pettyDetailJenisText').textContent = isMasuk ? 'Dana Masuk (Top Up)' : 'Belanja Operasional';
+    document.getElementById('pettyDetailKeteranganText').textContent = entry.keterangan || '-';
+
+    const buktiImg = document.getElementById('pettyDetailBuktiImg');
+    const emptyBukti = document.getElementById('pettyDetailBuktiEmpty');
+    if (entry.buktiImage) {
+        buktiImg.src = entry.buktiImage;
+        buktiImg.classList.remove('hidden');
+        if (emptyBukti) emptyBukti.classList.add('hidden');
+    } else {
+        buktiImg.src = '';
+        buktiImg.classList.add('hidden');
+        if (emptyBukti) emptyBukti.classList.remove('hidden');
+    }
+
+    const modal = document.getElementById('modalPettyDetail');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closePettyDetailModal() {
+    const modal = document.getElementById('modalPettyDetail');
+    if (modal) modal.classList.add('hidden');
+}
+
+// 8. Cetak Bon Pengeluaran / Penerimaan Kas Kecil
+function printCurrentPettyVoucher() {
+    if (!currentPettyCashEntry) return;
+
+    const entry = currentPettyCashEntry;
+    const isMasuk = entry.tipe === 'masuk';
+    const docTitle = isMasuk ? 'BUKTI PENERIMAAN KAS KECIL (BPKK)' : 'BUKTI PENGELUARAN KAS KECIL (BKKK)';
+    const docCode = isMasuk ? `BPKK-${String(entry.id).padStart(5, '0')}` : `BKKK-${String(entry.id).padStart(5, '0')}`;
+
+    const printable = document.getElementById('printableArea');
+    if (!printable) return;
+
+    printable.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 25px; max-width: 700px; margin: 0 auto; color: #1e293b; border: 2px dashed #475569; border-radius: 8px;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px;">
+                <div>
+                    <h2 style="margin: 0; font-size: 16px; font-weight: bold; color: #4338ca; text-transform: uppercase;">ADAM PROPERTY GROUP</h2>
+                    <p style="margin: 2px 0 0 0; font-size: 10px; color: #64748b;">Pengelolaan Dana Kas Kecil Kantor & Operasional Harian</p>
+                </div>
+                <div style="text-align: right;">
+                    <span style="display: inline-block; padding: 3px 8px; background: #312e81; color: white; font-weight: bold; font-size: 11px; border-radius: 4px;">
+                        ${docTitle}
+                    </span>
+                    <p style="margin: 4px 0 0 0; font-size: 10px; font-family: monospace; font-weight: bold;">No: ${docCode}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 10px; color: #475569;">Tanggal: ${formatTanggalIndo(entry.tanggal)}</p>
+                </div>
+            </div>
+
+            <!-- Table content -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px;">
+                <tr>
+                    <td style="padding: 6px; width: 25%; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1;">${isMasuk ? 'Diterima Dari' : 'Dibayarkan Kepada'}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 12px; color: #0f172a;">${escapeHtml(entry.penerima)}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1;">Jumlah Uang</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 14px; color: ${isMasuk ? '#047857' : '#e11d48'};">
+                        ${formatRupiah(entry.nominal)}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1;">Terbilang</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; font-style: italic; background: #f1f5f9;">
+                        ${terbilang(entry.nominal)} Rupiah
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1;">Keperluan Belanja</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;">${escapeHtml(entry.keterangan)}</td>
+                </tr>
+            </table>
+
+            <!-- Signatures -->
+            <div style="display: flex; justify-content: space-between; text-align: center; margin-top: 25px; font-size: 10px;">
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">Disetujui,</p>
+                    <div style="height: 50px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Pimpinan / Manajer</p>
+                </div>
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">Kasir Pemegang Kas,</p>
+                    <div style="height: 50px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Kasir Kantor</p>
+                </div>
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">${isMasuk ? 'Penyetor Dana' : 'Penerima Uang'},</p>
+                    <div style="height: 50px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">( ${escapeHtml(entry.penerima)} )</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    printable.classList.remove('hidden');
+    window.print();
+    printable.classList.add('hidden');
+}
+
+// 9. Cetak Laporan Rekapitulasi Kas Kecil
+function printPettyCashReport() {
+    const printable = document.getElementById('printableArea');
+    if (!printable) return;
+
+    let totalIn = 0;
+    let totalOut = 0;
+
+    for (const item of filteredPettyCash) {
+        const nom = Number(item.nominal) || 0;
+        if (item.tipe === 'masuk') totalIn += nom;
+        else totalOut += nom;
+    }
+
+    const currentBal = totalIn - totalOut;
+
+    const rowsHtml = filteredPettyCash.map((item, idx) => {
+        const isMasuk = item.tipe === 'masuk';
+        return `
+            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 10px;">
+                <td style="padding: 5px; text-align: center;">${idx + 1}</td>
+                <td style="padding: 5px; white-space: nowrap;">${formatTanggalIndo(item.tanggal)}</td>
+                <td style="padding: 5px; font-weight: bold;">${escapeHtml(item.penerima)}</td>
+                <td style="padding: 5px;">${escapeHtml(item.keterangan)}</td>
+                <td style="padding: 5px; text-align: right; color: #047857; font-weight: bold;">
+                    ${isMasuk ? formatRupiah(item.nominal) : '-'}
+                </td>
+                <td style="padding: 5px; text-align: right; color: #e11d48; font-weight: bold;">
+                    ${!isMasuk ? formatRupiah(item.nominal) : '-'}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    printable.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 25px; color: #0f172a;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #6366f1; padding-bottom: 10px; margin-bottom: 12px;">
+                <div>
+                    <h1 style="margin: 0; font-size: 18px; font-weight: 800; color: #4338ca;">ADAM PROPERTY GROUP</h1>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #475569;">Laporan Pertanggungjawaban Mutasi Kas Kecil Harian (Petty Cash)</p>
+                </div>
+                <div style="text-align: right; font-size: 10px; color: #64748b;">
+                    <p style="margin: 0;">Dicetak: <b>${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</b></p>
+                    <p style="margin: 2px 0 0 0;">Total Data: <b>${filteredPettyCash.length} Mutasi</b></p>
+                </div>
+            </div>
+
+            <!-- Financial Summary Bar -->
+            <div style="display: flex; gap: 12px; margin-bottom: 15px; font-size: 10px;">
+                <div style="flex: 1; padding: 7px 10px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px;">
+                    <span style="color: #065f46; display: block; font-weight: bold;">TOTAL TOP UP DITERIMA</span>
+                    <span style="font-size: 13px; font-weight: bold; color: #047857;">${formatRupiah(totalIn)}</span>
+                </div>
+                <div style="flex: 1; padding: 7px 10px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px;">
+                    <span style="color: #9f1239; display: block; font-weight: bold;">TOTAL BELANJA HARIAN</span>
+                    <span style="font-size: 13px; font-weight: bold; color: #e11d48;">${formatRupiah(totalOut)}</span>
+                </div>
+                <div style="flex: 1; padding: 7px 10px; background: #312e81; color: white; border-radius: 6px;">
+                    <span style="color: #c7d2fe; display: block; font-weight: bold;">SISA SALDO KASIR</span>
+                    <span style="font-size: 13px; font-weight: bold; color: #a5b4fc;">${formatRupiah(currentBal)}</span>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 10px; font-weight: bold; text-transform: uppercase;">
+                        <th style="padding: 6px; text-align: center; width: 30px;">#</th>
+                        <th style="padding: 6px; text-align: left; width: 80px;">Tanggal</th>
+                        <th style="padding: 6px; text-align: left; width: 140px;">Pihak / Toko</th>
+                        <th style="padding: 6px; text-align: left;">Keperluan Belanja</th>
+                        <th style="padding: 6px; text-align: right; width: 100px;">Masuk (Rp)</th>
+                        <th style="padding: 6px; text-align: right; width: 100px;">Keluar (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <!-- Signatures -->
+            <div style="display: flex; justify-content: space-between; text-align: center; margin-top: 35px; font-size: 10px;">
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">Pemegang Kas Kecil,</p>
+                    <div style="height: 50px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Kasir Kantor</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY</p>
+                </div>
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">Mengetahui & Menyetujui,</p>
+                    <div style="height: 50px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Pimpinan Operasional</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY</p>
                 </div>
             </div>
         </div>
