@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useProperty } from '@/context/PropertyContext';
+import { CashbookItem } from '@/types';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -47,6 +48,7 @@ export default function DashboardView() {
     totalCashIn,
     totalReceivables,
     totalFarmerDebt,
+    cashbook,
     cashbookBalance,
     pettyCashBalance,
     totalAssetValue
@@ -64,25 +66,70 @@ export default function DashboardView() {
 
   const totalLiquidity = cashbookBalance + pettyCashBalance;
 
+  // Dynamically compute the last 6 months
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+  const now = new Date();
+  const recentMonths: { label: string; year: number; month: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    recentMonths.push({
+      label: `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
+      year: d.getFullYear(),
+      month: d.getMonth()
+    });
+  }
+
+  // Monthly aggregated numbers from cashbook & sales
+  const cashInMonthly = recentMonths.map(m => {
+    return cashbook
+      .filter((c: CashbookItem) => {
+        if (c.tipe !== 'masuk') return false;
+        if (selectedProjectId !== 'all' && c.projectId && c.projectId !== selectedProjectId) return false;
+        if (!c.tanggal) return false;
+        const d = new Date(c.tanggal);
+        return d.getFullYear() === m.year && d.getMonth() === m.month;
+      })
+      .reduce((sum: number, c: CashbookItem) => sum + c.nominal, 0);
+  });
+
+  const cashOutMonthly = recentMonths.map(m => {
+    return cashbook
+      .filter((c: CashbookItem) => {
+        if (c.tipe !== 'keluar') return false;
+        if (selectedProjectId !== 'all' && c.projectId && c.projectId !== selectedProjectId) return false;
+        if (!c.tanggal) return false;
+        const d = new Date(c.tanggal);
+        return d.getFullYear() === m.year && d.getMonth() === m.month;
+      })
+      .reduce((sum: number, c: CashbookItem) => sum + c.nominal, 0);
+  });
+
+  const salesMonthly = recentMonths.map(m => {
+    if (kavlings.length === 0) return 0;
+    return kavlings
+      .filter(k => k.status !== 'terbuka' && (selectedProjectId === 'all' || k.projectId === selectedProjectId))
+      .reduce((sum: number, k) => sum + k.harga, 0);
+  });
+
   // Chart 1 Data: Bar Trend
   const barData = {
-    labels: ['Jun 2026', 'Jul 2026', 'Agt 2026', 'Sep 2026', 'Okt 2026', 'Nov 2026'],
+    labels: recentMonths.map(m => m.label),
     datasets: [
       {
         label: 'Omzet Penjualan (Rp)',
-        data: [0, 250000000, 120000000, 120000000, 80000000, 150000000],
+        data: salesMonthly,
         backgroundColor: '#10b981',
         borderRadius: 6
       },
       {
         label: 'Kas Masuk Real (Rp)',
-        data: [500000000, 250000000, 60000000, 100000000, 45000000, 75000000],
+        data: cashInMonthly,
         backgroundColor: '#3b82f6',
         borderRadius: 6
       },
       {
         label: 'Pengeluaran Kas (Rp)',
-        data: [250000000, 32000000, 5000000, 50000000, 15000000, 22000000],
+        data: cashOutMonthly,
         backgroundColor: '#f43f5e',
         borderRadius: 6
       }
@@ -317,9 +364,19 @@ export default function DashboardView() {
             </h3>
             <p className="text-[11px] text-slate-500">Rasio kavling Terjual, Booking, dan Terbuka</p>
           </div>
-          <div className="relative w-full h-[210px] flex items-center justify-center">
-            <Doughnut data={doughnutData} options={{ maintainAspectRatio: false }} />
-          </div>
+          {totalCount > 0 ? (
+            <div className="relative w-full h-[210px] flex items-center justify-center">
+              <Doughnut data={doughnutData} options={{ maintainAspectRatio: false }} />
+            </div>
+          ) : (
+            <div className="h-[210px] flex flex-col items-center justify-center text-center p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <PieIcon className="w-8 h-8 text-slate-300 mb-2" />
+              <p className="text-xs font-bold text-slate-700">Belum Ada Unit Kavling</p>
+              <p className="text-[11px] text-slate-400 mt-1 max-w-[200px]">
+                Mulai dengan membuat induk proyek & menambahkan unit kavling baru.
+              </p>
+            </div>
+          )}
           <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
             <div className="flex justify-between items-center">
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Terjual Lunas:</span>

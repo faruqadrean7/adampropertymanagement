@@ -28,6 +28,14 @@ import {
   INITIAL_EMPLOYEES,
   INITIAL_SALARY_PAYMENTS
 } from '@/lib/mockData';
+import { 
+  isSupabaseConfigured,
+  supabaseFetchProjects,
+  supabaseFetchKavlings,
+  supabaseFetchCustomers,
+  supabaseFetchLandDebts,
+  supabaseFetchCashbook
+} from '@/lib/supabaseService';
 
 export interface AddProjectData {
   nama: string;
@@ -186,6 +194,36 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [salaryPayments, setSalaryPayments] = useState<SalaryPayment[]>(INITIAL_SALARY_PAYMENTS);
+
+  // Synchronize with Supabase if configured
+  useEffect(() => {
+    let isMounted = true;
+    async function loadFromSupabase() {
+      if (!isSupabaseConfigured()) return;
+      try {
+        const [supaProjects, supaKavlings, supaCust, supaLands, supaCash] = await Promise.all([
+          supabaseFetchProjects(),
+          supabaseFetchKavlings(),
+          supabaseFetchCustomers(),
+          supabaseFetchLandDebts(),
+          supabaseFetchCashbook()
+        ]);
+
+        if (!isMounted) return;
+
+        if (supaProjects) setProjects(supaProjects);
+        if (supaKavlings) setKavlings(supaKavlings);
+        if (supaCust) setCustomers(supaCust);
+        if (supaLands) setLandDebts(supaLands);
+        if (supaCash) setCashbook(supaCash);
+      } catch (err) {
+        console.warn('Could not sync with Supabase tables:', err);
+      }
+    }
+
+    loadFromSupabase();
+    return () => { isMounted = false; };
+  }, []);
 
   // Financial Calculations
   const totalSalesValue = kavlings
