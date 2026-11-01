@@ -211,11 +211,11 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
 
         if (!isMounted) return;
 
-        if (supaProjects) setProjects(supaProjects);
-        if (supaKavlings) setKavlings(supaKavlings);
-        if (supaCust) setCustomers(supaCust);
-        if (supaLands) setLandDebts(supaLands);
-        if (supaCash) setCashbook(supaCash);
+        if (supaProjects && supaProjects.length > 0) setProjects(supaProjects);
+        if (supaKavlings && supaKavlings.length > 0) setKavlings(supaKavlings);
+        if (supaCust && supaCust.length > 0) setCustomers(supaCust);
+        if (supaLands && supaLands.length > 0) setLandDebts(supaLands);
+        if (supaCash && supaCash.length > 0) setCashbook(supaCash);
       } catch (err) {
         console.warn('Could not sync with Supabase tables:', err);
       }
