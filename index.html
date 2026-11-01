@@ -173,6 +173,31 @@
                 </nav>
             </div>
 
+            <!-- Group 3: Sarana & Aset Kantor -->
+            <div>
+                <div class="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>ASET & SARANA KANTOR</span>
+                    <i class="fa-solid fa-boxes-stacked text-[9px]"></i>
+                </div>
+                <nav class="space-y-1">
+                    
+                    <!-- Tab 6: Inventaris Kantor -->
+                    <button id="navTabInventory" onclick="switchMainTab('inventory')" class="corp-tab-inactive w-full text-left px-3.5 py-3 rounded-xl text-xs font-semibold transition flex items-center justify-between gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 group-hover:bg-rose-500/20 flex items-center justify-center text-sm transition">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-200 group-hover:text-white">6. Inventaris Kantor</div>
+                                <div class="text-[10px] text-slate-400 font-normal">Aset Tetap & Peralatan</div>
+                            </div>
+                        </div>
+                        <span id="inventoryNavCountBadge" class="bg-rose-500/20 text-rose-300 text-[10px] px-2 py-0.5 rounded-full border border-rose-400/30 font-bold">0 Item</span>
+                    </button>
+
+                </nav>
+            </div>
+
         </div>
 
         <!-- Bottom: Quick Actions & Database Status -->
@@ -1031,6 +1056,193 @@
                             + Top Up Kas Kecil Pertama
                         </button>
                     </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 6: INVENTARIS KANTOR & ASET TETAP DEVELOPER -->
+        <!-- ======================================================== -->
+        <section id="viewInventory" class="space-y-6 hidden">
+            
+            <!-- Header Kontrol Inventaris -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center text-sm font-bold">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                        </span>
+                        <h2 class="text-lg font-bold text-slate-900 tracking-tight">Manajemen Inventaris & Aset Kantor</h2>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Pencatatan sarana kantor, laptop, printer, alat ukur tanah kavling, brankas, kendaraan dinas & label stiker barcode.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <button onclick="openInventoryModal()" class="flex-1 md:flex-none px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>+ Tambah Inventaris</span>
+                    </button>
+                    <button onclick="printInventoryReport()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm" title="Cetak Rekapitulasi Inventaris Kantor">
+                        <i class="fa-solid fa-print"></i>
+                        <span class="hidden sm:inline">Cetak Rekap</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4 Financial & Quantity Stat Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- Card 1: Total Nilai Aset -->
+                <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-rose-950 p-5 rounded-2xl border border-slate-800 text-white shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+                            <span class="font-medium">Total Nilai Buku Aset</span>
+                            <span class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-rose-400">
+                                <i class="fa-solid fa-vault text-xs"></i>
+                            </span>
+                        </div>
+                        <h3 id="statInvTotalValue" class="text-2xl font-black text-rose-300 font-mono tracking-tight">Rp 0</h3>
+                    </div>
+                    <div class="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300">
+                        <span>Total Nilai Pembelian Aset</span>
+                        <span class="text-rose-400 font-bold">Aktiva Tetap</span>
+                    </div>
+                </div>
+
+                <!-- Card 2: Total Item Fisik -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-slate-500 text-xs mb-1">
+                            <span class="font-semibold">Total Unit Barang</span>
+                            <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <i class="fa-solid fa-boxes-stacked text-xs"></i>
+                            </span>
+                        </div>
+                        <h3 id="statInvTotalItems" class="text-2xl font-black text-slate-900 font-mono">0 <span class="text-xs font-normal text-slate-500">Unit</span></h3>
+                    </div>
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-500 truncate" id="statInvCategorySummary">
+                        0 Kategori Terdata
+                    </div>
+                </div>
+
+                <!-- Card 3: Kondisi Baik / Prima -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-slate-500 text-xs mb-1">
+                            <span class="font-semibold">Kondisi Baik / Prima</span>
+                            <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <i class="fa-solid fa-circle-check text-xs"></i>
+                            </span>
+                        </div>
+                        <h3 id="statInvGoodCount" class="text-2xl font-black text-emerald-600 font-mono">0 <span class="text-xs font-normal text-slate-500">Unit</span></h3>
+                    </div>
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Siap Pakai Operasional
+                    </div>
+                </div>
+
+                <!-- Card 4: Perlu Servis / Rusak -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-slate-500 text-xs mb-1">
+                            <span class="font-semibold">Perlu Servis / Rusak</span>
+                            <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                                <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                            </span>
+                        </div>
+                        <h3 id="statInvMaintenanceCount" class="text-2xl font-black text-amber-600 font-mono">0 <span class="text-xs font-normal text-slate-500">Unit</span></h3>
+                    </div>
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-amber-700 font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> Butuh Perbaikan / Afkir
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Toolbar Pencarian & Filter Multi-Kriteria -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Kategori Inventaris</label>
+                        <select id="inventoryFilterKategori" onchange="filterInventory()" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500 text-xs">
+                            <option value="all">Semua Kategori</option>
+                            <option value="elektronik">💻 Elektronik & Komputer</option>
+                            <option value="mesin_kantor">🖨️ Mesin & Perkantoran</option>
+                            <option value="furniture">🪑 Mebel & Furniture</option>
+                            <option value="alat_lapangan">📐 Peralatan Ukur & Lapangan</option>
+                            <option value="kendaraan">🚗 Kendaraan Operasional</option>
+                            <option value="fasilitas">❄️ Fasilitas & Pendingin</option>
+                            <option value="keamanan">🔒 Keamanan, Brankas & CCTV</option>
+                            <option value="lainnya">📦 Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Kondisi Barang</label>
+                        <select id="inventoryFilterKondisi" onchange="filterInventory()" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500 text-xs">
+                            <option value="all">Semua Kondisi</option>
+                            <option value="baik">🟢 Baik / Prima</option>
+                            <option value="servis">🟡 Perlu Servis / Perbaikan</option>
+                            <option value="rusak">🔴 Rusak Berat</option>
+                            <option value="afkir">⚪ Afkir / Dijual / Hilang</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Lokasi Penempatan</label>
+                        <select id="inventoryFilterLokasi" onchange="filterInventory()" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500 text-xs">
+                            <option value="all">Semua Lokasi</option>
+                            <option value="Ruang Direktur">Ruang Direktur</option>
+                            <option value="Ruang Administrasi & Kasir">Ruang Administrasi & Kasir</option>
+                            <option value="Ruang Marketing & Tamu">Ruang Marketing & Tamu</option>
+                            <option value="Gudang Proyek Baitul Makmur">Gudang Proyek Baitul Makmur</option>
+                            <option value="Kendaraan Dinas Lapangan">Kendaraan Dinas Lapangan</option>
+                            <option value="Umum / Seluruh Kantor">Umum / Seluruh Kantor</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pencarian Cepat</label>
+                        <div class="relative">
+                            <input type="text" id="inventorySearchInput" oninput="filterInventory()" placeholder="Nama, kode, merk, pemegang..." class="w-full border border-slate-300 rounded-xl pl-8 pr-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500 text-xs">
+                            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Tabel Data Inventaris & Aset -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[900px]">
+                        <thead>
+                            <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                                <th class="py-3 px-4 w-12 text-center">#</th>
+                                <th class="py-3 px-4">Kode & Foto</th>
+                                <th class="py-3 px-4">Nama Barang & Merk / SN</th>
+                                <th class="py-3 px-4">Kategori & Lokasi</th>
+                                <th class="py-3 px-4">Penanggung Jawab</th>
+                                <th class="py-3 px-4">Kondisi</th>
+                                <th class="py-3 px-4 text-right">Nilai Aset (Rp)</th>
+                                <th class="py-3 px-4 text-center w-36">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyInventoryState" class="hidden py-14 text-center px-4">
+                    <i class="fa-solid fa-boxes-stacked text-slate-300 text-3xl mb-2"></i>
+                    <h3 class="text-base font-semibold text-slate-700 mb-1">Belum Ada Inventaris Terdata</h3>
+                    <p class="text-xs text-slate-500 mb-4">Catat peralatan kantor, laptop, printer, alat ukur tanah kavling, dan aset kantor lainnya.</p>
+                    <button onclick="openInventoryModal()" class="px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition">
+                        + Tambah Inventaris Pertama
+                    </button>
                 </div>
             </div>
 
@@ -2644,6 +2856,257 @@
                     <i class="fa-solid fa-print"></i> Cetak Bon Kas Kecil
                 </button>
                 <button onclick="closePettyDetailModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: TAMBAH / EDIT INVENTARIS KANTOR -->
+    <!-- ======================================================== -->
+    <div id="modalInventory" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl modal-content-animated overflow-hidden border border-slate-200">
+            
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-900 via-rose-900 to-slate-900 text-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg border border-white/20">
+                        <i class="fa-solid fa-boxes-stacked text-rose-300"></i>
+                    </div>
+                    <div>
+                        <h3 id="inventoryModalTitle" class="font-bold text-base text-white">Tambah Inventaris Kantor</h3>
+                        <p class="text-xs text-rose-200">Pencatatan aset tetap, sarana kantor, dan peralatan proyek lapangan</p>
+                    </div>
+                </div>
+                <button onclick="closeInventoryModal()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="formInventory" onsubmit="handleInventorySubmit(event)" class="p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1 text-slate-700">
+                <input type="hidden" id="inventoryEditId" value="">
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Kode Inventaris *</label>
+                        <input type="text" id="inventoryKode" required placeholder="Contoh: INV-2026-001" class="w-full text-xs font-mono font-bold border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Nama Barang / Aset *</label>
+                        <input type="text" id="inventoryNama" required placeholder="Contoh: Laptop Asus ROG / Printer Epson L3210" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Kategori Inventaris *</label>
+                        <select id="inventoryKategori" required class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                            <option value="elektronik">💻 Elektronik & Komputer</option>
+                            <option value="mesin_kantor">🖨️ Mesin & Perkantoran</option>
+                            <option value="furniture">🪑 Mebel & Furniture</option>
+                            <option value="alat_lapangan">📐 Peralatan Ukur & Lapangan Proyek</option>
+                            <option value="kendaraan">🚗 Kendaraan Operasional</option>
+                            <option value="fasilitas">❄️ Fasilitas & Pendingin (AC/Pantry)</option>
+                            <option value="keamanan">🔒 Keamanan, Brankas & CCTV</option>
+                            <option value="lainnya">📦 Lainnya</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Kondisi Barang *</label>
+                        <select id="inventoryKondisi" required class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                            <option value="baik">🟢 Baik / Prima (Siap Pakai)</option>
+                            <option value="servis">🟡 Perlu Servis / Perbaikan Ringan</option>
+                            <option value="rusak">🔴 Rusak Berat / Tidak Bisa Dipakai</option>
+                            <option value="afkir">⚪ Dijual / Dihibahkan / Afkir</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Lokasi Penempatan *</label>
+                        <input type="text" id="inventoryLokasi" required placeholder="Contoh: Ruang Direktur / Ruang Admin / Gudang Lapangan" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Penanggung Jawab / Pemegang *</label>
+                        <input type="text" id="inventoryPenanggungJawab" required placeholder="Contoh: Bpk. Adam (Direktur) / Kasir / Tim Survey" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Tanggal Perolehan *</label>
+                        <input type="date" id="inventoryTanggal" required class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Sumber Dana Perolehan</label>
+                        <select id="inventorySumberDana" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                            <option value="Kas Besar Developer">Kas Besar Developer</option>
+                            <option value="Kas Kecil Kantor">Kas Kecil Kantor</option>
+                            <option value="Modal Awal Owner / Investor">Modal Awal Owner / Investor</option>
+                            <option value="Barter / Kerjasama">Barter / Kerjasama Proyek</option>
+                            <option value="Hibah / Bawaan">Hibah / Bawaan Perusahaan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Harga Beli / Nilai Aset (Rp) *</label>
+                        <input type="text" id="inventoryNilaiPerolehan" required placeholder="0" oninput="formatCurrencyInput(this)" class="w-full text-xs font-bold text-rose-700 border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex gap-2">
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700 block mb-1">Jumlah Unit</label>
+                            <input type="number" id="inventoryJumlah" min="1" value="1" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700 block mb-1">Satuan</label>
+                            <input type="text" id="inventorySatuan" value="Unit" placeholder="Unit / Set / Pcs" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Nomor Seri / No Rangka / Plat</label>
+                        <input type="text" id="inventoryNomorSeri" placeholder="Contoh: SN-839210-ASUS / H-1234-AD" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-rose-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">Spesifikasi, Merk & Catatan Garansi</label>
+                    <textarea id="inventoryKeterangan" rows="2" placeholder="Spesifikasi teknis, kelengkapan aksesoris, charger, masa garansi sampai kapan, dll." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-slate-50 focus:bg-white focus:outline-rose-500"></textarea>
+                </div>
+
+                <!-- Foto Barang & Foto Nota -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Foto Fisik Barang / Aset</label>
+                        <input type="file" id="inventoryFotoBarang" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100">
+                        <div id="inventoryFotoBarangPreviewContainer" class="mt-2 hidden">
+                            <img id="inventoryFotoBarangPreview" src="" class="h-28 rounded-lg border border-slate-200 object-cover">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Foto Nota Pembelian / Kartu Garansi</label>
+                        <input type="file" id="inventoryFotoNota" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
+                        <div id="inventoryFotoNotaPreviewContainer" class="mt-2 hidden">
+                            <img id="inventoryFotoNotaPreview" src="" class="h-28 rounded-lg border border-slate-200 object-cover">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" onclick="closeInventoryModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">Batal</button>
+                    <button type="submit" id="btnSubmitInventory" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-check"></i> Simpan Inventaris
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: DETAIL & LABEL STIKER INVENTARIS -->
+    <!-- ======================================================== -->
+    <div id="modalInventoryDetail" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl modal-content-animated overflow-hidden border border-slate-200">
+            
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-900 to-rose-950 text-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg border border-white/20">
+                        <i class="fa-solid fa-tag text-rose-300"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span id="inventoryDetailKodeBadge" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/30">INV-000</span>
+                            <span id="inventoryDetailKondisiBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">Baik</span>
+                        </div>
+                        <h3 id="inventoryDetailNamaTitle" class="font-bold text-base text-white mt-0.5">Detail Barang Inventaris</h3>
+                    </div>
+                </div>
+                <button onclick="closeInventoryDetailModal()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1 text-xs">
+                
+                <!-- Nilai Aset Banner -->
+                <div class="flex justify-between items-center p-4 bg-rose-50/70 border border-rose-100 rounded-xl">
+                    <div>
+                        <span class="text-rose-700 font-bold block">NILAI PEROLEHAN / BUKU ASET:</span>
+                        <h4 id="inventoryDetailNilaiText" class="text-xl font-black text-rose-800 font-mono">Rp 0</h4>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-slate-400 font-medium block">Sumber Perolehan:</span>
+                        <span id="inventoryDetailSumberText" class="font-bold text-slate-800">Kas Besar</span>
+                    </div>
+                </div>
+
+                <!-- Info Grid -->
+                <div class="grid grid-cols-2 gap-3 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="text-slate-400 font-medium block">Kategori Inventaris:</span>
+                        <span id="inventoryDetailKategoriText" class="font-bold text-slate-800">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-medium block">Lokasi Penempatan:</span>
+                        <span id="inventoryDetailLokasiText" class="font-bold text-slate-800">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-medium block">Penanggung Jawab:</span>
+                        <span id="inventoryDetailPenanggungJawabText" class="font-bold text-slate-800">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-medium block">Tanggal Perolehan:</span>
+                        <span id="inventoryDetailTanggalText" class="font-bold text-slate-800">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-medium block">Jumlah & Satuan:</span>
+                        <span id="inventoryDetailJumlahText" class="font-bold text-slate-800">1 Unit</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-medium block">Nomor Seri / Plat:</span>
+                        <span id="inventoryDetailNomorSeriText" class="font-mono font-bold text-slate-800">-</span>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="text-slate-500 font-bold block mb-1">Spesifikasi & Keterangan:</span>
+                    <div id="inventoryDetailKeteranganText" class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 whitespace-pre-wrap leading-relaxed">
+                        -
+                    </div>
+                </div>
+
+                <!-- Foto Barang & Foto Nota Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <span class="text-slate-500 font-bold block mb-1">Foto Fisik Barang:</span>
+                        <div class="w-full h-44 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center">
+                            <img id="inventoryDetailFotoBarangImg" src="" alt="Foto Fisik Barang" class="w-full h-full object-cover clickable-image hidden" onclick="openLightbox(this.src, 'Foto Fisik Barang Inventaris')">
+                            <p id="inventoryDetailFotoBarangEmpty" class="text-slate-400 text-xs italic">Tidak ada foto fisik barang</p>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 font-bold block mb-1">Foto Nota / Kartu Garansi:</span>
+                        <div class="w-full h-44 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center">
+                            <img id="inventoryDetailFotoNotaImg" src="" alt="Foto Nota / Garansi" class="w-full h-full object-cover clickable-image hidden" onclick="openLightbox(this.src, 'Nota / Kartu Garansi Inventaris')">
+                            <p id="inventoryDetailFotoNotaEmpty" class="text-slate-400 text-xs italic">Tidak ada foto nota/garansi</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-slate-50">
+                <button onclick="printCurrentInventorySticker()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-barcode"></i> Cetak Stiker Barcode Label
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="editCurrentInventoryFromDetail()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen"></i> Edit
+                    </button>
+                    <button onclick="closeInventoryDetailModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold">Tutup</button>
+                </div>
             </div>
         </div>
     </div>

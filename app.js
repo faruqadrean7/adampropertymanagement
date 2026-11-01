@@ -30,6 +30,15 @@ let pettyFilterSumber = 'all';
 let pettyFilterProject = 'all';
 let pettySearchQuery = '';
 
+// State Inventaris Kantor & Aset Tetap Developer
+let allInventory = [];
+let filteredInventory = [];
+let currentInventoryEntry = null;
+let inventoryFilterKategori = 'all';
+let inventoryFilterKondisi = 'all';
+let inventoryFilterLokasi = 'all';
+let inventorySearchQuery = '';
+
 let currentFilter = 'all'; // Filter customer: 'all', 'unpaid', 'paid'
 let searchQuery = '';
 let searchKavlingQuery = '';
@@ -62,11 +71,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (pettyTopupDate) pettyTopupDate.value = today;
         const pettyExpDate = document.getElementById('pettyExpTanggal');
         if (pettyExpDate) pettyExpDate.value = today;
+        const inventoryDate = document.getElementById('inventoryTanggal');
+        if (inventoryDate) inventoryDate.value = today;
 
         // Auto-sync jika ada pembayaran customer / cicilan lahan yang belum masuk Kas Besar
         await syncAllToCashbook();
         await refreshCashbookView();
         await refreshPettyCashView();
+        await refreshInventoryView();
         updateTopbarDate();
 
     } catch (error) {
@@ -100,9 +112,10 @@ async function initializeData() {
     await refreshLandDebtList();
     await refreshCashbookView();
     await refreshPettyCashView();
+    await refreshInventoryView();
 }
 
-// Navigasi Tab Utama (Executive Sidebar Navigation: 5 Modul Terintegrasi)
+// Navigasi Tab Utama (Executive Sidebar Navigation: 6 Modul Terintegrasi)
 function switchMainTab(tab) {
     currentTab = tab;
 
@@ -111,12 +124,14 @@ function switchMainTab(tab) {
     const navLandDebt = document.getElementById('navTabLandDebt');
     const navCashbook = document.getElementById('navTabCashbook');
     const navPettyCash = document.getElementById('navTabPettyCash');
+    const navInventory = document.getElementById('navTabInventory');
 
     const viewKavling = document.getElementById('viewKavling');
     const viewCustomer = document.getElementById('viewCustomer');
     const viewLandDebt = document.getElementById('viewLandDebt');
     const viewCashbook = document.getElementById('viewCashbook');
     const viewPettyCash = document.getElementById('viewPettyCash');
+    const viewInventory = document.getElementById('viewInventory');
 
     const headerActionText = document.getElementById('headerPrimaryActionText');
     const topbarActionText = document.getElementById('topbarPrimaryActionText');
@@ -128,7 +143,7 @@ function switchMainTab(tab) {
     const activeClasses = `corp-tab-active ${baseClasses} font-bold shadow-md`;
 
     // Reset tab styles
-    [navKavling, navCustomer, navLandDebt, navCashbook, navPettyCash].forEach(el => {
+    [navKavling, navCustomer, navLandDebt, navCashbook, navPettyCash, navInventory].forEach(el => {
         if (el) el.className = inactiveClasses;
     });
 
@@ -137,6 +152,7 @@ function switchMainTab(tab) {
     if (viewLandDebt) viewLandDebt.classList.add('hidden');
     if (viewCashbook) viewCashbook.classList.add('hidden');
     if (viewPettyCash) viewPettyCash.classList.add('hidden');
+    if (viewInventory) viewInventory.classList.add('hidden');
 
     let actionLabel = '+ Tambah Kavling';
     let moduleTitle = '1. Peta & Site Plan Kavling';
@@ -177,6 +193,13 @@ function switchMainTab(tab) {
         moduleTitle = '5. Kas Kecil Kantor (Petty Cash)';
         breadcrumbLabel = 'Operasional Harian Kantor';
         refreshPettyCashView();
+    } else if (tab === 'inventory') {
+        if (navInventory) navInventory.className = activeClasses;
+        if (viewInventory) viewInventory.classList.remove('hidden');
+        actionLabel = '+ Tambah Inventaris';
+        moduleTitle = '6. Manajemen Inventaris & Aset Kantor';
+        breadcrumbLabel = 'Aset Tetap & Peralatan Kantor';
+        refreshInventoryView();
     }
 
     if (headerActionText) headerActionText.textContent = actionLabel;
@@ -232,6 +255,8 @@ function handlePrimaryAction() {
         openInvestorModal();
     } else if (currentTab === 'petty_cash') {
         openPettyTopupModal();
+    } else if (currentTab === 'inventory') {
+        openInventoryModal();
     }
 }
 
@@ -2856,6 +2881,139 @@ async function loadDemoData() {
         buktiImage: demoNotaAtk
     });
 
+    // 8. Data Inventaris & Aset Kantor Tetap ADAM PROPERTY GROUP
+    const demoLaptopImg = createDummyDoc('FOTO ASSET LAPTOP', 'Asus ROG Zephyrus G14', '#1e293b');
+    const demoPrinterImg = createDummyDoc('FOTO ASSET PRINTER', 'Epson EcoTank L3210', '#0f766e');
+    const demoTheodoliteImg = createDummyDoc('FOTO ASSET THEODOLITE', 'Digital Theodolite South DT-02', '#c2410c');
+    const demoBrankasImg = createDummyDoc('FOTO ASSET BRANKAS', 'Chubbsafes Cobra King', '#1e3a8a');
+    const demoNotaAsset = createDummyDoc('FAKTUR PEMBELIAN ASET', 'PT Metro Komputer Indonesia', '#334155');
+
+    await InventoryDB.add({
+        kode: 'INV-2026-001',
+        nama: 'Laptop Asus ROG Zephyrus G14 (AMD Ryzen 9 / RTX 4060)',
+        kategori: 'elektronik',
+        kondisi: 'baik',
+        lokasi: 'Ruang Direktur',
+        penanggungJawab: 'Bpk. Adam (Direktur Utama)',
+        tanggal: '2026-06-15',
+        sumberDana: 'Kas Besar Developer',
+        nilaiPerolehan: 24500000,
+        jumlah: 1,
+        satuan: 'Unit',
+        nomorSeri: 'SN-G14-ROG-882914',
+        keterangan: 'Laptop operasional pimpinan untuk rendering denah site plan AutoCAD 3D dan approval perbankan. Kelengkapan tas, charger adaptor 240W original. Garansi resmi s/d Juni 2028.',
+        fotoBarang: demoLaptopImg,
+        fotoNota: demoNotaAsset
+    });
+
+    await InventoryDB.add({
+        kode: 'INV-2026-002',
+        nama: 'Printer Epson EcoTank L3210 All-in-One (Print, Scan, Copy)',
+        kategori: 'mesin_kantor',
+        kondisi: 'baik',
+        lokasi: 'Ruang Administrasi & Kasir',
+        penanggungJawab: 'Bagian Administrasi & Kasir',
+        tanggal: '2026-07-02',
+        sumberDana: 'Kas Besar Developer',
+        nilaiPerolehan: 2850000,
+        jumlah: 1,
+        satuan: 'Unit',
+        nomorSeri: 'SN-EPSON-L3210-9921',
+        keterangan: 'Printer pencetakan formulir pemesanan kavling, kwitansi, berkas PPJB dan fotokopi KTP/KK customer. Tinta original 003.',
+        fotoBarang: demoPrinterImg,
+        fotoNota: demoNotaAsset
+    });
+
+    await InventoryDB.add({
+        kode: 'INV-2026-003',
+        nama: 'Digital Theodolite South DT-02 & Tripod Aluminium Berat',
+        kategori: 'alat_lapangan',
+        kondisi: 'baik',
+        lokasi: 'Gudang Proyek Baitul Makmur',
+        penanggungJawab: 'Tim Lapangan & Survey Patok',
+        tanggal: '2026-07-10',
+        sumberDana: 'Kas Besar Developer',
+        nilaiPerolehan: 14500000,
+        jumlah: 1,
+        satuan: 'Set',
+        nomorSeri: 'SN-THD-SOUTH-02941',
+        keterangan: 'Alat ukur presisi untuk penentuan batas lahan mentah petani, leveling jalan dan pematokan kavling blok perumahan. Lengkap box hardcase & rambu ukur 5 meter.',
+        fotoBarang: demoTheodoliteImg,
+        fotoNota: demoNotaAsset
+    });
+
+    await InventoryDB.add({
+        kode: 'INV-2026-004',
+        nama: 'Brankas Besi Tahan Api Chubbsafes Cobra King (Size 3)',
+        kategori: 'keamanan',
+        kondisi: 'baik',
+        lokasi: 'Ruang Direktur',
+        penanggungJawab: 'Direktur Utama',
+        tanggal: '2026-06-20',
+        sumberDana: 'Kas Besar Developer',
+        nilaiPerolehan: 16500000,
+        jumlah: 1,
+        satuan: 'Unit',
+        nomorSeri: 'SN-CHUBB-CB3-44120',
+        keterangan: 'Brankas khusus penyimpanan dokumen vital perusahaan: Sertifikat SHM Asli induk kavling, Letter C petani, Akta Notaris, dan Bilyet Giro/Cek.',
+        fotoBarang: demoBrankasImg,
+        fotoNota: demoNotaAsset
+    });
+
+    await InventoryDB.add({
+        kode: 'INV-2026-005',
+        nama: 'Meja Kerja Eksekutif Kayu Jati Solid 2 Meter & Kursi Kulit',
+        kategori: 'furniture',
+        kondisi: 'baik',
+        lokasi: 'Ruang Direktur',
+        penanggungJawab: 'Bpk. Adam (Direktur Utama)',
+        tanggal: '2026-06-18',
+        sumberDana: 'Modal Awal Owner / Investor',
+        nilaiPerolehan: 8500000,
+        jumlah: 1,
+        satuan: 'Set',
+        nomorSeri: '-',
+        keterangan: 'Meja kerja kayu jati ukir Jepara finishing melamine gloss dan kursi putar direktur hidrolik kulit hitam.',
+        fotoBarang: null,
+        fotoNota: null
+    });
+
+    await InventoryDB.add({
+        kode: 'INV-2026-006',
+        nama: 'AC Daikin Inverter Flash 1 PK (STKQ25U)',
+        kategori: 'fasilitas',
+        kondisi: 'baik',
+        lokasi: 'Ruang Administrasi & Kasir',
+        penanggungJawab: 'Umum / Seluruh Kantor',
+        tanggal: '2026-07-05',
+        sumberDana: 'Kas Besar Developer',
+        nilaiPerolehan: 5200000,
+        jumlah: 1,
+        satuan: 'Unit',
+        nomorSeri: 'SN-DKN-INV-9901',
+        keterangan: 'Pendingin ruangan kantor admin & ruang tunggu tamu pembeli kavling. Servis berkala setiap 3 bulan.',
+        fotoBarang: null,
+        fotoNota: demoNotaAsset
+    });
+
+    await InventoryDB.add({
+        kode: 'INV-2026-007',
+        nama: 'Meteran Laser Digital Bosch Professional GLM 50-27 C (50m)',
+        kategori: 'alat_lapangan',
+        kondisi: 'baik',
+        lokasi: 'Ruang Administrasi & Kasir',
+        penanggungJawab: 'Tim Survey & Marketing',
+        tanggal: '2026-08-01',
+        sumberDana: 'Kas Kecil Kantor',
+        nilaiPerolehan: 1750000,
+        jumlah: 1,
+        satuan: 'Unit',
+        nomorSeri: 'SN-BSH-GLM-3312',
+        keterangan: 'Meteran laser bluetooth untuk pengukuran cepat dimensi fisik kavling saat diajak survey langsung bersama calon pembeli.',
+        fotoBarang: null,
+        fotoNota: null
+    });
+
     // Auto-sync seluruh pembayaran customer & cicilan petani ke Kas Besar
     await syncAllToCashbook();
 
@@ -2867,11 +3025,12 @@ async function loadDemoData() {
     await refreshLandDebtList();
     await refreshCashbookView();
     await refreshPettyCashView();
+    await refreshInventoryView();
 
     Swal.fire({
         icon: 'success',
         title: 'Data Sampel Perusahaan Dimuat!',
-        text: 'Data Kas Kecil, Top Up Kas Besar/Investor, Belanja Harian, Kas Besar, dan Site Plan siap dipelajari.',
+        text: 'Data Inventaris Kantor, Kas Kecil, Kas Besar, Customer, dan Site Plan siap dipelajari.',
         confirmButtonColor: '#059669'
     });
 }
@@ -4522,6 +4681,703 @@ function printPettyCashReport() {
                     <div style="height: 50px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Pimpinan Operasional</p>
                     <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    printable.classList.remove('hidden');
+    window.print();
+    printable.classList.add('hidden');
+}
+
+
+// ========================================================
+// MODUL INVENTARIS KANTOR & ASET TETAP DEVELOPER
+// ========================================================
+
+const INVENTORY_CATEGORIES = {
+    'elektronik': { label: 'Elektronik & Komputer', icon: 'fa-laptop', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+    'mesin_kantor': { label: 'Mesin & Perkantoran', icon: 'fa-print', color: 'bg-teal-50 text-teal-700 border-teal-200' },
+    'furniture': { label: 'Mebel & Furniture', icon: 'fa-chair', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+    'alat_lapangan': { label: 'Peralatan Ukur & Lapangan', icon: 'fa-ruler-combined', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    'kendaraan': { label: 'Kendaraan Operasional', icon: 'fa-car', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    'fasilitas': { label: 'Fasilitas & Pendingin', icon: 'fa-snowflake', color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+    'keamanan': { label: 'Keamanan & Brankas', icon: 'fa-shield-halved', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+    'lainnya': { label: 'Lainnya', icon: 'fa-box', color: 'bg-slate-100 text-slate-700 border-slate-200' }
+};
+
+const INVENTORY_CONDITIONS = {
+    'baik': { label: 'Baik / Prima', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+    'servis': { label: 'Perlu Servis', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
+    'rusak': { label: 'Rusak Berat', color: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500' },
+    'afkir': { label: 'Afkir / Dijual', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' }
+};
+
+// 1. Refresh & Render View Inventaris
+async function refreshInventoryView() {
+    allInventory = await InventoryDB.getAll();
+
+    let totalValue = 0;
+    let totalItems = 0;
+    let goodCount = 0;
+    let maintenanceCount = 0;
+
+    const categoryCounts = {};
+
+    for (const item of allInventory) {
+        const qty = Number(item.jumlah) || 1;
+        const val = Number(item.nilaiPerolehan) || 0;
+        totalValue += val * qty;
+        totalItems += qty;
+
+        if (item.kondisi === 'baik') {
+            goodCount += qty;
+        } else if (item.kondisi === 'servis' || item.kondisi === 'rusak') {
+            maintenanceCount += qty;
+        }
+
+        const cat = item.kategori || 'lainnya';
+        categoryCounts[cat] = (categoryCounts[cat] || 0) + qty;
+    }
+
+    // Build category summary text
+    const summaryParts = [];
+    if (categoryCounts['elektronik']) summaryParts.push(`${categoryCounts['elektronik']} Elektronik`);
+    if (categoryCounts['alat_lapangan']) summaryParts.push(`${categoryCounts['alat_lapangan']} Alat Ukur`);
+    if (categoryCounts['furniture']) summaryParts.push(`${categoryCounts['furniture']} Furniture`);
+    if (categoryCounts['kendaraan']) summaryParts.push(`${categoryCounts['kendaraan']} Kendaraan`);
+    const summaryText = summaryParts.length > 0 ? summaryParts.join(' • ') : `${Object.keys(categoryCounts).length} Kategori Terdata`;
+
+    // Update DOM Cards
+    const elVal = document.getElementById('statInvTotalValue');
+    const elItems = document.getElementById('statInvTotalItems');
+    const elSummary = document.getElementById('statInvCategorySummary');
+    const elGood = document.getElementById('statInvGoodCount');
+    const elMaint = document.getElementById('statInvMaintenanceCount');
+    const elNavBadge = document.getElementById('inventoryNavCountBadge');
+
+    if (elVal) elVal.textContent = formatRupiah(totalValue);
+    if (elItems) elItems.innerHTML = `${totalItems} <span class="text-xs font-normal text-slate-500">Unit</span>`;
+    if (elSummary) elSummary.textContent = summaryText;
+    if (elGood) elGood.innerHTML = `${goodCount} <span class="text-xs font-normal text-slate-500">Unit</span>`;
+    if (elMaint) elMaint.innerHTML = `${maintenanceCount} <span class="text-xs font-normal text-slate-500">Unit</span>`;
+    if (elNavBadge) elNavBadge.textContent = `${allInventory.length} Item`;
+
+    filterInventory();
+}
+
+// 2. Filter Inventaris Multi-Kriteria
+function filterInventory() {
+    const selCat = document.getElementById('inventoryFilterKategori')?.value || 'all';
+    const selCond = document.getElementById('inventoryFilterKondisi')?.value || 'all';
+    const selLoc = document.getElementById('inventoryFilterLokasi')?.value || 'all';
+    const searchVal = (document.getElementById('inventorySearchInput')?.value || '').toLowerCase().trim();
+
+    inventoryFilterKategori = selCat;
+    inventoryFilterKondisi = selCond;
+    inventoryFilterLokasi = selLoc;
+    inventorySearchQuery = searchVal;
+
+    filteredInventory = allInventory.filter(item => {
+        if (selCat !== 'all' && item.kategori !== selCat) return false;
+        if (selCond !== 'all' && item.kondisi !== selCond) return false;
+        if (selLoc !== 'all' && item.lokasi !== selLoc) return false;
+
+        if (searchVal) {
+            const matchKode = (item.kode || '').toLowerCase().includes(searchVal);
+            const matchNama = (item.nama || '').toLowerCase().includes(searchVal);
+            const matchPJ = (item.penanggungJawab || '').toLowerCase().includes(searchVal);
+            const matchSN = (item.nomorSeri || '').toLowerCase().includes(searchVal);
+            const matchKet = (item.keterangan || '').toLowerCase().includes(searchVal);
+            const matchLoc = (item.lokasi || '').toLowerCase().includes(searchVal);
+            if (!matchKode && !matchNama && !matchPJ && !matchSN && !matchKet && !matchLoc) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    renderInventoryTable();
+}
+
+// 3. Render Tabel Inventaris
+function renderInventoryTable() {
+    const tbody = document.getElementById('inventoryTableBody');
+    const emptyState = document.getElementById('emptyInventoryState');
+    if (!tbody) return;
+
+    if (filteredInventory.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    tbody.innerHTML = filteredInventory.map((item, index) => {
+        const catInfo = INVENTORY_CATEGORIES[item.kategori] || INVENTORY_CATEGORIES['lainnya'];
+        const condInfo = INVENTORY_CONDITIONS[item.kondisi] || INVENTORY_CONDITIONS['baik'];
+        const nilaiFormatted = formatRupiah(item.nilaiPerolehan);
+        const qtyText = item.jumlah && item.jumlah > 1 ? ` (${item.jumlah} ${escapeHtml(item.satuan || 'Unit')})` : '';
+
+        return `
+            <tr class="hover:bg-slate-50/80 transition group">
+                <td class="py-3 px-4 text-center text-slate-400 font-mono text-xs">
+                    ${index + 1}
+                </td>
+                
+                <!-- Kode & Foto Thumbnail -->
+                <td class="py-3 px-4 whitespace-nowrap">
+                    <div class="flex items-center gap-2.5">
+                        ${item.fotoBarang ? `
+                            <div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 shrink-0 bg-slate-100">
+                                <img src="${item.fotoBarang}" class="w-full h-full object-cover clickable-image" onclick="openLightbox('${item.fotoBarang}', '${escapeHtml(item.nama)}')">
+                            </div>
+                        ` : `
+                            <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400">
+                                <i class="fa-solid ${catInfo.icon}"></i>
+                            </div>
+                        `}
+                        <div>
+                            <span class="font-mono text-xs font-bold text-rose-700 block">${escapeHtml(item.kode)}</span>
+                            <span class="text-[10px] text-slate-400 block">${formatTanggalIndo(item.tanggal)}</span>
+                        </div>
+                    </div>
+                </td>
+
+                <!-- Nama Barang & Spesifikasi / SN -->
+                <td class="py-3 px-4">
+                    <div class="font-bold text-slate-800 text-xs">${escapeHtml(item.nama)}${qtyText}</div>
+                    ${item.nomorSeri ? `
+                        <div class="text-[10px] font-mono text-slate-500 flex items-center gap-1 mt-0.5">
+                            <i class="fa-solid fa-barcode text-[9px] text-slate-400"></i>
+                            <span>${escapeHtml(item.nomorSeri)}</span>
+                        </div>
+                    ` : ''}
+                    ${item.keterangan ? `
+                        <div class="text-[11px] text-slate-500 line-clamp-1 mt-0.5" title="${escapeHtml(item.keterangan)}">${escapeHtml(item.keterangan)}</div>
+                    ` : ''}
+                </td>
+
+                <!-- Kategori & Lokasi -->
+                <td class="py-3 px-4 whitespace-nowrap">
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${catInfo.color}">
+                        <i class="fa-solid ${catInfo.icon} text-[9px]"></i>
+                        ${escapeHtml(catInfo.label)}
+                    </span>
+                    <div class="text-[11px] text-slate-600 font-medium mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-location-dot text-[9px] text-emerald-600"></i>
+                        <span>${escapeHtml(item.lokasi || '-')}</span>
+                    </div>
+                </td>
+
+                <!-- Penanggung Jawab -->
+                <td class="py-3 px-4 whitespace-nowrap">
+                    <div class="font-bold text-slate-800 text-xs">${escapeHtml(item.penanggungJawab || '-')}</div>
+                    <span class="text-[10px] text-slate-400 block">${escapeHtml(item.sumberDana || 'Kas Kantor')}</span>
+                </td>
+
+                <!-- Kondisi -->
+                <td class="py-3 px-4 whitespace-nowrap">
+                    <span class="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${condInfo.color}">
+                        <span class="w-1.5 h-1.5 rounded-full ${condInfo.dot}"></span>
+                        ${escapeHtml(condInfo.label)}
+                    </span>
+                </td>
+
+                <!-- Nilai Aset (Rp) -->
+                <td class="py-3 px-4 text-right whitespace-nowrap">
+                    <div class="font-bold font-mono text-slate-900 text-xs">${nilaiFormatted}</div>
+                    <span class="text-[10px] text-slate-400">Buku Aset</span>
+                </td>
+
+                <!-- Aksi -->
+                <td class="py-3 px-4 text-center whitespace-nowrap">
+                    <div class="flex items-center justify-center gap-1">
+                        <button onclick="printInventorySticker(${item.id})" class="p-1.5 text-slate-600 hover:text-slate-950 hover:bg-slate-100 rounded-lg transition" title="Cetak Stiker Barcode Label">
+                            <i class="fa-solid fa-barcode text-xs"></i>
+                        </button>
+                        <button onclick="openInventoryDetail(${item.id})" class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition" title="Lihat Detail & Foto">
+                            <i class="fa-solid fa-eye text-xs"></i>
+                        </button>
+                        <button onclick="openInventoryModal(${item.id})" class="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition" title="Edit Data">
+                            <i class="fa-solid fa-pen text-xs"></i>
+                        </button>
+                        <button onclick="deleteInventory(${item.id})" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition" title="Hapus Aset">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// 4. Modal Tambah / Edit Inventaris
+async function openInventoryModal(id = null) {
+    const modal = document.getElementById('modalInventory');
+    const form = document.getElementById('formInventory');
+    const title = document.getElementById('inventoryModalTitle');
+    const editIdInput = document.getElementById('inventoryEditId');
+
+    const previewBarang = document.getElementById('inventoryFotoBarangPreview');
+    const containerBarang = document.getElementById('inventoryFotoBarangPreviewContainer');
+    const previewNota = document.getElementById('inventoryFotoNotaPreview');
+    const containerNota = document.getElementById('inventoryFotoNotaPreviewContainer');
+
+    if (form) form.reset();
+    if (containerBarang) containerBarang.classList.add('hidden');
+    if (containerNota) containerNota.classList.add('hidden');
+
+    if (id) {
+        // Edit mode
+        const item = await InventoryDB.getById(id);
+        if (!item) return;
+
+        if (title) title.textContent = 'Edit Data Inventaris Kantor';
+        if (editIdInput) editIdInput.value = item.id;
+
+        document.getElementById('inventoryKode').value = item.kode || '';
+        document.getElementById('inventoryNama').value = item.nama || '';
+        document.getElementById('inventoryKategori').value = item.kategori || 'elektronik';
+        document.getElementById('inventoryKondisi').value = item.kondisi || 'baik';
+        document.getElementById('inventoryLokasi').value = item.lokasi || '';
+        document.getElementById('inventoryPenanggungJawab').value = item.penanggungJawab || '';
+        document.getElementById('inventoryTanggal').value = item.tanggal || '';
+        document.getElementById('inventorySumberDana').value = item.sumberDana || 'Kas Besar Developer';
+        document.getElementById('inventoryNilaiPerolehan').value = new Intl.NumberFormat('id-ID').format(item.nilaiPerolehan || 0);
+        document.getElementById('inventoryJumlah').value = item.jumlah || 1;
+        document.getElementById('inventorySatuan').value = item.satuan || 'Unit';
+        document.getElementById('inventoryNomorSeri').value = item.nomorSeri || '';
+        document.getElementById('inventoryKeterangan').value = item.keterangan || '';
+
+        if (item.fotoBarang && previewBarang && containerBarang) {
+            previewBarang.src = item.fotoBarang;
+            containerBarang.classList.remove('hidden');
+        }
+        if (item.fotoNota && previewNota && containerNota) {
+            previewNota.src = item.fotoNota;
+            containerNota.classList.remove('hidden');
+        }
+    } else {
+        // Create mode
+        if (title) title.textContent = 'Tambah Inventaris Kantor';
+        if (editIdInput) editIdInput.value = '';
+
+        const year = new Date().getFullYear();
+        const nextNum = String(allInventory.length + 1).padStart(3, '0');
+        document.getElementById('inventoryKode').value = `INV-${year}-${nextNum}`;
+        document.getElementById('inventoryTanggal').value = new Date().toISOString().split('T')[0];
+        document.getElementById('inventoryJumlah').value = 1;
+        document.getElementById('inventorySatuan').value = 'Unit';
+    }
+
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeInventoryModal() {
+    const modal = document.getElementById('modalInventory');
+    if (modal) modal.classList.add('hidden');
+}
+
+// 5. Submit Form Tambah / Edit Inventaris
+async function handleInventorySubmit(event) {
+    event.preventDefault();
+
+    const editId = document.getElementById('inventoryEditId').value;
+    const kode = document.getElementById('inventoryKode').value.trim();
+    const nama = document.getElementById('inventoryNama').value.trim();
+    const kategori = document.getElementById('inventoryKategori').value;
+    const kondisi = document.getElementById('inventoryKondisi').value;
+    const lokasi = document.getElementById('inventoryLokasi').value.trim();
+    const penanggungJawab = document.getElementById('inventoryPenanggungJawab').value.trim();
+    const tanggal = document.getElementById('inventoryTanggal').value;
+    const sumberDana = document.getElementById('inventorySumberDana').value;
+    const nilaiPerolehan = parseCurrencyInput(document.getElementById('inventoryNilaiPerolehan').value);
+    const jumlah = parseInt(document.getElementById('inventoryJumlah').value, 10) || 1;
+    const satuan = document.getElementById('inventorySatuan').value.trim() || 'Unit';
+    const nomorSeri = document.getElementById('inventoryNomorSeri').value.trim();
+    const keterangan = document.getElementById('inventoryKeterangan').value.trim();
+
+    if (!kode || !nama || !lokasi || !penanggungJawab || !tanggal) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Form Belum Lengkap',
+            text: 'Mohon isi semua kolom bertanda bintang (*).'
+        });
+        return;
+    }
+
+    const fileBarang = document.getElementById('inventoryFotoBarang').files[0];
+    const fileNota = document.getElementById('inventoryFotoNota').files[0];
+
+    const submitBtn = document.getElementById('btnSubmitInventory');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+        let existingItem = null;
+        if (editId) {
+            existingItem = await InventoryDB.getById(editId);
+        }
+
+        let fotoBarang = existingItem ? existingItem.fotoBarang : null;
+        let fotoNota = existingItem ? existingItem.fotoNota : null;
+
+        if (fileBarang) {
+            fotoBarang = await compressImage(fileBarang, 1500, 0.85);
+        }
+        if (fileNota) {
+            fotoNota = await compressImage(fileNota, 1500, 0.85);
+        }
+
+        const payload = {
+            kode,
+            nama,
+            kategori,
+            kondisi,
+            lokasi,
+            penanggungJawab,
+            tanggal,
+            sumberDana,
+            nilaiPerolehan,
+            jumlah,
+            satuan,
+            nomorSeri,
+            keterangan,
+            fotoBarang,
+            fotoNota
+        };
+
+        if (editId) {
+            await InventoryDB.update(editId, payload);
+            Swal.fire({
+                icon: 'success',
+                title: 'Inventaris Diperbarui',
+                text: `Data aset ${kode} berhasil diperbarui.`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+        } else {
+            await InventoryDB.add(payload);
+            Swal.fire({
+                icon: 'success',
+                title: 'Inventaris Ditambahkan',
+                text: `Aset ${kode} - ${nama} berhasil disimpan ke database.`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        closeInventoryModal();
+        await refreshInventoryView();
+    } catch (err) {
+        console.error('Gagal simpan inventaris:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal Menyimpan',
+            text: 'Terjadi kesalahan saat menyimpan data inventaris ke IndexedDB.'
+        });
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Inventaris';
+    }
+}
+
+// 6. Hapus Data Inventaris
+async function deleteInventory(id) {
+    const item = await InventoryDB.getById(id);
+    if (!item) return;
+
+    const result = await Swal.fire({
+        title: 'Hapus Inventaris?',
+        html: `Apakah Anda yakin ingin menghapus data aset <b>${escapeHtml(item.kode)} - ${escapeHtml(item.nama)}</b>?<br><small class="text-rose-500">Tindakan ini tidak dapat dibatalkan.</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e11d48',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus Aset',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        await InventoryDB.delete(id);
+        await refreshInventoryView();
+        Swal.fire({
+            icon: 'success',
+            title: 'Inventaris Dihapus',
+            text: 'Data inventaris telah dihapus dari sistem.',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+}
+
+// 7. Detail & Audit Aset Inventaris
+async function openInventoryDetail(id) {
+    const item = await InventoryDB.getById(id);
+    if (!item) return;
+
+    currentInventoryEntry = item;
+
+    const catInfo = INVENTORY_CATEGORIES[item.kategori] || INVENTORY_CATEGORIES['lainnya'];
+    const condInfo = INVENTORY_CONDITIONS[item.kondisi] || INVENTORY_CONDITIONS['baik'];
+
+    const kodeBadge = document.getElementById('inventoryDetailKodeBadge');
+    const kondisiBadge = document.getElementById('inventoryDetailKondisiBadge');
+    const namaTitle = document.getElementById('inventoryDetailNamaTitle');
+    const nilaiText = document.getElementById('inventoryDetailNilaiText');
+    const sumberText = document.getElementById('inventoryDetailSumberText');
+    const katText = document.getElementById('inventoryDetailKategoriText');
+    const lokText = document.getElementById('inventoryDetailLokasiText');
+    const pjText = document.getElementById('inventoryDetailPenanggungJawabText');
+    const tglText = document.getElementById('inventoryDetailTanggalText');
+    const jmlText = document.getElementById('inventoryDetailJumlahText');
+    const snText = document.getElementById('inventoryDetailNomorSeriText');
+    const ketText = document.getElementById('inventoryDetailKeteranganText');
+
+    if (kodeBadge) kodeBadge.textContent = item.kode;
+    if (kondisiBadge) {
+        kondisiBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded-full border ${condInfo.color}`;
+        kondisiBadge.textContent = condInfo.label;
+    }
+    if (namaTitle) namaTitle.textContent = item.nama;
+    if (nilaiText) nilaiText.textContent = formatRupiah(item.nilaiPerolehan);
+    if (sumberText) sumberText.textContent = item.sumberDana || 'Kas Besar';
+    if (katText) katText.textContent = catInfo.label;
+    if (lokText) lokText.textContent = item.lokasi || '-';
+    if (pjText) pjText.textContent = item.penanggungJawab || '-';
+    if (tglText) tglText.textContent = formatTanggalIndo(item.tanggal);
+    if (jmlText) jmlText.textContent = `${item.jumlah || 1} ${escapeHtml(item.satuan || 'Unit')}`;
+    if (snText) snText.textContent = item.nomorSeri || '-';
+    if (ketText) ketText.textContent = item.keterangan || '-';
+
+    // Foto Barang
+    const imgBarang = document.getElementById('inventoryDetailFotoBarangImg');
+    const emptyBarang = document.getElementById('inventoryDetailFotoBarangEmpty');
+    if (item.fotoBarang) {
+        imgBarang.src = item.fotoBarang;
+        imgBarang.classList.remove('hidden');
+        if (emptyBarang) emptyBarang.classList.add('hidden');
+    } else {
+        imgBarang.src = '';
+        imgBarang.classList.add('hidden');
+        if (emptyBarang) emptyBarang.classList.remove('hidden');
+    }
+
+    // Foto Nota
+    const imgNota = document.getElementById('inventoryDetailFotoNotaImg');
+    const emptyNota = document.getElementById('inventoryDetailFotoNotaEmpty');
+    if (item.fotoNota) {
+        imgNota.src = item.fotoNota;
+        imgNota.classList.remove('hidden');
+        if (emptyNota) emptyNota.classList.add('hidden');
+    } else {
+        imgNota.src = '';
+        imgNota.classList.add('hidden');
+        if (emptyNota) emptyNota.classList.remove('hidden');
+    }
+
+    const modal = document.getElementById('modalInventoryDetail');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeInventoryDetailModal() {
+    const modal = document.getElementById('modalInventoryDetail');
+    if (modal) modal.classList.add('hidden');
+}
+
+function editCurrentInventoryFromDetail() {
+    if (!currentInventoryEntry) return;
+    const id = currentInventoryEntry.id;
+    closeInventoryDetailModal();
+    openInventoryModal(id);
+}
+
+// 8. Cetak Stiker Label Barcode Inventaris (Asset Tag Sticker)
+async function printInventorySticker(id = null) {
+    let item = currentInventoryEntry;
+    if (id) {
+        item = await InventoryDB.getById(id);
+    }
+    if (!item) return;
+
+    const printable = document.getElementById('printableArea');
+    if (!printable) return;
+
+    const catInfo = INVENTORY_CATEGORIES[item.kategori] || INVENTORY_CATEGORIES['lainnya'];
+
+    printable.innerHTML = `
+        <div style="font-family: Arial, sans-serif; max-width: 380px; margin: 30px auto; padding: 16px; border: 2.5px solid #0f172a; border-radius: 10px; background: #ffffff; color: #0f172a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            
+            <!-- Header Label -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px;">
+                <div>
+                    <h3 style="margin: 0; font-size: 13px; font-weight: 900; letter-spacing: 0.5px; color: #047857;">ADAM PROPERTY GROUP</h3>
+                    <p style="margin: 1px 0 0 0; font-size: 9px; font-weight: bold; color: #475569; text-transform: uppercase;">Label Inventaris & Aset Tetap</p>
+                </div>
+                <div style="background: #0f172a; color: white; font-family: monospace; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 4px;">
+                    ${escapeHtml(item.kode)}
+                </div>
+            </div>
+
+            <!-- Simulated Barcode Lines -->
+            <div style="text-align: center; margin: 10px 0; background: #f8fafc; padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <div style="font-family: 'Courier New', monospace; font-size: 26px; font-weight: 900; letter-spacing: 3px; line-height: 1; color: #0f172a;">
+                    ||| | ||||| || ||| |||| | |||
+                </div>
+                <div style="font-family: monospace; font-size: 10px; font-weight: bold; color: #64748b; letter-spacing: 2px; margin-top: 4px;">
+                    * ${escapeHtml(item.kode)} *
+                </div>
+            </div>
+
+            <!-- Asset Details Table -->
+            <table style="width: 100%; font-size: 10px; border-collapse: collapse; margin-top: 8px;">
+                <tr>
+                    <td style="padding: 3px 0; color: #64748b; width: 35%;">Nama Barang</td>
+                    <td style="padding: 3px 0; font-weight: bold; color: #0f172a;">: ${escapeHtml(item.nama)}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 3px 0; color: #64748b;">Kategori</td>
+                    <td style="padding: 3px 0;">: ${escapeHtml(catInfo.label)}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 3px 0; color: #64748b;">Lokasi Penempatan</td>
+                    <td style="padding: 3px 0; font-weight: bold; color: #047857;">: ${escapeHtml(item.lokasi)}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 3px 0; color: #64748b;">Penanggung Jawab</td>
+                    <td style="padding: 3px 0; font-weight: bold;">: ${escapeHtml(item.penanggungJawab)}</td>
+                </tr>
+                ${item.nomorSeri ? `
+                <tr>
+                    <td style="padding: 3px 0; color: #64748b;">Nomor Seri / SN</td>
+                    <td style="padding: 3px 0; font-family: monospace;">: ${escapeHtml(item.nomorSeri)}</td>
+                </tr>
+                ` : ''}
+                <tr>
+                    <td style="padding: 3px 0; color: #64748b;">Tgl Perolehan</td>
+                    <td style="padding: 3px 0;">: ${formatTanggalIndo(item.tanggal)}</td>
+                </tr>
+            </table>
+
+            <!-- Footer Warning Note -->
+            <div style="margin-top: 12px; padding-top: 6px; border-top: 1px dashed #cbd5e1; font-size: 8px; color: #94a3b8; text-align: center; text-transform: uppercase;">
+                MILIK RESMI ADAM PROPERTY GROUP &bull; DILARANG DIBAWA TANPA IZIN LOGISTIK
+            </div>
+        </div>
+    `;
+
+    printable.classList.remove('hidden');
+    window.print();
+    printable.classList.add('hidden');
+}
+
+function printCurrentInventorySticker() {
+    if (currentInventoryEntry) {
+        printInventorySticker(currentInventoryEntry.id);
+    }
+}
+
+// 9. Cetak Laporan Rekapitulasi Inventaris Kantor
+function printInventoryReport() {
+    const printable = document.getElementById('printableArea');
+    if (!printable) return;
+
+    let totalValue = 0;
+    let totalItems = 0;
+
+    const rowsHtml = filteredInventory.map((item, index) => {
+        const qty = Number(item.jumlah) || 1;
+        const val = Number(item.nilaiPerolehan) || 0;
+        totalValue += val * qty;
+        totalItems += qty;
+
+        const catInfo = INVENTORY_CATEGORIES[item.kategori] || INVENTORY_CATEGORIES['lainnya'];
+        const condInfo = INVENTORY_CONDITIONS[item.kondisi] || INVENTORY_CONDITIONS['baik'];
+
+        return `
+            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 10px;">
+                <td style="padding: 6px; text-align: center;">${index + 1}</td>
+                <td style="padding: 6px; font-family: monospace; font-weight: bold; color: #9f1239;">${escapeHtml(item.kode)}</td>
+                <td style="padding: 6px;">
+                    <b>${escapeHtml(item.nama)}</b>
+                    ${item.nomorSeri ? `<div style="font-size: 9px; color: #64748b; font-family: monospace;">SN: ${escapeHtml(item.nomorSeri)}</div>` : ''}
+                </td>
+                <td style="padding: 6px;">${escapeHtml(catInfo.label)}</td>
+                <td style="padding: 6px; font-weight: bold;">${escapeHtml(item.lokasi)}</td>
+                <td style="padding: 6px;">${escapeHtml(item.penanggungJawab)}</td>
+                <td style="padding: 6px; text-align: center;">
+                    <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 9px; ${item.kondisi === 'baik' ? 'background: #dcfce7; color: #15803d;' : 'background: #fef3c7; color: #b45309;'}">
+                        ${escapeHtml(condInfo.label)}
+                    </span>
+                </td>
+                <td style="padding: 6px; text-align: right; font-weight: bold; font-family: monospace;">
+                    ${formatRupiah(item.nilaiPerolehan)}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    printable.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 25px; color: #0f172a;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #e11d48; padding-bottom: 10px; margin-bottom: 15px;">
+                <div>
+                    <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #881337;">ADAM PROPERTY GROUP</h1>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #475569;">Laporan Resmi Daftar Inventaris & Aset Tetap Kantor</p>
+                </div>
+                <div style="text-align: right; font-size: 10px; color: #64748b;">
+                    <p style="margin: 0;">Tanggal Cetak: <b>${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</b></p>
+                    <p style="margin: 2px 0 0 0;">Total Data: <b>${filteredInventory.length} Item</b></p>
+                </div>
+            </div>
+
+            <!-- Financial Summary Bar -->
+            <div style="display: flex; gap: 12px; margin-bottom: 18px; font-size: 11px;">
+                <div style="flex: 1; padding: 8px 12px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px;">
+                    <span style="color: #9f1239; display: block; font-weight: bold;">TOTAL NILAI BUKU ASET</span>
+                    <span style="font-size: 15px; font-weight: bold; color: #be123c;">${formatRupiah(totalValue)}</span>
+                </div>
+                <div style="flex: 1; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;">
+                    <span style="color: #166534; display: block; font-weight: bold;">TOTAL UNIT FISIK BARANG</span>
+                    <span style="font-size: 15px; font-weight: bold; color: #15803d;">${totalItems} Unit</span>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                <thead>
+                    <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 10px; font-weight: bold; text-transform: uppercase;">
+                        <th style="padding: 7px; text-align: center; width: 30px;">#</th>
+                        <th style="padding: 7px; text-align: left; width: 85px;">Kode Aset</th>
+                        <th style="padding: 7px; text-align: left;">Nama Barang & Spek</th>
+                        <th style="padding: 7px; text-align: left; width: 130px;">Kategori</th>
+                        <th style="padding: 7px; text-align: left; width: 120px;">Lokasi</th>
+                        <th style="padding: 7px; text-align: left; width: 110px;">Penanggung Jawab</th>
+                        <th style="padding: 7px; text-align: center; width: 80px;">Kondisi</th>
+                        <th style="padding: 7px; text-align: right; width: 95px;">Nilai Aset (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <!-- Signatures -->
+            <div style="display: flex; justify-content: space-between; text-align: center; margin-top: 40px; font-size: 11px;">
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">Pengelola Inventaris & Sarana,</p>
+                    <div style="height: 60px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Bagian Umum & Aset</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                </div>
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">Mengetahui & Mengesahkan,</p>
+                    <div style="height: 60px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Direktur Utama</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
                 </div>
             </div>
         </div>

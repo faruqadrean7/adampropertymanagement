@@ -1,6 +1,6 @@
-// db.js - Layer Database IndexedDB & Image Helper untuk Adam Property (Versi 5: Kas Kecil & Petty Cash)
+// db.js - Layer Database IndexedDB & Image Helper untuk Adam Property (Versi 6: Inventaris Kantor & Aset Tetap)
 const DB_NAME = 'AdamKavlingDB';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 let dbInstance = null;
 
@@ -81,6 +81,17 @@ function initDB() {
                 pettyStore.createIndex('sumberDana', 'sumberDana', { unique: false }); // 'kas_besar' | 'investor' | 'manual'
                 pettyStore.createIndex('refType', 'refType', { unique: false });
                 pettyStore.createIndex('refId', 'refId', { unique: false });
+            }
+
+            // 9. Store Inventaris Kantor & Aset Tetap Developer
+            if (!db.objectStoreNames.contains('inventory')) {
+                const invStore = db.createObjectStore('inventory', { keyPath: 'id', autoIncrement: true });
+                invStore.createIndex('kode', 'kode', { unique: false });
+                invStore.createIndex('kategori', 'kategori', { unique: false });
+                invStore.createIndex('kondisi', 'kondisi', { unique: false });
+                invStore.createIndex('lokasi', 'lokasi', { unique: false });
+                invStore.createIndex('tanggalPerolehan', 'tanggalPerolehan', { unique: false });
+                invStore.createIndex('penanggungJawab', 'penanggungJawab', { unique: false });
             }
         };
 
@@ -763,6 +774,76 @@ const PettyCashDB = {
     }
 };
 
+// Helper Operasi CRUD Inventaris Kantor (Aset Tetap Developer)
+const InventoryDB = {
+    async getAll() {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('inventory', 'readonly');
+            const store = tx.objectStore('inventory');
+            const request = store.getAll();
+            request.onsuccess = () => {
+                const list = request.result || [];
+                list.sort((a, b) => (b.id || 0) - (a.id || 0));
+                resolve(list);
+            };
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async getById(id) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('inventory', 'readonly');
+            const store = tx.objectStore('inventory');
+            const request = store.get(Number(id));
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async add(itemData) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('inventory', 'readwrite');
+            const store = tx.objectStore('inventory');
+            itemData.nilaiPerolehan = Number(itemData.nilaiPerolehan) || 0;
+            itemData.jumlah = Number(itemData.jumlah) || 1;
+            itemData.createdAt = new Date().toISOString();
+            itemData.updatedAt = new Date().toISOString();
+            const request = store.add(itemData);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async update(id, itemData) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('inventory', 'readwrite');
+            const store = tx.objectStore('inventory');
+            itemData.id = Number(id);
+            itemData.nilaiPerolehan = Number(itemData.nilaiPerolehan) || 0;
+            itemData.jumlah = Number(itemData.jumlah) || 1;
+            itemData.updatedAt = new Date().toISOString();
+            const request = store.put(itemData);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async delete(id) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('inventory', 'readwrite');
+            const store = tx.objectStore('inventory');
+            const request = store.delete(Number(id));
+            request.onsuccess = () => resolve(true);
+            request.onerror = () => reject(request.error);
+        });
+    }
+};
+
 // Helper Kompresi Gambar
 function compressImage(file, maxWidth = 1500, quality = 0.82) {
     return new Promise((resolve, reject) => {
@@ -812,6 +893,7 @@ const BackupManager = {
         const landPayments = await LandPaymentDB.getAll();
         const cashbook = await CashbookDB.getAll();
         const pettyCash = await PettyCashDB.getAll();
+        const inventory = await InventoryDB.getAll();
 
         const data = {
             version: DB_VERSION,
@@ -824,7 +906,8 @@ const BackupManager = {
             landDebts,
             landPayments,
             cashbook,
-            pettyCash
+            pettyCash,
+            inventory
         };
 
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -906,6 +989,14 @@ const BackupManager = {
                 const pcStore = txPetty.objectStore('petty_cash');
                 pcStore.clear();
                 for (const pc of data.pettyCash) pcStore.put(pc);
+            }
+
+            // 9. Inventory (Inventaris Kantor & Aset Tetap)
+            if (data.inventory && Array.isArray(data.inventory)) {
+                const txInv = db.transaction('inventory', 'readwrite');
+                const invStore = txInv.objectStore('inventory');
+                invStore.clear();
+                for (const item of data.inventory) invStore.put(item);
             }
 
             return true;
