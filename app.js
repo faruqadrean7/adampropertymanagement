@@ -1,6 +1,6 @@
 // app.js - Logika Enterprise ADAM PROPERTY GROUP (Kavling, Customer, Barter Material, Hutang Petani, Kas Besar & Kas Kecil)
 
-let currentTab = 'kavling'; // 'kavling', 'customer', 'land_debt', 'cashbook', atau 'petty_cash'
+let currentTab = 'dashboard'; // 'dashboard', 'kavling', 'customer', 'land_debt', 'cashbook', 'petty_cash', atau 'inventory'
 let allProjects = [];
 let selectedProjectId = null;
 let allKavlings = [];
@@ -9,6 +9,17 @@ let allCustomers = [];
 let filteredCustomers = [];
 let allLandDebts = [];
 let selectedLandProjectId = 'all'; // Filter Lahan Aktif untuk Hutang Petani ('all' atau ID Proyek)
+
+// State Dashboard Eksekutif & Monitoring Bisnis
+let dashSelectedProjectId = 'all';
+let dashboardCharts = {
+    salesTrend: null,
+    lotOccupancy: null,
+    cashflowCompare: null,
+    landDebtProgress: null,
+    paymentMethod: null,
+    inventoryAsset: null
+};
 
 // State Kas Besar (Master Cashbook & Arus Kas Investor)
 let allCashbook = [];
@@ -76,6 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Auto-sync jika ada pembayaran customer / cicilan lahan yang belum masuk Kas Besar
         await syncAllToCashbook();
+        await refreshDashboardView();
         await refreshCashbookView();
         await refreshPettyCashView();
         await refreshInventoryView();
@@ -107,6 +119,7 @@ async function initializeData() {
     }
 
     renderProjectDropdowns();
+    await refreshDashboardView();
     await refreshKavlingView();
     await refreshCustomerList();
     await refreshLandDebtList();
@@ -115,10 +128,11 @@ async function initializeData() {
     await refreshInventoryView();
 }
 
-// Navigasi Tab Utama (Executive Sidebar Navigation: 6 Modul Terintegrasi)
+// Navigasi Tab Utama (Executive Sidebar Navigation: 7 Modul Terintegrasi)
 function switchMainTab(tab) {
     currentTab = tab;
 
+    const navDashboard = document.getElementById('navTabDashboard');
     const navKavling = document.getElementById('navTabKavling');
     const navCustomer = document.getElementById('navTabCustomer');
     const navLandDebt = document.getElementById('navTabLandDebt');
@@ -126,6 +140,7 @@ function switchMainTab(tab) {
     const navPettyCash = document.getElementById('navTabPettyCash');
     const navInventory = document.getElementById('navTabInventory');
 
+    const viewDashboard = document.getElementById('viewDashboard');
     const viewKavling = document.getElementById('viewKavling');
     const viewCustomer = document.getElementById('viewCustomer');
     const viewLandDebt = document.getElementById('viewLandDebt');
@@ -143,10 +158,11 @@ function switchMainTab(tab) {
     const activeClasses = `corp-tab-active ${baseClasses} font-bold shadow-md`;
 
     // Reset tab styles
-    [navKavling, navCustomer, navLandDebt, navCashbook, navPettyCash, navInventory].forEach(el => {
+    [navDashboard, navKavling, navCustomer, navLandDebt, navCashbook, navPettyCash, navInventory].forEach(el => {
         if (el) el.className = inactiveClasses;
     });
 
+    if (viewDashboard) viewDashboard.classList.add('hidden');
     if (viewKavling) viewKavling.classList.add('hidden');
     if (viewCustomer) viewCustomer.classList.add('hidden');
     if (viewLandDebt) viewLandDebt.classList.add('hidden');
@@ -154,11 +170,18 @@ function switchMainTab(tab) {
     if (viewPettyCash) viewPettyCash.classList.add('hidden');
     if (viewInventory) viewInventory.classList.add('hidden');
 
-    let actionLabel = '+ Tambah Kavling';
-    let moduleTitle = '1. Peta & Site Plan Kavling';
-    let breadcrumbLabel = 'Site Plan & Unit Kavling';
+    let actionLabel = 'Cetak Laporan';
+    let moduleTitle = 'Dashboard Eksekutif';
+    let breadcrumbLabel = 'Monitoring & Analisis Finansial Terpadu';
 
-    if (tab === 'kavling') {
+    if (tab === 'dashboard') {
+        if (navDashboard) navDashboard.className = activeClasses;
+        if (viewDashboard) viewDashboard.classList.remove('hidden');
+        actionLabel = 'Cetak Laporan';
+        moduleTitle = 'Dashboard Eksekutif';
+        breadcrumbLabel = 'Monitoring & Analisis Finansial Terpadu';
+        refreshDashboardView();
+    } else if (tab === 'kavling') {
         if (navKavling) navKavling.className = activeClasses;
         if (viewKavling) viewKavling.classList.remove('hidden');
         actionLabel = '+ Tambah Kavling';
@@ -245,7 +268,9 @@ function updateTopbarDate() {
 }
 
 function handlePrimaryAction() {
-    if (currentTab === 'kavling') {
+    if (currentTab === 'dashboard') {
+        printDashboardSummary();
+    } else if (currentTab === 'kavling') {
         openKavlingModal();
     } else if (currentTab === 'customer') {
         openCustomerModal();
@@ -310,6 +335,13 @@ function renderProjectDropdowns() {
         let selectHtml = `<option value="kantor_pusat">🏢 Operasional Kantor Pusat Developer</option>`;
         selectHtml += allProjects.map(p => `<option value="${p.id}">📍 Proyek: ${escapeHtml(p.nama)}</option>`).join('');
         pettyExpProjectId.innerHTML = selectHtml;
+    }
+
+    const dashFilterProject = document.getElementById('dashFilterProject');
+    if (dashFilterProject) {
+        let dashHtml = `<option value="all" ${dashSelectedProjectId === 'all' ? 'selected' : ''}>🌟 Semua Proyek Kavling</option>`;
+        dashHtml += allProjects.map(p => `<option value="${p.id}" ${String(p.id) === String(dashSelectedProjectId) ? 'selected' : ''}>📍 ${escapeHtml(p.nama)}</option>`).join('');
+        dashFilterProject.innerHTML = dashHtml;
     }
 
     renderLandProjectDropdown();
@@ -5449,4 +5481,981 @@ function terbilang(n) {
     if (n < 1000000000) return terbilang(Math.floor(n / 1000000)) + " Juta " + terbilang(n % 1000000);
     if (n < 1000000000000) return terbilang(Math.floor(n / 1000000000)) + " Miliar " + terbilang(n % 1000000000);
     return "";
+}
+
+
+// ========================================================
+// MODUL 0: DASHBOARD EKSEKUTIF, GRAFIK & MONITORING BISNIS
+// ========================================================
+
+function renderDashboardProjectDropdown() {
+    const select = document.getElementById('dashFilterProject');
+    if (!select) return;
+
+    let html = `<option value="all" ${dashSelectedProjectId === 'all' ? 'selected' : ''}>🌟 Semua Proyek Kavling (Konsolidasi)</option>`;
+    html += allProjects.map(p => `
+        <option value="${p.id}" ${String(dashSelectedProjectId) === String(p.id) ? 'selected' : ''}>
+            📍 ${escapeHtml(p.nama)}
+        </option>
+    `).join('');
+    select.innerHTML = html;
+}
+
+function handleDashboardProjectChange(projectId) {
+    dashSelectedProjectId = projectId;
+    refreshDashboardView();
+}
+
+async function refreshDashboardView() {
+    renderDashboardProjectDropdown();
+
+    try {
+        const [allKav, allCust, allPay, allLand, allLandPay, allCash, allPetty, allInv] = await Promise.all([
+            KavlingDB.getAll(),
+            CustomerDB.getAll(),
+            PaymentDB.getAll(),
+            LandDebtDB.getAll(),
+            LandPaymentDB.getAll(),
+            CashbookDB.getAll(),
+            PettyCashDB.getAll(),
+            InventoryDB.getAll()
+        ]);
+
+        // Filter Proyek jika dipilih
+        let kavlings = allKav;
+        let customers = allCust;
+        let payments = allPay;
+        let landDebts = allLand;
+        let landPayments = allLandPay;
+        let cashbook = allCash;
+        let pettyCash = allPetty;
+        let inventory = allInv;
+
+        if (dashSelectedProjectId !== 'all') {
+            kavlings = allKav.filter(k => String(k.proyekId) === String(dashSelectedProjectId));
+            const kavlingIds = new Set(kavlings.map(k => k.id));
+            customers = allCust.filter(c => kavlingIds.has(c.kavlingId) || String(c.proyekId) === String(dashSelectedProjectId));
+            const customerIds = new Set(customers.map(c => c.id));
+            payments = allPay.filter(p => customerIds.has(p.customerId));
+            landDebts = allLand.filter(l => String(l.proyekId) === String(dashSelectedProjectId));
+            const landDebtIds = new Set(landDebts.map(l => l.id));
+            landPayments = allLandPay.filter(lp => landDebtIds.has(lp.landDebtId));
+            cashbook = allCash.filter(c => String(c.proyekId) === String(dashSelectedProjectId));
+            pettyCash = allPetty.filter(pc => String(pc.alokasiProyek) === String(dashSelectedProjectId));
+        }
+
+        // 1. Perhitungan Omzet & Okupansi
+        const soldLots = kavlings.filter(k => k.status === 'terjual');
+        const bookedLots = kavlings.filter(k => k.status === 'booking');
+        const openLots = kavlings.filter(k => k.status === 'terbuka');
+        const soldOrBookedLots = kavlings.filter(k => k.status === 'terjual' || k.status === 'booking');
+
+        let totalOmzet = 0;
+        soldOrBookedLots.forEach(k => {
+            const cust = customers.find(c => c.kavlingId === k.id);
+            if (cust && cust.hargaDeal) {
+                totalOmzet += Number(cust.hargaDeal) || 0;
+            } else {
+                totalOmzet += Number(k.harga) || 0;
+            }
+        });
+
+        // 2. Realisasi Kas Masuk Real (Non-Barter)
+        const cashPayments = payments.filter(p => p.metodeBayar !== 'barter');
+        const totalCashIn = cashPayments.reduce((acc, p) => acc + (Number(p.jumlah) || 0), 0);
+
+        // Barter Material
+        const barterPayments = payments.filter(p => p.metodeBayar === 'barter');
+        const totalBarterVal = barterPayments.reduce((acc, p) => acc + (Number(p.nilaiBarter || p.jumlah) || 0), 0);
+
+        // 3. Piutang Customer Berjalan
+        let totalPiutang = 0;
+        let activeDebtorsCount = 0;
+        const customerReceivablesList = [];
+
+        customers.forEach(c => {
+            const k = kavlings.find(item => item.id === c.kavlingId);
+            const dealPrice = Number(c.hargaDeal) || (k ? Number(k.harga) : 0);
+            const cPayments = payments.filter(p => p.customerId === c.id);
+            const cPaidTotal = cPayments.reduce((sum, p) => sum + (Number(p.jumlah) || 0), 0);
+            const sisa = Math.max(0, dealPrice - cPaidTotal);
+
+            if (sisa > 0) {
+                totalPiutang += sisa;
+                activeDebtorsCount++;
+            }
+
+            customerReceivablesList.push({
+                customer: c,
+                kavling: k,
+                dealPrice: dealPrice,
+                paid: cPaidTotal,
+                sisa: sisa
+            });
+        });
+
+        // 4. Hutang Pokok Lahan Petani
+        let totalKesepakatanLahan = 0;
+        let totalCicilanLahan = 0;
+        landDebts.forEach(ld => {
+            totalKesepakatanLahan += Number(ld.totalKesepakatan) || 0;
+            const ldPays = landPayments.filter(lp => lp.landDebtId === ld.id);
+            totalCicilanLahan += ldPays.reduce((sum, lp) => sum + (Number(lp.jumlah) || 0), 0);
+        });
+        const sisaHutangLahan = Math.max(0, totalKesepakatanLahan - totalCicilanLahan);
+
+        // 5. Tingkat Okupansi / Penjualan Kavling
+        const totalUnits = kavlings.length;
+        const occupancyPct = totalUnits > 0 ? Math.round(((soldLots.length + bookedLots.length) / totalUnits) * 100) : 0;
+
+        // 6. Likuiditas Perusahaan (Kas Besar + Kas Kecil)
+        const cashInflow = cashbook.filter(c => c.tipe === 'in').reduce((s, c) => s + (Number(c.jumlah) || 0), 0);
+        const cashOutflow = cashbook.filter(c => c.tipe === 'out').reduce((s, c) => s + (Number(c.jumlah) || 0), 0);
+        const saldoKasBesar = cashInflow - cashOutflow;
+
+        const pettyInflow = pettyCash.filter(p => p.tipe === 'topup').reduce((s, p) => s + (Number(p.jumlah) || 0), 0);
+        const pettyOutflow = pettyCash.filter(p => p.tipe === 'expense').reduce((s, p) => s + (Number(p.jumlah) || 0), 0);
+        const saldoKasKecil = pettyInflow - pettyOutflow;
+
+        const totalLikuid = saldoKasBesar + saldoKasKecil;
+
+        // 7. Nilai Aset Inventaris Kantor
+        const totalAssetVal = inventory.reduce((s, item) => s + ((Number(item.nilaiAset) || 0) * (Number(item.jumlah) || 1)), 0);
+
+        // Update DOM KPI Cards
+        const elTotalSales = document.getElementById('dashStatTotalSales');
+        if (elTotalSales) elTotalSales.textContent = formatRupiah(totalOmzet);
+        const elSalesCount = document.getElementById('dashStatSalesCount');
+        if (elSalesCount) elSalesCount.textContent = `${soldLots.length + bookedLots.length} Unit Terjual/Booking`;
+
+        const elCashIn = document.getElementById('dashStatCashIn');
+        if (elCashIn) elCashIn.textContent = formatRupiah(totalCashIn);
+
+        const elReceivables = document.getElementById('dashStatReceivables');
+        if (elReceivables) elReceivables.textContent = formatRupiah(totalPiutang);
+        const elReceivablesCount = document.getElementById('dashStatReceivablesCount');
+        if (elReceivablesCount) elReceivablesCount.textContent = `${activeDebtorsCount} Customer memiliki sisa cicilan`;
+
+        const elLandDebt = document.getElementById('dashStatLandDebt');
+        if (elLandDebt) elLandDebt.textContent = formatRupiah(sisaHutangLahan);
+        const elLandDebtInfo = document.getElementById('dashStatLandDebtInfo');
+        if (elLandDebtInfo) elLandDebtInfo.textContent = `Terbayar: ${formatRupiah(totalCicilanLahan)} (${landDebts.length} Lahan)`;
+
+        const elSalesRate = document.getElementById('dashStatSalesRate');
+        if (elSalesRate) elSalesRate.textContent = `${occupancyPct}%`;
+        const elLotStock = document.getElementById('dashStatLotStock');
+        if (elLotStock) elLotStock.textContent = `${soldLots.length} Terjual · ${bookedLots.length} Booking · ${openLots.length} Terbuka`;
+
+        const elNetLiquidity = document.getElementById('dashStatNetLiquidity');
+        if (elNetLiquidity) elNetLiquidity.textContent = formatRupiah(totalLikuid);
+        const elLiquidityBreakdown = document.getElementById('dashStatLiquidityBreakdown');
+        if (elLiquidityBreakdown) elLiquidityBreakdown.textContent = `Besar: ${formatRupiah(saldoKasBesar)} · Kecil: ${formatRupiah(saldoKasKecil)}`;
+
+        const elNetCashText = document.getElementById('dashNetCashText');
+        if (elNetCashText) elNetCashText.textContent = formatRupiah(saldoKasBesar);
+
+        const elLandDebtText = document.getElementById('dashLandDebtText');
+        if (elLandDebtText) elLandDebtText.textContent = formatRupiah(sisaHutangLahan);
+
+        const elBarterTotalText = document.getElementById('dashBarterTotalText');
+        if (elBarterTotalText) elBarterTotalText.textContent = `${formatRupiah(totalBarterVal)} (${barterPayments.length} transaksi)`;
+
+        const elTotalAssetValText = document.getElementById('dashTotalAssetValText');
+        if (elTotalAssetValText) elTotalAssetValText.textContent = formatRupiah(totalAssetVal);
+
+        // Render Actionable Widgets & Breakdowns
+        renderDashBlockBreakdown(kavlings);
+        renderDashTopReceivables(customerReceivablesList);
+        renderDashAvailableLots(openLots);
+
+        // Render Chart.js Visualizations
+        if (typeof Chart !== 'undefined') {
+            renderChartSalesTrend(customers, payments, cashbook, landPayments, pettyCash);
+            renderChartLotOccupancy(soldLots.length, bookedLots.length, openLots.length);
+            renderChartCashflowCompare(totalCashIn, cashInflow, totalCicilanLahan, pettyOutflow, cashOutflow);
+            renderChartLandDebtProgress(landDebts, landPayments);
+            renderChartPaymentMethod(payments);
+            renderChartInventoryAsset(inventory);
+        }
+
+    } catch (err) {
+        console.error('Error saat refreshDashboardView:', err);
+    }
+}
+
+function renderDashBlockBreakdown(kavlings) {
+    const container = document.getElementById('dashBlockBreakdownList');
+    if (!container) return;
+
+    if (!kavlings || kavlings.length === 0) {
+        container.innerHTML = `<div class="text-[11px] text-slate-400 italic text-center py-2">Belum ada data kavling</div>`;
+        return;
+    }
+
+    const blockMap = {};
+    kavlings.forEach(k => {
+        const b = (k.blok || 'Lainnya').toUpperCase().trim();
+        if (!blockMap[b]) {
+            blockMap[b] = { total: 0, sold: 0, booked: 0, open: 0 };
+        }
+        blockMap[b].total++;
+        if (k.status === 'terjual') blockMap[b].sold++;
+        else if (k.status === 'booking') blockMap[b].booked++;
+        else blockMap[b].open++;
+    });
+
+    const blocks = Object.keys(blockMap).sort();
+    let html = '';
+
+    blocks.forEach(b => {
+        const m = blockMap[b];
+        const soldPct = m.total > 0 ? (m.sold / m.total) * 100 : 0;
+        const bookedPct = m.total > 0 ? (m.booked / m.total) * 100 : 0;
+        const openPct = m.total > 0 ? (m.open / m.total) * 100 : 0;
+        const occupancyTotalPct = Math.round(soldPct + bookedPct);
+
+        html += `
+            <div class="space-y-1">
+                <div class="flex justify-between items-center text-[11px]">
+                    <span class="font-bold text-slate-700">Blok ${escapeHtml(b)}</span>
+                    <span class="font-mono text-slate-500 font-semibold">${occupancyTotalPct}% (${m.sold + m.booked}/${m.total} Unit)</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2 flex overflow-hidden border border-slate-200" title="${m.sold} Terjual, ${m.booked} Booking, ${m.open} Terbuka">
+                    <div class="bg-emerald-500 h-2 transition-all duration-500" style="width: ${soldPct}%"></div>
+                    <div class="bg-amber-400 h-2 transition-all duration-500" style="width: ${bookedPct}%"></div>
+                    <div class="bg-slate-200 h-2 transition-all duration-500" style="width: ${openPct}%"></div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function renderDashTopReceivables(customerReceivablesList) {
+    const container = document.getElementById('dashTopReceivablesList');
+    if (!container) return;
+
+    const filtered = customerReceivablesList
+        .filter(item => item.sisa > 0)
+        .sort((a, b) => b.sisa - a.sisa)
+        .slice(0, 5);
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center text-slate-500 text-xs">
+                <i class="fa-solid fa-circle-check text-emerald-500 text-base mb-1 block"></i>
+                Alhamdulillah, tidak ada piutang customer yang tertunggak.
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(item => {
+        const blokNomor = item.kavling ? `Blok ${item.kavling.blok} - No. ${item.kavling.nomor}` : 'Unit Kavling';
+        html += `
+            <div class="p-3 rounded-xl border border-slate-200 hover:border-amber-400 bg-slate-50/60 hover:bg-white transition flex items-center justify-between gap-3 group">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                        <h5 class="text-xs font-bold text-slate-900 group-hover:text-amber-600 transition truncate">${escapeHtml(item.customer.nama)}</h5>
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 shrink-0">${escapeHtml(blokNomor)}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-0.5 truncate">
+                        Deal: ${formatRupiah(item.dealPrice)} · Terbayar: ${formatRupiah(item.paid)}
+                    </div>
+                </div>
+                <div class="text-right shrink-0">
+                    <div class="text-xs font-black font-mono text-amber-600">${formatRupiah(item.sisa)}</div>
+                    <button onclick="openCustomerDetailFromDashboard(${item.customer.id})" class="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 underline mt-0.5 cursor-pointer">
+                        Rincian &rarr;
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function renderDashAvailableLots(openLots) {
+    const container = document.getElementById('dashAvailableLotsList');
+    if (!container) return;
+
+    if (!openLots || openLots.length === 0) {
+        container.innerHTML = `
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center text-slate-500 text-xs">
+                <i class="fa-solid fa-trophy text-amber-500 text-base mb-1 block"></i>
+                Luar biasa! Semua unit kavling telah terbooking / terjual 100%!
+            </div>
+        `;
+        return;
+    }
+
+    const available = openLots.slice(0, 5);
+    let html = '';
+
+    available.forEach(lot => {
+        html += `
+            <div class="p-3 rounded-xl border border-slate-200 hover:border-emerald-400 bg-slate-50/60 hover:bg-white transition flex items-center justify-between gap-3 group">
+                <div class="min-w-0 flex-1 flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-black font-mono shrink-0">
+                        ${escapeHtml(lot.nomor)}
+                    </span>
+                    <div class="min-w-0">
+                        <h5 class="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition truncate">
+                            Blok ${escapeHtml(lot.blok)} - No. ${escapeHtml(lot.nomor)}
+                        </h5>
+                        <div class="text-[10px] text-slate-500 truncate">
+                            ${lot.luasTanah || 0} m² (${lot.panjang || 0} x ${lot.lebar || 0} m) · ${escapeHtml(lot.tipe || 'Standar')}
+                        </div>
+                    </div>
+                </div>
+                <div class="text-right shrink-0">
+                    <div class="text-xs font-black font-mono text-emerald-700">${formatRupiah(lot.harga)}</div>
+                    <button onclick="selectLotFromDashboard(${lot.id})" class="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 underline mt-0.5 cursor-pointer">
+                        Site Plan &rarr;
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+async function openCustomerDetailFromDashboard(customerId) {
+    switchMainTab('customer');
+    await openCustomerDetail(customerId);
+}
+
+async function selectLotFromDashboard(kavlingId) {
+    switchMainTab('kavling');
+    await openKavlingDetail(kavlingId);
+}
+
+// ----------------------------------------------------
+// CHART.JS RENDERERS (GRAFIK & ANALISIS BISNIS)
+// ----------------------------------------------------
+
+function renderChartSalesTrend(customers, payments, cashbook, landPayments, pettyCash) {
+    const canvas = document.getElementById('chartSalesTrend');
+    if (!canvas) return;
+
+    // Generate last 6 months buckets
+    const monthBuckets = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const key = `${yyyy}-${mm}`;
+        const label = d.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+        monthBuckets.push({
+            key,
+            label,
+            salesContract: 0,
+            cashIn: 0,
+            cashOut: 0
+        });
+    }
+
+    // Populate salesContract (from customer.tanggalBeli)
+    customers.forEach(c => {
+        if (c.tanggalBeli) {
+            const ym = c.tanggalBeli.substring(0, 7);
+            const bucket = monthBuckets.find(b => b.key === ym);
+            if (bucket) {
+                bucket.salesContract += (Number(c.hargaDeal) || 0);
+            }
+        }
+    });
+
+    // Populate cashIn (from PaymentDB + Cashbook inflow from investor)
+    payments.forEach(p => {
+        if (p.tanggal && p.metodeBayar !== 'barter') {
+            const ym = p.tanggal.substring(0, 7);
+            const bucket = monthBuckets.find(b => b.key === ym);
+            if (bucket) {
+                bucket.cashIn += (Number(p.jumlah) || 0);
+            }
+        }
+    });
+    cashbook.forEach(cb => {
+        if (cb.tanggal && cb.tipe === 'in' && cb.kategori === 'investor_masuk') {
+            const ym = cb.tanggal.substring(0, 7);
+            const bucket = monthBuckets.find(b => b.key === ym);
+            if (bucket) {
+                bucket.cashIn += (Number(cb.jumlah) || 0);
+            }
+        }
+    });
+
+    // Populate cashOut (from LandPaymentDB + Cashbook out + PettyCash expense)
+    landPayments.forEach(lp => {
+        if (lp.tanggal) {
+            const ym = lp.tanggal.substring(0, 7);
+            const bucket = monthBuckets.find(b => b.key === ym);
+            if (bucket) {
+                bucket.cashOut += (Number(lp.jumlah) || 0);
+            }
+        }
+    });
+    cashbook.forEach(cb => {
+        if (cb.tanggal && cb.tipe === 'out' && cb.kategori !== 'topup_kas_kecil') {
+            const ym = cb.tanggal.substring(0, 7);
+            const bucket = monthBuckets.find(b => b.key === ym);
+            if (bucket) {
+                bucket.cashOut += (Number(cb.jumlah) || 0);
+            }
+        }
+    });
+    pettyCash.forEach(pc => {
+        if (pc.tanggal && pc.tipe === 'expense') {
+            const ym = pc.tanggal.substring(0, 7);
+            const bucket = monthBuckets.find(b => b.key === ym);
+            if (bucket) {
+                bucket.cashOut += (Number(pc.jumlah) || 0);
+            }
+        }
+    });
+
+    if (dashboardCharts.salesTrend) {
+        dashboardCharts.salesTrend.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    dashboardCharts.salesTrend = new Chart(ctx, {
+        data: {
+            labels: monthBuckets.map(b => b.label),
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Omzet Penjualan (Deal)',
+                    data: monthBuckets.map(b => b.salesContract),
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: '#10b981',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    order: 2
+                },
+                {
+                    type: 'bar',
+                    label: 'Realisasi Kas Masuk',
+                    data: monthBuckets.map(b => b.cashIn),
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    order: 3
+                },
+                {
+                    type: 'line',
+                    label: 'Pengeluaran Kas',
+                    data: monthBuckets.map(b => b.cashOut),
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#ef4444',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.3,
+                    fill: false,
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: false // Menggunakan legend custom di card header
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return ` ${context.dataset.label}: ${formatRupiah(context.parsed.y)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(v) {
+                            if (v >= 1000000000) return (v / 1000000000).toFixed(1) + ' M';
+                            if (v >= 1000000) return (v / 1000000).toFixed(0) + ' Jt';
+                            return v;
+                        },
+                        font: { size: 10 }
+                    },
+                    grid: { color: 'rgba(226, 232, 240, 0.8)' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 10 } }
+                }
+            }
+        }
+    });
+}
+
+function renderChartLotOccupancy(sold, booked, open) {
+    const canvas = document.getElementById('chartLotOccupancy');
+    if (!canvas) return;
+
+    if (dashboardCharts.lotOccupancy) {
+        dashboardCharts.lotOccupancy.destroy();
+    }
+
+    const hasData = (sold + booked + open) > 0;
+    const dataVals = hasData ? [sold, booked, open] : [0, 0, 1];
+    const bgColors = hasData ? ['#10b981', '#f59e0b', '#3b82f6'] : ['#e2e8f0', '#e2e8f0', '#e2e8f0'];
+
+    const ctx = canvas.getContext('2d');
+    dashboardCharts.lotOccupancy = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Terjual', 'Booking', 'Terbuka'],
+            datasets: [{
+                data: dataVals,
+                backgroundColor: bgColors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, font: { size: 11 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            if (!hasData) return ' Belum ada data kavling';
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = total > 0 ? Math.round((ctx.parsed / total) * 100) : 0;
+                            return ` ${ctx.label}: ${ctx.parsed} unit (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderChartCashflowCompare(totalCustomerCashIn, cashInflow, totalCicilanLahan, pettyOutflow, cashOutflow) {
+    const canvas = document.getElementById('chartCashflowCompare');
+    if (!canvas) return;
+
+    if (dashboardCharts.cashflowCompare) {
+        dashboardCharts.cashflowCompare.destroy();
+    }
+
+    const labels = ['Penjualan Kavling', 'Inflow Kas Lain', 'Cicilan Lahan', 'Kas Kecil Kantor', 'Biaya Proyek & Ops'];
+    const dataVals = [
+        totalCustomerCashIn,
+        Math.max(0, cashInflow - totalCustomerCashIn),
+        totalCicilanLahan,
+        pettyOutflow,
+        Math.max(0, cashOutflow - totalCicilanLahan)
+    ];
+    const colors = ['#10b981', '#06b6d4', '#ef4444', '#f59e0b', '#ec4899'];
+
+    const ctx = canvas.getContext('2d');
+    dashboardCharts.cashflowCompare = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: dataVals,
+                backgroundColor: colors,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return ` ${ctx.label}: ${formatRupiah(ctx.parsed.y)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(v) {
+                            if (v >= 1000000000) return (v / 1000000000).toFixed(1) + ' M';
+                            if (v >= 1000000) return (v / 1000000).toFixed(0) + ' Jt';
+                            return v;
+                        },
+                        font: { size: 10 }
+                    },
+                    grid: { color: 'rgba(226, 232, 240, 0.8)' }
+                },
+                x: {
+                    ticks: {
+                        font: { size: 9 },
+                        callback: function(val, idx) {
+                            const l = labels[idx];
+                            return l.length > 14 ? l.substring(0, 12) + '..' : l;
+                        }
+                    },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+function renderChartLandDebtProgress(landDebts, landPayments) {
+    const canvas = document.getElementById('chartLandDebtProgress');
+    if (!canvas) return;
+
+    if (dashboardCharts.landDebtProgress) {
+        dashboardCharts.landDebtProgress.destroy();
+    }
+
+    const labels = [];
+    const terbayarData = [];
+    const sisaData = [];
+
+    if (landDebts && landDebts.length > 0) {
+        landDebts.forEach(ld => {
+            labels.push(ld.namaPetani || 'Lahan');
+            const ldPays = landPayments.filter(lp => lp.landDebtId === ld.id);
+            const paid = ldPays.reduce((s, lp) => s + (Number(lp.jumlah) || 0), 0);
+            const total = Number(ld.totalKesepakatan) || 0;
+            const sisa = Math.max(0, total - paid);
+            terbayarData.push(paid);
+            sisaData.push(sisa);
+        });
+    } else {
+        labels.push('Belum ada data hutang lahan');
+        terbayarData.push(0);
+        sisaData.push(0);
+    }
+
+    const ctx = canvas.getContext('2d');
+    dashboardCharts.landDebtProgress = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Terbayar',
+                    data: terbayarData,
+                    backgroundColor: '#10b981',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Sisa Hutang',
+                    data: sisaData,
+                    backgroundColor: '#ef4444',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    stacked: true,
+                    ticks: {
+                        callback: function(v) {
+                            if (v >= 1000000000) return (v / 1000000000).toFixed(1) + ' M';
+                            if (v >= 1000000) return (v / 1000000).toFixed(0) + ' Jt';
+                            return v;
+                        },
+                        font: { size: 10 }
+                    },
+                    grid: { color: 'rgba(226, 232, 240, 0.8)' }
+                },
+                y: {
+                    stacked: true,
+                    ticks: { font: { size: 10 } },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { boxWidth: 12, font: { size: 10 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return ` ${ctx.dataset.label}: ${formatRupiah(ctx.parsed.x)}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderChartPaymentMethod(payments) {
+    const canvas = document.getElementById('chartPaymentMethod');
+    if (!canvas) return;
+
+    if (dashboardCharts.paymentMethod) {
+        dashboardCharts.paymentMethod.destroy();
+    }
+
+    let transferVal = 0;
+    let tunaiVal = 0;
+    let barterVal = 0;
+
+    payments.forEach(p => {
+        const jml = Number(p.jumlah) || 0;
+        if (p.metodeBayar === 'barter') {
+            barterVal += Number(p.nilaiBarter || jml);
+        } else if (p.metodeBayar === 'tunai') {
+            tunaiVal += jml;
+        } else {
+            // Default transfer bank
+            transferVal += jml;
+        }
+    });
+
+    const hasData = (transferVal + tunaiVal + barterVal) > 0;
+    const dataVals = hasData ? [transferVal, tunaiVal, barterVal] : [0, 0, 1];
+    const bgColors = hasData ? ['#0284c7', '#10b981', '#f59e0b'] : ['#e2e8f0', '#e2e8f0', '#e2e8f0'];
+
+    const ctx = canvas.getContext('2d');
+    dashboardCharts.paymentMethod = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Transfer Bank', 'Tunai Langsung', 'Barter Material'],
+            datasets: [{
+                data: dataVals,
+                backgroundColor: bgColors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, font: { size: 10 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            if (!hasData) return ' Belum ada data pembayaran';
+                            return ` ${ctx.label}: ${formatRupiah(ctx.parsed)}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderChartInventoryAsset(inventory) {
+    const canvas = document.getElementById('chartInventoryAsset');
+    if (!canvas) return;
+
+    if (dashboardCharts.inventoryAsset) {
+        dashboardCharts.inventoryAsset.destroy();
+    }
+
+    const catMap = {
+        'elektronik': { label: 'Elektronik & IT', val: 0 },
+        'kendaraan': { label: 'Kendaraan Ops', val: 0 },
+        'alat_lapangan': { label: 'Alat Lapangan', val: 0 },
+        'furniture': { label: 'Furniture Kantor', val: 0 },
+        'keamanan': { label: 'K3 & Keamanan', val: 0 },
+        'peralatan_kantor': { label: 'Alat Kantor', val: 0 },
+        'lainnya': { label: 'Lainnya', val: 0 }
+    };
+
+    inventory.forEach(item => {
+        const cat = item.kategori || 'lainnya';
+        const totalNilai = (Number(item.nilaiAset) || 0) * (Number(item.jumlah) || 1);
+        if (catMap[cat]) {
+            catMap[cat].val += totalNilai;
+        } else {
+            catMap['lainnya'].val += totalNilai;
+        }
+    });
+
+    const activeCats = Object.values(catMap).filter(c => c.val > 0);
+    const hasData = activeCats.length > 0;
+
+    const labels = hasData ? activeCats.map(c => c.label) : ['Belum ada aset'];
+    const dataVals = hasData ? activeCats.map(c => c.val) : [1];
+    const bgColors = hasData ? ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6', '#0ea5e9', '#64748b'] : ['#e2e8f0'];
+
+    const ctx = canvas.getContext('2d');
+    dashboardCharts.inventoryAsset = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: dataVals,
+                backgroundColor: bgColors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 10, font: { size: 9 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            if (!hasData) return ' Belum ada data aset';
+                            return ` ${ctx.label}: ${formatRupiah(ctx.parsed)}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function printDashboardSummary() {
+    const printable = document.getElementById('printableArea');
+    if (!printable) return;
+
+    const todayStr = formatTanggalIndo(new Date().toISOString().split('T')[0]);
+    const projectName = dashSelectedProjectId === 'all' 
+        ? 'Seluruh Proyek (Konsolidasi)' 
+        : (allProjects.find(p => String(p.id) === String(dashSelectedProjectId))?.nama || 'Proyek Kavling');
+
+    const totalSales = document.getElementById('dashStatTotalSales')?.textContent || 'Rp 0';
+    const cashIn = document.getElementById('dashStatCashIn')?.textContent || 'Rp 0';
+    const receivables = document.getElementById('dashStatReceivables')?.textContent || 'Rp 0';
+    const landDebt = document.getElementById('dashStatLandDebt')?.textContent || 'Rp 0';
+    const salesRate = document.getElementById('dashStatSalesRate')?.textContent || '0%';
+    const netLiquidity = document.getElementById('dashStatNetLiquidity')?.textContent || 'Rp 0';
+    const barterTotal = document.getElementById('dashBarterTotalText')?.textContent || 'Rp 0';
+    const totalAsset = document.getElementById('dashTotalAssetValText')?.textContent || 'Rp 0';
+
+    printable.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 25px; color: #1e293b; max-width: 800px; margin: auto;">
+            <!-- Header Surat / Kop Perusahaan -->
+            <div style="border-bottom: 3px double #0f172a; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 style="margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 0.5px; color: #0f172a;">ADAM PROPERTY GROUP</h1>
+                    <p style="margin: 3px 0 0 0; font-size: 11px; color: #64748b;">Pengembang Real Estate, Kavling Mandiri & Pembebasan Lahan</p>
+                    <p style="margin: 2px 0 0 0; font-size: 10px; color: #94a3b8;">Jl. Properti Mandiri No. 88 · Telp: (021) 7788-9900 · Email: corporate@adamproperty.id</p>
+                </div>
+                <div style="text-align: right;">
+                    <span style="display: inline-block; padding: 4px 10px; background: #0f172a; color: white; border-radius: 6px; font-size: 10px; font-weight: bold; text-transform: uppercase;">
+                        Executive Summary
+                    </span>
+                    <p style="margin: 5px 0 0 0; font-size: 10px; color: #64748b;">Per Tanggal: <b>${todayStr}</b></p>
+                </div>
+            </div>
+
+            <!-- Judul Laporan -->
+            <div style="text-align: center; margin-bottom: 25px;">
+                <h2 style="margin: 0; font-size: 16px; font-weight: bold; text-transform: uppercase; color: #0f172a;">
+                    LAPORAN MONITORING & KINERJA BISNIS KAVLING
+                </h2>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #047857; font-weight: bold;">
+                    Cakupan Proyek: ${escapeHtml(projectName)}
+                </p>
+            </div>
+
+            <!-- KPI Summary Table -->
+            <div style="margin-bottom: 25px;">
+                <h3 style="font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; color: #334155; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">
+                    I. Indikator Kunci Finansial & Operasional (Executive KPIs)
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 8px; font-weight: bold; width: 40%; background: #f8fafc;">Total Omzet Penjualan Kavling</td>
+                            <td style="padding: 8px; font-weight: bold; font-family: monospace; font-size: 12px; color: #0f172a;">${totalSales}</td>
+                            <td style="padding: 8px; font-weight: bold; width: 35%; background: #f8fafc;">Okupansi / Keterjualan</td>
+                            <td style="padding: 8px; font-weight: bold; font-family: monospace; font-size: 12px; color: #4338ca;">${salesRate}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 8px; font-weight: bold; background: #f8fafc;">Realisasi Kas Masuk (Customer)</td>
+                            <td style="padding: 8px; font-weight: bold; font-family: monospace; font-size: 12px; color: #047857;">${cashIn}</td>
+                            <td style="padding: 8px; font-weight: bold; background: #f8fafc;">Kas Likuid (Besar + Kecil)</td>
+                            <td style="padding: 8px; font-weight: bold; font-family: monospace; font-size: 12px; color: #047857;">${netLiquidity}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 8px; font-weight: bold; background: #f8fafc;">Sisa Piutang Berjalan Customer</td>
+                            <td style="padding: 8px; font-weight: bold; font-family: monospace; font-size: 12px; color: #d97706;">${receivables}</td>
+                            <td style="padding: 8px; font-weight: bold; background: #f8fafc;">Transaksi Barter Material</td>
+                            <td style="padding: 8px; font-weight: bold; font-family: monospace; font-size: 12px; color: #b45309;">${barterTotal}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 8px; font-weight: bold; background: #f8fafc;">Sisa Hutang Pokok Lahan Petani</td>
+                            <td style="padding: 8px; font-weight: bold; font-family: monospace; font-size: 12px; color: #dc2626;">${landDebt}</td>
+                            <td style="padding: 8px; font-weight: bold; background: #f8fafc;">Valuasi Aset Inventaris Kantor</td>
+                            <td style="padding: 8px; font-weight: bold; font-family: monospace; font-size: 12px; color: #be123c;">${totalAsset}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Catatan Audit Manajerial -->
+            <div style="background: #f8fafc; border-left: 4px solid #0f172a; padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 30px; font-size: 10px; color: #475569;">
+                <b>Catatan Manajerial & Rekomendasi Eksekutif:</b>
+                <ul style="margin: 5px 0 0 0; padding-left: 18px; line-height: 1.5;">
+                    <li>Arus kas masuk didominasi oleh realisasi DP dan cicilan konsumen yang telah masuk ke Kas Besar.</li>
+                    <li>Sisa piutang berjalan harus dipantau secara berkala melalui surat tagihan jatuh tempo.</li>
+                    <li>Kewajiban pelunasan lahan ke petani/pemilik tanah terikat dengan skema cicilan termin sesuai kesepakatan notaris.</li>
+                    <li>Data ini diolah langsung secara terintegrasi dari database operasional real-time ADAM PROPERTY GROUP.</li>
+                </ul>
+            </div>
+
+            <!-- Signatures -->
+            <div style="display: flex; justify-content: space-between; text-align: center; margin-top: 40px; font-size: 11px;">
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">Disiapkan oleh,</p>
+                    <div style="height: 60px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Manager Keuangan & Accounting</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                </div>
+                <div style="width: 30%;">
+                    <p style="margin: 0; color: #64748b;">Menyetujui & Mengesahkan,</p>
+                    <div style="height: 60px;"></div>
+                    <p style="margin: 0; font-weight: bold; text-decoration: underline;">Direktur Utama</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    printable.classList.remove('hidden');
+    window.print();
+    printable.classList.add('hidden');
 }

@@ -1,7 +1,7 @@
 # ADAM PROPERTY GROUP - ENTERPRISE REAL ESTATE SYSTEM
-**Sistem Manajemen Kavling, Customer CRM, Barter Material, Hutang Petani, Kas Besar Investor, Kas Kecil & Inventaris Kantor**
+**Sistem Manajemen Kavling, Customer CRM, Barter Material, Hutang Petani, Kas Besar Investor, Kas Kecil, Inventaris Kantor & Dashboard Grafik Eksekutif**
 
-Aplikasi sistem pengelolaan properti terpadu berbasis Web (HTML5, Tailwind CSS, JavaScript, IndexedDB v6) dengan tampilan **Corporate Executive**, dirancang khusus untuk operasional pengembang tanah kavling dan perumahan mandiri.
+Aplikasi sistem pengelolaan properti terpadu berbasis Web (HTML5, Tailwind CSS, Chart.js, JavaScript, IndexedDB v6) dengan tampilan **Corporate Executive**, dirancang khusus untuk direksi dan staf pengembang tanah kavling dan perumahan mandiri.
 
 ---
 
@@ -12,10 +12,40 @@ Aplikasi sistem pengelolaan properti terpadu berbasis Web (HTML5, Tailwind CSS, 
 
 ---
 
+## 📊 1. Dashboard Eksekutif, Grafik Penjualan & Monitoring Finansial Usaha
+Tampilan beranda utama (*Executive Business Analytics*) yang menyajikan indikator kinerja kunci (KPI), grafik interaktif Chart.js, serta widget penagihan piutang dan stok unit secara konsolidasi:
+
+* **Filter Proyek Dinamis**:
+  * Pilihan `🌟 Semua Proyek Kavling (Konsolidasi)` untuk melihat performa bisnis group secara menyeluruh.
+  * Pilihan per proyek spesifik (misal: *Baitul Makmur Regency*) untuk analisa mendalam unit per kawasan.
+* **6 Kartu Metrik Finansial & Operasional (Executive KPIs)**:
+  1. 💵 **Total Omzet Penjualan Kavling**: Akumulasi nilai kontrak penjualan kavling yang telah laku/booking.
+  2. 📈 **Realisasi Kas Masuk Real**: Total uang kas/bank aktual yang telah diterima dari pembayaran DP dan cicilan konsumen.
+  3. ⚠️ **Piutang Berjalan Customer**: Sisa saldo piutang yang masih harus ditagihkan ke konsumen.
+  4. 🚜 **Sisa Hutang Pokok Lahan Petani**: Sisa kewajiban pelunasan tanah mentah kepada petani pemilik lahan asal.
+  5. 📊 **Okupansi & Keterjualan Kavling**: Persentase kavling laku beserta rincian unit Terjual, Booking, dan Terbuka.
+  6. 🏦 **Total Kas Bersih Likuid**: Saldo kas riil perusahaan (akumulasi Kas Besar Sentral + Kas Kecil Kantor).
+* **6 Grafik Interaktif Bisnis (Powered by Chart.js)**:
+  1. 📊 **Tren Nilai Penjualan Kavling & Realisasi Uang Masuk**: Grafik kombinasi Bar + Line yang membandingkan Omzet Kontrak Penjualan Baru vs Uang Masuk Aktual vs Pengeluaran Kas per bulan.
+  2. 🍩 **Status Stok Unit Kavling & Okupansi Blok**: Diagram donat rasio Terjual, Booking, dan Terbuka, dilengkapi *Progress Bar* keterjualan per blok (Blok Ruko, Blok A, Blok B, Blok C).
+  3. ⚖️ **Komparasi Arus Kas Sentral (Inflow vs Outflow)**: Perbandingan penerimaan penjualan dan investor melawan pengeluaran lahan, kas kecil, dan operasional proyek.
+  4. 🌾 **Status Pelunasan Hutang Petani**: Bar horizontal bertumpuk (*Stacked Horizontal Bar*) memperlihatkan porsi yang sudah dicicil versus sisa hutang per lahan petani.
+  5. 🧱 **Komposisi Transaksi Tunai vs Barter Material**: Analisa visual porsi pembayaran tunai/transfer bank dibandingkan barter material bahan bangunan proyek.
+  6. 💻 **Valuasi Aset & Inventaris Kantor**: Distribusi nilai buku aktiva tetap menurut kategori (Elektronik & IT, Kendaraan, Alat Lapangan, Furniture, K3).
+* **Widget Tindakan Cepat (Actionable Widgets)**:
+  * ⚠️ **Piutang Customer Terbesar**: Daftar 5 konsumen prioritas penagihan dengan akses 1-klik ke kwitansi detail.
+  * 🌟 **Kavling Terbuka Siap Jual**: Daftar unit unggulan siap ditawarkan marketing dengan akses 1-klik ke Site Plan.
+* **Cetak Ringkasan Eksekutif (Print / PDF)**:
+  * Tombol `Cetak Laporan` untuk mencetak lembar resmi Berita Acara Kinerja Bisnis berlogo ADAM PROPERTY GROUP lengkap dengan kolom tanda tangan Manager Keuangan dan Direktur Utama.
+
+---
+
 ## 🏢 Navigasi Samping Eksekutif (Executive Sidebar Navigation)
 Tata letak navigasi menggunakan **Sidebar Samping Kiri (*Left Sidebar*)** bergaya Enterprise ERP Properti:
 * **Identitas Korporat**: Logo `AP` gradient emerald, `ADAM PROPERTY GROUP - Real Estate Dev`, status sistem `v6.0 OFFLINE`.
 * **Pengelompokan Modul Vertikal**:
+  * **DASHBOARD UTAMA**:
+    * 📊 **Dashboard Eksekutif**: Grafik tren penjualan, arus kas, pembebasan lahan, okupansi unit & monitoring usaha.
   * **OPERASIONAL PROPERTI**:
     1. 🗺️ **1. Peta & Site Plan Kavling**: Manajemen unit kavling, pengelompokan blok (Ruko, A, B, C), spek fisik asli, dan status (*Terbuka*, *Booking*, *Terjual*).
     2. 👥 **2. Customer & Piutang Kavling**: CRM customer, identitas (**KTP, KK, & AJB setelah DP**), kwitansi tunai, serta **Barter Material Bangunan**.
@@ -24,7 +54,7 @@ Tata letak navigasi menggunakan **Sidebar Samping Kiri (*Left Sidebar*)** bergay
     4. 💰 **4. Kas Besar & Investor (Arus Kas)**: Buku kas besar sentral, pencatatan uang masuk (**AUTO-SYNC dari Customer**), modal investor, serta pengeluaran proyek.
     5. 🧾 **5. Kas Kecil Kantor (Petty Cash)**: Operasional harian laci kantor, belanja ATK/konsumsi/BBM, dengan top up dari **Kas Besar (Auto-Sync)** dan **Investor**.
   * **ASET & SARANA KANTOR**:
-    6. 📦 **6. Inventaris Kantor & Aset Tetap**: Pencatatan peralatan kantor, laptop, printer, drone pemetaan, theodolite alat ukur tanah, brankas dokumen sertifikat, kendaraan dinas, dan **cetak label barcode stiker**.
+    6. 📦 **6. Inventaris Kantor & Aset Tetap**: Pencatatan peralatan kantor, laptop, printer, theodolite alat ukur tanah, brankas dokumen sertifikat, kendaraan dinas, dan **cetak label barcode stiker**.
 * **Toolbar Bawah Sidebar**: Tombol aksi dinamis (*+ Tambah Kavling / Customer / Top Up / Inventaris*), tombol Backup/Restore, dan Muat Data Demo.
 * **Responsive Mobile Drawer**: Pada layar ponsel/tablet, navigasi samping dapat dibuka-tutup dengan tombol hamburger menu.
 
