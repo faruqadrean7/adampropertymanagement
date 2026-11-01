@@ -21,21 +21,21 @@ BEGIN
   SELECT id INTO v_uid_mgmt FROM auth.users WHERE email = 'management@adamproperty.co.id' LIMIT 1;
   IF v_uid_mgmt IS NOT NULL THEN
     INSERT INTO public.profiles (id, email, nama, jabatan, role)
-    VALUES (v_uid_mgmt, 'management@adamproperty.co.id', 'Bpk. Ir. H. Adam Malik', 'Direksi Management & Investor', 'management')
-    ON CONFLICT (id) DO UPDATE SET role = 'management', nama = 'Bpk. Ir. H. Adam Malik', jabatan = 'Direksi Management & Investor';
+    VALUES (v_uid_mgmt, 'management@adamproperty.co.id', 'Management', 'Direksi & Pengawas', 'management')
+    ON CONFLICT (id) DO UPDATE SET role = 'management', nama = 'Management', jabatan = 'Direksi & Pengawas';
   END IF;
 
   SELECT id INTO v_uid_it FROM auth.users WHERE email = 'it.manager@adamproperty.co.id' LIMIT 1;
   IF v_uid_it IS NOT NULL THEN
     INSERT INTO public.profiles (id, email, nama, jabatan, role)
-    VALUES (v_uid_it, 'it.manager@adamproperty.co.id', 'Budi Santoso, S.Kom', 'Head of IT & Super Administrator', 'it_manager')
-    ON CONFLICT (id) DO UPDATE SET role = 'it_manager', nama = 'Budi Santoso, S.Kom', jabatan = 'Head of IT & Super Administrator';
+    VALUES (v_uid_it, 'it.manager@adamproperty.co.id', 'Faruq Adrean', 'Head of IT & Administrator', 'it_manager')
+    ON CONFLICT (id) DO UPDATE SET role = 'it_manager', nama = 'Faruq Adrean', jabatan = 'Head of IT & Administrator';
   END IF;
 
   SELECT id INTO v_uid_admin FROM auth.users WHERE email = 'admin@adamproperty.co.id' LIMIT 1;
   IF v_uid_admin IS NOT NULL THEN
     INSERT INTO public.profiles (id, email, nama, jabatan, role)
-    VALUES (v_uid_admin, 'admin@adamproperty.co.id', 'Siti Nurhaliza, S.Ak.', 'Admin Keuangan & Kasir Pembayaran', 'admin')
-    ON CONFLICT (id) DO UPDATE SET role = 'admin', nama = 'Siti Nurhaliza, S.Ak.', jabatan = 'Admin Keuangan & Kasir Pembayaran';
+    VALUES (v_uid_admin, 'admin@adamproperty.co.id', 'Admin', 'Admin Keuangan & Kasir', 'admin')
+    ON CONFLICT (id) DO UPDATE SET role = 'admin', nama = 'Admin', jabatan = 'Admin Keuangan & Kasir';
   END IF;
 END $$;

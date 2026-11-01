@@ -14,7 +14,7 @@ import CashbookView from '@/components/cashbook/CashbookView';
 import PettyCashView from '@/components/petty-cash/PettyCashView';
 import InventoryView from '@/components/inventory/InventoryView';
 import EmployeeView from '@/components/employee/EmployeeView';
-import { Database, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 function MainApp() {
   const { activeTab } = useProperty();
@@ -64,18 +64,14 @@ function MainApp() {
         </main>
 
         {/* Corporate Footer */}
-        <footer className="bg-white border-t border-slate-200 py-4 mt-auto">
+        <footer className="bg-white border-t border-slate-200 py-3.5 mt-auto">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
             <div className="flex items-center gap-2">
               <img src="/assets/logo-icon.svg" alt="Logo" className="w-5 h-5 object-contain" />
               <p>
-                &copy; 2026 <strong>PT Adam Property Indonesia</strong> &bull; Developer Utama. Next.js Enterprise ERP.
+                &copy; 2026 <strong>PT Adam Property Indonesia</strong> &bull; Developer Utama. Hak Cipta Dilindungi.
               </p>
             </div>
-            <p className="flex items-center gap-1.5 font-medium text-emerald-700">
-              <Database className="w-4 h-4 text-emerald-600" />
-              Siap Terkoneksi ke Backend Supabase (PostgreSQL, Auth & Storage)
-            </p>
           </div>
         </footer>
       </div>

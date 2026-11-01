@@ -11,8 +11,8 @@ export const USER_CREDENTIALS: Record<UserRole, { email: string; password: strin
     user: {
       id: 'usr-management',
       email: 'management@adamproperty.co.id',
-      nama: 'Bpk. Ir. H. Adam Malik',
-      jabatan: 'Direksi Management (Hanya Lihat)',
+      nama: 'Management',
+      jabatan: 'Direksi & Pengawas (Hanya Lihat)',
       role: 'management'
     }
   },
@@ -22,8 +22,8 @@ export const USER_CREDENTIALS: Record<UserRole, { email: string; password: strin
     user: {
       id: 'usr-admin',
       email: 'admin@adamproperty.co.id',
-      nama: 'Siti Nurhaliza, S.Ak.',
-      jabatan: 'Admin Keuangan & Kasir Pembayaran',
+      nama: 'Admin',
+      jabatan: 'Admin Keuangan & Kasir',
       role: 'admin'
     }
   },
@@ -33,8 +33,8 @@ export const USER_CREDENTIALS: Record<UserRole, { email: string; password: strin
     user: {
       id: 'usr-it-manager',
       email: 'it.manager@adamproperty.co.id',
-      nama: 'Budi Santoso, S.Kom',
-      jabatan: 'Head of IT & Super Administrator',
+      nama: 'Faruq Adrean',
+      jabatan: 'Head of IT & Administrator',
       role: 'it_manager'
     }
   }
