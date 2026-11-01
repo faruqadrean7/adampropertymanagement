@@ -2511,12 +2511,12 @@ async function handleImportBackup(input) {
 
 
 // ========================================================
-// CONTOH DATA DEMO (PROYEK, BLOK, BARTER MATERIAL & PETANI)
+// INISIALISASI MASTER DATA PROPERTI (PROYEK, BLOK, BARTER MATERIAL & PETANI)
 // ========================================================
 async function loadDemoData() {
     const result = await Swal.fire({
-        title: 'Muat Data Sampel Perusahaan?',
-        html: `Aplikasi akan memuat data operasional riil:
+        title: 'Inisialisasi Master Data Properti?',
+        html: `Sistem akan memuat data operasional riil PT Adam Property Indonesia:
                <ul class="text-left text-xs list-disc pl-5 mt-2 space-y-1.5">
                  <li><b>Induk Proyek:</b> Baitul Makmur Regency</li>
                  <li><b>Blok Kavling:</b> Blok Ruko, Blok A, Blok B, Blok C</li>
@@ -2527,7 +2527,7 @@ async function loadDemoData() {
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#059669',
-        confirmButtonText: 'Ya, Muat Data Demo',
+        confirmButtonText: 'Ya, Inisialisasi Data',
         cancelButtonText: 'Batal'
     });
 
@@ -3105,8 +3105,8 @@ async function loadDemoData() {
 
     Swal.fire({
         icon: 'success',
-        title: 'Data Sampel Perusahaan Dimuat!',
-        text: 'Data Inventaris Kantor, Kas Kecil, Kas Besar, Customer, dan Site Plan siap dipelajari.',
+        title: 'Master Data Berhasil Dimuat!',
+        text: 'Data Properti, Inventaris Kantor, Kas Kecil, Kas Besar, dan Site Plan berhasil disiapkan.',
         confirmButtonColor: '#059669'
     });
 }
