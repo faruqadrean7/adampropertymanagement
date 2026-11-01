@@ -112,6 +112,7 @@ interface PropertyContextType {
     keterangan?: string;
   }) => void;
   addLandPayment: (data: Omit<LandPayment, 'id'>) => void;
+  updateLandPaymentReceipt: (paymentId: string, kwitansiImage: string | null) => void;
   addCashbookItem: (data: Omit<CashbookItem, 'id'>) => void;
   topUpPettyCash: (nominal: number, sumberDana: 'kas_besar' | 'investor', keterangan: string, penerima?: string) => void;
   addPettyExpense: (data: {
@@ -532,6 +533,12 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     setCashbook(prev => [...prev, cashOut]);
   };
 
+  const updateLandPaymentReceipt = (paymentId: string, kwitansiImage: string | null) => {
+    setLandPayments(prev =>
+      prev.map(p => (p.id === paymentId ? { ...p, kwitansiImage } : p))
+    );
+  };
+
   // 5. Cashbook Direct
   const addCashbookItem = (data: Omit<CashbookItem, 'id'>) => {
     const newItem: CashbookItem = { ...data, id: `cash-${Date.now()}` };
@@ -734,6 +741,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         updateCustomerDocuments,
         addLandDebt,
         addLandPayment,
+        updateLandPaymentReceipt,
         addCashbookItem,
         topUpPettyCash,
         addPettyExpense,

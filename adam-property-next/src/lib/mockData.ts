@@ -280,7 +280,8 @@ export const INITIAL_LAND_PAYMENTS: LandPayment[] = [
     tanggal: '2026-06-15',
     nominal: 250000000,
     metode: 'Transfer Bank Mandiri',
-    keterangan: 'Pembayaran DP Pembebasan Lahan 6.000 m² di hadapan Notaris'
+    keterangan: 'Pembayaran DP Pembebasan Lahan 6.000 m² di hadapan Notaris',
+    kwitansiImage: makeMockSvg('BUKTI TRANSFER BANK - DP LAHAN', 'DP Lahan 6.000 m² Rp 250.000.000 • Bpk. H. Sugeng Mulyono', '#9a3412')
   },
   {
     id: 'lpay-2',
@@ -288,7 +289,8 @@ export const INITIAL_LAND_PAYMENTS: LandPayment[] = [
     tanggal: '2026-08-15',
     nominal: 50000000,
     metode: 'Transfer Bank Mandiri',
-    keterangan: 'Cicilan Tahap 1 Pembayaran Tanah'
+    keterangan: 'Cicilan Tahap 1 Pembayaran Tanah',
+    kwitansiImage: makeMockSvg('BUKTI TRANSFER BANK - CICILAN LAHAN', 'Cicilan Tahap 1 Rp 50.000.000 • Bpk. H. Sugeng Mulyono', '#b45309')
   }
 ];
 

@@ -11,7 +11,14 @@ import {
   Receipt, 
   Phone, 
   FileCheck2, 
-  Building2 
+  Building2,
+  UploadCloud,
+  Eye,
+  Trash2,
+  X,
+  CheckCircle2,
+  FileCheck,
+  Image as ImageIcon
 } from 'lucide-react';
 import { LandDebt } from '@/types';
 
@@ -21,13 +28,15 @@ export default function LandDebtView() {
     landDebts, 
     landPayments, 
     addLandDebt, 
-    addLandPayment 
+    addLandPayment,
+    updateLandPaymentReceipt
   } = useProperty();
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedLandForPay, setSelectedLandForPay] = useState<LandDebt | null>(null);
   const [selectedLandDetail, setSelectedLandDetail] = useState<LandDebt | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ title: string; src: string } | null>(null);
 
   // Form Add Land Debt
   const [projectId, setProjectId] = useState(projects[0]?.id || 'proj-1');
@@ -44,6 +53,52 @@ export default function LandDebtView() {
   const [payNominal, setPayNominal] = useState(50000000);
   const [payMetode, setPayMetode] = useState('Transfer Bank Mandiri');
   const [payKeterangan, setPayKeterangan] = useState('Cicilan Pembayaran Tanah Mentah');
+  const [payKwitansiImage, setPayKwitansiImage] = useState<string | null>(null);
+
+  // Helper membaca file upload slip lokal
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string | null) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Ukuran file maksimal 8 MB!');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setter(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLandReceiptUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    paymentId: string
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Ukuran file maksimal 8 MB!');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      updateLandPaymentReceipt(paymentId, dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const generateSampleDoc = (title: string, subtitle: string, bg: string) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">
+      <rect width="600" height="380" fill="${bg}" rx="12"/>
+      <rect x="20" y="20" width="560" height="340" fill="none" stroke="white" stroke-width="2" stroke-dasharray="6,6" opacity="0.4"/>
+      <circle cx="300" cy="140" r="45" fill="white" opacity="0.2"/>
+      <text x="300" y="215" font-family="Arial" font-size="22" font-weight="bold" fill="white" text-anchor="middle">${title}</text>
+      <text x="300" y="245" font-family="Arial" font-size="14" fill="white" opacity="0.8" text-anchor="middle">${subtitle}</text>
+      <text x="300" y="280" font-family="Arial" font-size="12" fill="white" opacity="0.6" text-anchor="middle">PT ADAM PROPERTY INDONESIA - KAS BESAR</text>
+    </svg>`;
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  };
 
   // Filtering per Lahan Proyek (agar catatan hutang tidak tercampur)
   const filteredLands = landDebts.filter(l => 
@@ -88,11 +143,13 @@ export default function LandDebtView() {
       tanggal: new Date().toISOString().split('T')[0],
       nominal: Number(payNominal),
       metode: payMetode,
-      keterangan: payKeterangan
+      keterangan: payKeterangan,
+      kwitansiImage: payKwitansiImage
     });
 
     setSelectedLandForPay(null);
     setPayNominal(50000000);
+    setPayKwitansiImage(null);
   };
 
   return (
@@ -258,7 +315,10 @@ export default function LandDebtView() {
                     <td className="py-3 px-4 text-center space-x-1.5">
                       {!isLunas && (
                         <button
-                          onClick={() => setSelectedLandForPay(land)}
+                          onClick={() => {
+                            setSelectedLandForPay(land);
+                            setPayKwitansiImage(null);
+                          }}
                           className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs"
                         >
                           <Coins className="w-3.5 h-3.5" />
@@ -345,6 +405,85 @@ export default function LandDebtView() {
                 />
               </div>
 
+              {/* UPLOAD BUKTI SLIP TRANSFER / PEMBAYARAN KE PETANI */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                    <Receipt className="w-4 h-4 text-amber-600" />
+                    <span>Upload Bukti Bayar / Slip Transfer Bank</span>
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400 font-medium">Opsional</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const sampleSlip = generateSampleDoc(
+                          'BUKTI TRANSFER BANK - CICILAN LAHAN',
+                          `Nominal: Rp ${payNominal.toLocaleString('id-ID')} • ${selectedLandForPay.namaPetani} (${selectedLandForPay.projectNama})`,
+                          '#9a3412'
+                        );
+                        setPayKwitansiImage(sampleSlip);
+                      }}
+                      className="text-[10px] px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-semibold transition"
+                    >
+                      + Isi Sampel Slip Bank
+                    </button>
+                  </div>
+                </div>
+
+                {payKwitansiImage ? (
+                  <div className="space-y-1.5">
+                    <div className="relative h-28 w-full rounded-lg overflow-hidden border border-amber-300 bg-slate-100 group">
+                      <img
+                        src={payKwitansiImage}
+                        alt="Bukti Transfer Lahan"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage({ title: `Bukti Transfer Lahan: ${selectedLandForPay.namaPetani} - Rp ${payNominal.toLocaleString('id-ID')}`, src: payKwitansiImage })}
+                          className="px-2.5 py-1 bg-white text-slate-900 rounded-md font-bold text-[11px] flex items-center gap-1"
+                        >
+                          <Eye className="w-3 h-3" /> Lihat
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPayKwitansiImage(null)}
+                          className="px-2.5 py-1 bg-rose-600 text-white rounded-md font-bold text-[11px] flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" /> Hapus
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-amber-800 font-semibold truncate flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-amber-600" /> Slip transfer siap diarsipkan ke kas keluar
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPayKwitansiImage(null)}
+                        className="text-rose-600 hover:underline font-semibold"
+                      >
+                        Ganti Berkas
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-slate-300 hover:border-amber-400 bg-white hover:bg-amber-50/30 rounded-xl p-3 text-center cursor-pointer transition flex flex-col items-center justify-center h-24">
+                    <UploadCloud className="w-5 h-5 text-slate-400 mb-1" />
+                    <span className="font-bold text-slate-700 text-xs">Pilih File Bukti Transfer / Kwitansi</span>
+                    <span className="text-[10px] text-slate-400">JPG, PNG, atau screenshot mutasi m-Banking (Maks 8MB)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, setPayKwitansiImage)}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
               <div className="p-2.5 bg-emerald-50 rounded-lg text-emerald-800 text-[11px]">
                 ℹ️ Pembayaran ini otomatis mengurangi saldo Kas Besar dan mencatat mutasi keluar resmi.
               </div>
@@ -423,7 +562,7 @@ export default function LandDebtView() {
                 </div>
 
                 {landPayments.filter(p => p.landDebtId === selectedLandDetail.id).map(pay => (
-                  <div key={pay.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                  <div key={pay.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-slate-900">{pay.keterangan}</span>
                       <span className="font-mono font-bold text-emerald-700">
@@ -433,6 +572,71 @@ export default function LandDebtView() {
                     <div className="flex justify-between text-[11px] text-slate-500">
                       <span>Tanggal: {pay.tanggal}</span>
                       <span>Metode: {pay.metode}</span>
+                    </div>
+
+                    {/* Baris Bukti Slip Pembayaran ke Petani */}
+                    <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                        <Receipt className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Bukti Slip / Nota Pembayaran:</span>
+                      </span>
+
+                      {pay.kwitansiImage ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImage({ title: `Bukti Transfer Lahan: ${pay.keterangan} - Rp ${pay.nominal.toLocaleString('id-ID')}`, src: pay.kwitansiImage! })}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg font-bold text-[10px] transition"
+                          >
+                            <Eye className="w-3 h-3 text-amber-700" />
+                            <span>Lihat Slip Transfer</span>
+                          </button>
+                          <label className="text-[10px] text-slate-500 hover:text-slate-800 cursor-pointer font-semibold underline">
+                            <span>Ganti</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleLandReceiptUpload(e, pay.id)}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => updateLandPaymentReceipt(pay.id, null)}
+                            className="text-[10px] text-rose-600 hover:text-rose-700 font-semibold"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-slate-400 italic">Belum ada slip</span>
+                          <label className="text-[10px] px-2 py-0.5 bg-white border border-slate-300 hover:border-amber-400 text-slate-700 rounded font-semibold cursor-pointer transition flex items-center gap-1 shadow-2xs">
+                            <UploadCloud className="w-3 h-3 text-slate-500" />
+                            <span>Upload Slip</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleLandReceiptUpload(e, pay.id)}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const sample = generateSampleDoc(
+                                'BUKTI TRANSFER BANK - CICILAN LAHAN',
+                                `Nominal: Rp ${pay.nominal.toLocaleString('id-ID')} • ${pay.keterangan}`,
+                                '#9a3412'
+                              );
+                              updateLandPaymentReceipt(pay.id, sample);
+                            }}
+                            className="text-[10px] px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded font-semibold transition"
+                          >
+                            + Sampel
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -583,6 +787,36 @@ export default function LandDebtView() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex flex-col items-center justify-between p-4">
+          <div className="w-full flex justify-between items-center text-white max-w-4xl pb-2 border-b border-white/20">
+            <div className="flex items-center gap-2">
+              <FileCheck className="w-5 h-5 text-amber-400" />
+              <span className="font-bold text-sm">{previewImage.title}</span>
+            </div>
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition"
+            >
+              ✕ Tutup [ESC]
+            </button>
+          </div>
+
+          <div className="flex-1 flex items-center justify-center p-4 max-w-4xl max-h-[82vh] overflow-hidden">
+            <img
+              src={previewImage.src}
+              alt="Preview Berkas"
+              className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-white/10"
+            />
+          </div>
+
+          <div className="text-white/60 text-xs text-center pb-2">
+            Klik Tutup untuk kembali ke aplikasi
           </div>
         </div>
       )}
