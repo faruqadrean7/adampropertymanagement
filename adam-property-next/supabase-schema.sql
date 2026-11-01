@@ -53,6 +53,12 @@ CREATE TABLE IF NOT EXISTS public.customers (
     ktp_url TEXT,
     kk_url TEXT,
     ajb_url TEXT,
+    shm_split_url TEXT,
+    no_ajb TEXT,
+    no_shm_split TEXT,
+    tanggal_ajb DATE,
+    tanggal_shm_split DATE,
+    notaris_ppat TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

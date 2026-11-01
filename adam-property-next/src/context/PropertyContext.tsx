@@ -76,7 +76,28 @@ interface PropertyContextType {
     rincianBarter?: string;
     ktpImage?: string | null;
     kkImage?: string | null;
+    ajbImage?: string | null;
+    shmSplitImage?: string | null;
+    noAjb?: string;
+    noShmSplit?: string;
+    tanggalAjb?: string;
+    tanggalShmSplit?: string;
+    notarisPpat?: string;
   }) => void;
+  updateCustomerDocuments: (
+    customerId: string,
+    docs: {
+      ktpImage?: string | null;
+      kkImage?: string | null;
+      ajbImage?: string | null;
+      shmSplitImage?: string | null;
+      noAjb?: string;
+      noShmSplit?: string;
+      tanggalAjb?: string;
+      tanggalShmSplit?: string;
+      notarisPpat?: string;
+    }
+  ) => void;
   addCustomerPayment: (data: Omit<Payment, 'id'>) => void;
   addLandDebt: (data: {
     projectId: string;
@@ -246,6 +267,13 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     rincianBarter?: string;
     ktpImage?: string | null;
     kkImage?: string | null;
+    ajbImage?: string | null;
+    shmSplitImage?: string | null;
+    noAjb?: string;
+    noShmSplit?: string;
+    tanggalAjb?: string;
+    tanggalShmSplit?: string;
+    notarisPpat?: string;
   }) => {
     const custId = `cust-${Date.now()}`;
     const targetKav = kavlings.find(k => k.id === data.kavlingId);
@@ -271,7 +299,14 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       statusBayar: isLunas ? 'lunas' : 'belum_lunas',
       tanggalBeli: new Date().toISOString().split('T')[0],
       ktpImage: data.ktpImage,
-      kkImage: data.kkImage
+      kkImage: data.kkImage,
+      ajbImage: data.ajbImage,
+      shmSplitImage: data.shmSplitImage,
+      noAjb: data.noAjb,
+      noShmSplit: data.noShmSplit,
+      tanggalAjb: data.tanggalAjb,
+      tanggalShmSplit: data.tanggalShmSplit,
+      notarisPpat: data.notarisPpat
     };
 
     setCustomers(prev => [...prev, newCustomer]);
@@ -363,6 +398,25 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       refId: payId
     };
     setCashbook(prev => [...prev, cashItem]);
+  };
+
+  const updateCustomerDocuments = (
+    customerId: string,
+    docs: {
+      ktpImage?: string | null;
+      kkImage?: string | null;
+      ajbImage?: string | null;
+      shmSplitImage?: string | null;
+      noAjb?: string;
+      noShmSplit?: string;
+      tanggalAjb?: string;
+      tanggalShmSplit?: string;
+      notarisPpat?: string;
+    }
+  ) => {
+    setCustomers(prev =>
+      prev.map(c => (c.id === customerId ? { ...c, ...docs } : c))
+    );
   };
 
   // 4. Land Debts (with auto-deduction from Cashbook)
@@ -669,6 +723,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         updateKavlingStatus,
         addCustomer,
         addCustomerPayment,
+        updateCustomerDocuments,
         addLandDebt,
         addLandPayment,
         addCashbookItem,

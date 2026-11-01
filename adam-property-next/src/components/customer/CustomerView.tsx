@@ -24,7 +24,10 @@ import {
   Briefcase,
   Calendar,
   Building2,
-  FileCheck
+  FileCheck,
+  Scale,
+  Award,
+  ShieldCheck
 } from 'lucide-react';
 import { Customer, Payment } from '@/types';
 
@@ -34,7 +37,8 @@ export default function CustomerView() {
     payments, 
     kavlings, 
     addCustomer, 
-    addCustomerPayment 
+    addCustomerPayment,
+    updateCustomerDocuments 
   } = useProperty();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,9 +59,18 @@ export default function CustomerView() {
   const [pekerjaan, setPekerjaan] = useState('');
   const [alamat, setAlamat] = useState('');
 
-  // Form Add Customer - Berkas Dokumen Fisik
+  // Form Add Customer - Berkas Dokumen Fisik Identitas
   const [ktpImage, setKtpImage] = useState<string | null>(null);
   const [kkImage, setKkImage] = useState<string | null>(null);
+
+  // Form Add Customer - Berkas Dokumen Legalitas (AJB & SHM Split)
+  const [ajbImage, setAjbImage] = useState<string | null>(null);
+  const [shmSplitImage, setShmSplitImage] = useState<string | null>(null);
+  const [noAjb, setNoAjb] = useState('');
+  const [noShmSplit, setNoShmSplit] = useState('');
+  const [notarisPpat, setNotarisPpat] = useState('');
+  const [tanggalAjb, setTanggalAjb] = useState('');
+  const [tanggalShmSplit, setTanggalShmSplit] = useState('');
 
   // Form Add Customer - Transaksi Kavling
   const [selectedKavlingId, setSelectedKavlingId] = useState('');
@@ -84,6 +97,32 @@ export default function CustomerView() {
     const reader = new FileReader();
     reader.onload = (event) => {
       setter(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Helper untuk update dokumen langsung dari modal Detail Customer
+  const handleUpdateDetailDoc = (updates: Partial<Customer>) => {
+    if (!selectedCustDetail) return;
+    updateCustomerDocuments(selectedCustDetail.id, updates);
+    setSelectedCustDetail(prev => (prev ? { ...prev, ...updates } : null));
+  };
+
+  const handleDetailFileUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'ktpImage' | 'kkImage' | 'ajbImage' | 'shmSplitImage',
+    extra?: Partial<Customer>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Ukuran file maksimal 8 MB!');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      handleUpdateDetailDoc({ [field]: dataUrl, ...extra });
     };
     reader.readAsDataURL(file);
   };
@@ -137,7 +176,14 @@ export default function CustomerView() {
       metodeBayar,
       rincianBarter: metodeBayar === 'barter' ? rincianBarter : undefined,
       ktpImage,
-      kkImage
+      kkImage,
+      ajbImage,
+      shmSplitImage,
+      noAjb: noAjb.trim() || undefined,
+      noShmSplit: noShmSplit.trim() || undefined,
+      notarisPpat: notarisPpat.trim() || undefined,
+      tanggalAjb: tanggalAjb || undefined,
+      tanggalShmSplit: tanggalShmSplit || undefined
     });
 
     setShowAddModal(false);
@@ -153,6 +199,13 @@ export default function CustomerView() {
     setSelectedKavlingId('');
     setKtpImage(null);
     setKkImage(null);
+    setAjbImage(null);
+    setShmSplitImage(null);
+    setNoAjb('');
+    setNoShmSplit('');
+    setNotarisPpat('');
+    setTanggalAjb('');
+    setTanggalShmSplit('');
     setRincianBarter('');
   };
 
@@ -289,7 +342,7 @@ export default function CustomerView() {
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
                 <th className="py-3 px-4">Customer & Data Diri</th>
-                <th className="py-3 px-4">Berkas Dokumen</th>
+                <th className="py-3 px-4">Berkas & Legalitas</th>
                 <th className="py-3 px-4">Kavling</th>
                 <th className="py-3 px-4 text-right">Nilai Kontrak</th>
                 <th className="py-3 px-4 text-right">Sudah Masuk</th>
@@ -320,27 +373,53 @@ export default function CustomerView() {
                         {cust.ktpImage ? (
                           <button
                             onClick={() => setPreviewImage({ title: `Foto KTP: ${cust.nama}`, src: cust.ktpImage! })}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200 hover:bg-blue-100 transition"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200 hover:bg-blue-100 transition"
                             title="Klik untuk melihat berkas KTP"
                           >
                             <ImageIcon className="w-3 h-3" />
                             <span>KTP ✓</span>
                           </button>
                         ) : (
-                          <span className="text-[10px] text-slate-400 italic">KTP (-)</span>
+                          <span className="text-[10px] text-slate-400">KTP -</span>
                         )}
 
                         {cust.kkImage ? (
                           <button
                             onClick={() => setPreviewImage({ title: `Foto Kartu Keluarga: ${cust.nama}`, src: cust.kkImage! })}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200 hover:bg-purple-100 transition"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200 hover:bg-purple-100 transition"
                             title="Klik untuk melihat berkas KK"
                           >
                             <FileText className="w-3 h-3" />
                             <span>KK ✓</span>
                           </button>
                         ) : (
-                          <span className="text-[10px] text-slate-400 italic">KK (-)</span>
+                          <span className="text-[10px] text-slate-400">KK -</span>
+                        )}
+
+                        {cust.ajbImage ? (
+                          <button
+                            onClick={() => setPreviewImage({ title: `Akta Jual Beli: ${cust.nama} (${cust.noAjb || 'AJB'})`, src: cust.ajbImage! })}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200 hover:bg-amber-100 transition"
+                            title="Klik untuk melihat berkas AJB"
+                          >
+                            <Scale className="w-3 h-3" />
+                            <span>AJB ✓</span>
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">AJB -</span>
+                        )}
+
+                        {cust.shmSplitImage ? (
+                          <button
+                            onClick={() => setPreviewImage({ title: `Sertifikat SHM Split: ${cust.nama} (${cust.noShmSplit || 'SHM'})`, src: cust.shmSplitImage! })}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200 hover:bg-emerald-100 transition"
+                            title="Klik untuk melihat sertifikat SHM Split"
+                          >
+                            <Award className="w-3 h-3" />
+                            <span>SHM ✓</span>
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">SHM -</span>
                         )}
                       </div>
                     </td>
@@ -708,12 +787,196 @@ export default function CustomerView() {
               </div>
 
               {/* ---------------------------------------------------- */}
-              {/* BAGIAN 3: UNIT KAVLING & SKEMA TRANSAKSI FINANSIAL */}
+              {/* BAGIAN 3: BERKAS DOKUMEN LEGALITAS (AJB & SHM SPLIT) */}
+              {/* ---------------------------------------------------- */}
+              <div className="p-4 rounded-xl bg-amber-50/40 border border-amber-200/80 space-y-3">
+                <div className="flex flex-wrap justify-between items-center pb-2 border-b border-amber-200/60 gap-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                    <Scale className="w-4 h-4 text-amber-600" />
+                    <span>3. BERKAS DOKUMEN LEGALITAS (AJB & SHM SPLIT)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded font-medium">
+                      Opsional (Bisa menyusul)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNoAjb('048/AJB/KDL/2026');
+                        setNotarisPpat('Hj. Siti Rohmah, S.H., M.Kn');
+                        setTanggalAjb(new Date().toISOString().split('T')[0]);
+                        setAjbImage(generateSampleDoc('AKTA JUAL BELI (AJB)', 'No. 048/AJB/KDL/2026 • PPAT Hj. Siti Rohmah, S.H.', '#78350f'));
+                        setNoShmSplit('SHM No. 04291/Kaliwungu/2026');
+                        setTanggalShmSplit(new Date().toISOString().split('T')[0]);
+                        setShmSplitImage(generateSampleDoc('SERTIPIKAT HAK MILIK (SHM)', 'Pecahan Kavling Resmi • BPN Kab. Kendal', '#064e3b'));
+                      }}
+                      className="text-[10px] px-2 py-0.5 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded font-semibold transition"
+                    >
+                      + Isi Sampel Legalitas
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* UPLOAD AJB BOX */}
+                  <div className="p-3 bg-white rounded-xl border border-amber-200/80 flex flex-col justify-between space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                        <Scale className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Akta Jual Beli (AJB)</span>
+                      </span>
+                      {ajbImage && (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          ✓ Terlampir
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                        Nomor Akta AJB / PPAT
+                      </label>
+                      <input
+                        type="text"
+                        value={noAjb}
+                        onChange={(e) => setNoAjb(e.target.value)}
+                        placeholder="Contoh: 048/AJB/KDL/2026"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-800 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+
+                    {/* AJB Upload / Preview */}
+                    {ajbImage ? (
+                      <div className="space-y-1.5">
+                        <div className="relative h-24 w-full rounded-lg overflow-hidden border border-amber-200 bg-slate-100 group">
+                          <img src={ajbImage} alt="Preview AJB" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage({ title: 'Preview Akta Jual Beli (AJB)', src: ajbImage })}
+                              className="px-2.5 py-1 bg-white text-slate-900 rounded-md font-bold text-[11px] flex items-center gap-1"
+                            >
+                              <Eye className="w-3 h-3" /> Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAjbImage(null)}
+                              className="px-2.5 py-1 bg-rose-600 text-white rounded-md font-bold text-[11px] flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" /> Hapus
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-amber-700 font-semibold truncate">Berkas AJB siap diarsip</span>
+                          <button
+                            type="button"
+                            onClick={() => setAjbImage(null)}
+                            className="text-rose-600 hover:underline font-semibold"
+                          >
+                            Ganti Berkas
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label className="border-2 border-dashed border-amber-200 hover:border-amber-400 bg-amber-50/20 hover:bg-amber-50/50 rounded-xl p-3 text-center cursor-pointer transition flex flex-col items-center justify-center h-24">
+                        <UploadCloud className="w-5 h-5 text-amber-600 mb-1" />
+                        <span className="font-bold text-slate-700 text-xs">Pilih File Berkas AJB</span>
+                        <span className="text-[10px] text-slate-400">Scan dokumen / foto akta</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileUpload(e, setAjbImage)}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* UPLOAD SHM SPLIT BOX */}
+                  <div className="p-3 bg-white rounded-xl border border-emerald-200/80 flex flex-col justify-between space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                        <Award className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Sertifikat SHM Split / Pecah</span>
+                      </span>
+                      {shmSplitImage && (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          ✓ Terlampir
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                        Nomor SHM Split BPN
+                      </label>
+                      <input
+                        type="text"
+                        value={noShmSplit}
+                        onChange={(e) => setNoShmSplit(e.target.value)}
+                        placeholder="Contoh: SHM No. 04291/Klw/2026"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-800 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    {/* SHM Upload / Preview */}
+                    {shmSplitImage ? (
+                      <div className="space-y-1.5">
+                        <div className="relative h-24 w-full rounded-lg overflow-hidden border border-emerald-200 bg-slate-100 group">
+                          <img src={shmSplitImage} alt="Preview SHM Split" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage({ title: 'Preview Sertifikat SHM Split', src: shmSplitImage })}
+                              className="px-2.5 py-1 bg-white text-slate-900 rounded-md font-bold text-[11px] flex items-center gap-1"
+                            >
+                              <Eye className="w-3 h-3" /> Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShmSplitImage(null)}
+                              className="px-2.5 py-1 bg-rose-600 text-white rounded-md font-bold text-[11px] flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" /> Hapus
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-emerald-700 font-semibold truncate">Berkas SHM Split siap disimpan</span>
+                          <button
+                            type="button"
+                            onClick={() => setShmSplitImage(null)}
+                            className="text-rose-600 hover:underline font-semibold"
+                          >
+                            Ganti Berkas
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label className="border-2 border-dashed border-emerald-200 hover:border-emerald-400 bg-emerald-50/20 hover:bg-emerald-50/50 rounded-xl p-3 text-center cursor-pointer transition flex flex-col items-center justify-center h-24">
+                        <UploadCloud className="w-5 h-5 text-emerald-600 mb-1" />
+                        <span className="font-bold text-slate-700 text-xs">Pilih File SHM Split</span>
+                        <span className="text-[10px] text-slate-400">Scan sertifikat / buku tanah</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileUpload(e, setShmSplitImage)}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ---------------------------------------------------- */}
+              {/* BAGIAN 4: UNIT KAVLING & SKEMA TRANSAKSI FINANSIAL */}
               {/* ---------------------------------------------------- */}
               <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200 space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-800 pb-2 border-b border-slate-200">
                   <Coins className="w-4 h-4 text-amber-600" />
-                  <span>3. PILIHAN KAVLING & SKEMA PEMBAYARAN</span>
+                  <span>4. PILIHAN KAVLING & SKEMA PEMBAYARAN</span>
                 </div>
 
                 <div>
@@ -908,61 +1171,332 @@ export default function CustomerView() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Card KTP */}
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 flex flex-col justify-between">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="font-bold text-[11px] text-slate-800 flex items-center gap-1">
-                        <ImageIcon className="w-3 h-3 text-blue-600" /> E-KTP Konsumen
-                      </span>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col justify-between space-y-2">
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <span className="font-bold text-[11px] text-slate-800 flex items-center gap-1">
+                          <ImageIcon className="w-3.5 h-3.5 text-blue-600" /> E-KTP Konsumen
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">NIK: {selectedCustDetail.nik}</span>
+                      </div>
                       {selectedCustDetail.ktpImage ? (
-                        <span className="text-[9px] bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-bold">Tersedia</span>
+                        <span className="text-[9px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold border border-blue-200">
+                          Tersedia
+                        </span>
                       ) : (
-                        <span className="text-[9px] text-slate-400">Belum Ada</span>
+                        <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">
+                          Belum Ada
+                        </span>
                       )}
                     </div>
 
                     {selectedCustDetail.ktpImage ? (
-                      <div 
-                        onClick={() => setPreviewImage({ title: `Foto E-KTP: ${selectedCustDetail.nama}`, src: selectedCustDetail.ktpImage! })}
-                        className="cursor-pointer group relative h-28 rounded-lg overflow-hidden border border-slate-200 bg-slate-100"
-                      >
-                        <img src={selectedCustDetail.ktpImage} alt="KTP" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-bold text-xs gap-1">
-                          <Eye className="w-4 h-4" /> Perbesar KTP
+                      <div className="space-y-1.5">
+                        <div 
+                          onClick={() => setPreviewImage({ title: `Foto E-KTP: ${selectedCustDetail.nama}`, src: selectedCustDetail.ktpImage! })}
+                          className="cursor-pointer group relative h-28 rounded-lg overflow-hidden border border-slate-200 bg-slate-100"
+                        >
+                          <img src={selectedCustDetail.ktpImage} alt="KTP" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-bold text-xs gap-1">
+                            <Eye className="w-4 h-4" /> Perbesar KTP
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-1 text-[11px]">
+                          <label className="text-blue-700 hover:text-blue-800 font-semibold cursor-pointer">
+                            <span>Ganti Berkas</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleDetailFileUpload(e, 'ktpImage')}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateDetailDoc({ ktpImage: null })}
+                            className="text-rose-600 hover:text-rose-700 font-semibold"
+                          >
+                            Hapus
+                          </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="h-28 rounded-lg border border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs italic">
-                        Belum diunggah
+                      <div className="space-y-1.5">
+                        <label className="h-20 rounded-lg border border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/20 hover:bg-blue-50/50 flex flex-col items-center justify-center text-blue-800 text-xs cursor-pointer transition p-2">
+                          <UploadCloud className="w-5 h-5 text-blue-600 mb-0.5" />
+                          <span className="font-bold text-[11px]">Unggah Foto KTP</span>
+                          <span className="text-[9px] text-slate-400">Klik jelajahi file gambar</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleDetailFileUpload(e, 'ktpImage')}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateDetailDoc({
+                            ktpImage: generateSampleDoc('E-KTP REPUBLIK INDONESIA', `NIK: ${selectedCustDetail.nik} • ${selectedCustDetail.nama}`, '#1e3a8a')
+                          })}
+                          className="w-full py-1 text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-700 rounded font-semibold text-center border border-blue-200 transition"
+                        >
+                          + Isi Sampel KTP
+                        </button>
                       </div>
                     )}
                   </div>
 
                   {/* Card KK */}
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 flex flex-col justify-between">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="font-bold text-[11px] text-slate-800 flex items-center gap-1">
-                        <FileText className="w-3 h-3 text-purple-600" /> Kartu Keluarga (KK)
-                      </span>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col justify-between space-y-2">
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <span className="font-bold text-[11px] text-slate-800 flex items-center gap-1">
+                          <FileText className="w-3.5 h-3.5 text-purple-600" /> Kartu Keluarga (KK)
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">No. KK: {selectedCustDetail.noKk || '-'}</span>
+                      </div>
                       {selectedCustDetail.kkImage ? (
-                        <span className="text-[9px] bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-bold">Tersedia</span>
+                        <span className="text-[9px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold border border-purple-200">
+                          Tersedia
+                        </span>
                       ) : (
-                        <span className="text-[9px] text-slate-400">Belum Ada</span>
+                        <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">
+                          Belum Ada
+                        </span>
                       )}
                     </div>
 
                     {selectedCustDetail.kkImage ? (
-                      <div 
-                        onClick={() => setPreviewImage({ title: `Foto KK: ${selectedCustDetail.nama}`, src: selectedCustDetail.kkImage! })}
-                        className="cursor-pointer group relative h-28 rounded-lg overflow-hidden border border-slate-200 bg-slate-100"
-                      >
-                        <img src={selectedCustDetail.kkImage} alt="KK" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-bold text-xs gap-1">
-                          <Eye className="w-4 h-4" /> Perbesar KK
+                      <div className="space-y-1.5">
+                        <div 
+                          onClick={() => setPreviewImage({ title: `Foto KK: ${selectedCustDetail.nama}`, src: selectedCustDetail.kkImage! })}
+                          className="cursor-pointer group relative h-28 rounded-lg overflow-hidden border border-slate-200 bg-slate-100"
+                        >
+                          <img src={selectedCustDetail.kkImage} alt="KK" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-bold text-xs gap-1">
+                            <Eye className="w-4 h-4" /> Perbesar KK
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-1 text-[11px]">
+                          <label className="text-purple-700 hover:text-purple-800 font-semibold cursor-pointer">
+                            <span>Ganti Berkas</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleDetailFileUpload(e, 'kkImage')}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateDetailDoc({ kkImage: null })}
+                            className="text-rose-600 hover:text-rose-700 font-semibold"
+                          >
+                            Hapus
+                          </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="h-28 rounded-lg border border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs italic">
-                        Belum diunggah
+                      <div className="space-y-1.5">
+                        <label className="h-20 rounded-lg border border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/20 hover:bg-purple-50/50 flex flex-col items-center justify-center text-purple-800 text-xs cursor-pointer transition p-2">
+                          <UploadCloud className="w-5 h-5 text-purple-600 mb-0.5" />
+                          <span className="font-bold text-[11px]">Unggah Berkas KK</span>
+                          <span className="text-[9px] text-slate-400">Klik jelajahi file gambar</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleDetailFileUpload(e, 'kkImage')}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateDetailDoc({
+                            kkImage: generateSampleDoc('KARTU KELUARGA (KK)', `No. KK: ${selectedCustDetail.noKk || '3324080102030005'} • ${selectedCustDetail.nama}`, '#581c87')
+                          })}
+                          className="w-full py-1 text-[10px] bg-purple-50 hover:bg-purple-100 text-purple-700 rounded font-semibold text-center border border-purple-200 transition"
+                        >
+                          + Isi Sampel KK
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Dokumen Arsip Legalitas (AJB & SHM Split) */}
+              <div className="p-3.5 bg-amber-50/40 rounded-xl border border-amber-200/80 space-y-2.5">
+                <div className="flex justify-between items-center pb-1.5 border-b border-amber-200/60">
+                  <h4 className="font-bold text-slate-800 flex items-center gap-1.5">
+                    <Scale className="w-4 h-4 text-amber-600" />
+                    <span>Berkas Dokumen Legalitas (AJB & SHM Split)</span>
+                  </h4>
+                  <span className="text-[10px] text-amber-800 font-medium">Validasi Notaris PPAT & BPN</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Card AJB */}
+                  <div className="bg-white p-3 rounded-xl border border-amber-200/80 flex flex-col justify-between space-y-2">
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <span className="font-bold text-[11px] text-slate-800 flex items-center gap-1">
+                          <Scale className="w-3.5 h-3.5 text-amber-600" /> Akta Jual Beli (AJB)
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono block">
+                          {selectedCustDetail.noAjb ? `No: ${selectedCustDetail.noAjb}` : 'No. Akta Belum Terbit'}
+                        </span>
+                      </div>
+                      {selectedCustDetail.ajbImage ? (
+                        <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold border border-amber-200">
+                          Tersedia
+                        </span>
+                      ) : (
+                        <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">
+                          Belum Ada
+                        </span>
+                      )}
+                    </div>
+
+                    {selectedCustDetail.ajbImage ? (
+                      <div className="space-y-1.5">
+                        <div 
+                          onClick={() => setPreviewImage({ title: `Akta Jual Beli (AJB): ${selectedCustDetail.nama} (${selectedCustDetail.noAjb || selectedCustDetail.kavlingKode})`, src: selectedCustDetail.ajbImage! })}
+                          className="cursor-pointer group relative h-28 rounded-lg overflow-hidden border border-amber-200 bg-slate-100"
+                        >
+                          <img src={selectedCustDetail.ajbImage} alt="AJB" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-bold text-xs gap-1">
+                            <Eye className="w-4 h-4" /> Perbesar AJB
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-1 text-[11px]">
+                          <label className="text-amber-700 hover:text-amber-800 font-semibold cursor-pointer">
+                            <span>Ganti Berkas</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleDetailFileUpload(e, 'ajbImage')}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateDetailDoc({ ajbImage: null })}
+                            className="text-rose-600 hover:text-rose-700 font-semibold"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <label className="h-20 rounded-lg border border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/20 hover:bg-amber-50/50 flex flex-col items-center justify-center text-amber-800 text-xs cursor-pointer transition p-2">
+                          <UploadCloud className="w-5 h-5 text-amber-600 mb-0.5" />
+                          <span className="font-bold text-[11px]">Unggah Berkas AJB</span>
+                          <span className="text-[9px] text-slate-400">Klik untuk upload scan akta</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleDetailFileUpload(e, 'ajbImage', {
+                              noAjb: selectedCustDetail.noAjb || `048/AJB/KDL/${new Date().getFullYear()}`,
+                              tanggalAjb: new Date().toISOString().split('T')[0]
+                            })}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateDetailDoc({
+                            ajbImage: generateSampleDoc('AKTA JUAL BELI (AJB)', `PPAT Hj. Siti Rohmah, S.H. • Unit ${selectedCustDetail.kavlingKode}`, '#78350f'),
+                            noAjb: selectedCustDetail.noAjb || `048/AJB/KDL/${new Date().getFullYear()}`,
+                            tanggalAjb: new Date().toISOString().split('T')[0]
+                          })}
+                          className="w-full py-1 text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-900 rounded font-semibold text-center border border-amber-300 transition"
+                        >
+                          + Isi Sampel AJB
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card SHM Split */}
+                  <div className="bg-white p-3 rounded-xl border border-emerald-200/80 flex flex-col justify-between space-y-2">
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <span className="font-bold text-[11px] text-slate-800 flex items-center gap-1">
+                          <Award className="w-3.5 h-3.5 text-emerald-600" /> Sertifikat SHM Split
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono block">
+                          {selectedCustDetail.noShmSplit ? `No: ${selectedCustDetail.noShmSplit}` : 'Sertifikat Belum Pecah'}
+                        </span>
+                      </div>
+                      {selectedCustDetail.shmSplitImage ? (
+                        <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold border border-emerald-200">
+                          Tersedia
+                        </span>
+                      ) : (
+                        <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">
+                          Belum Ada
+                        </span>
+                      )}
+                    </div>
+
+                    {selectedCustDetail.shmSplitImage ? (
+                      <div className="space-y-1.5">
+                        <div 
+                          onClick={() => setPreviewImage({ title: `Sertifikat SHM Split: ${selectedCustDetail.nama} (${selectedCustDetail.noShmSplit || selectedCustDetail.kavlingKode})`, src: selectedCustDetail.shmSplitImage! })}
+                          className="cursor-pointer group relative h-28 rounded-lg overflow-hidden border border-emerald-200 bg-slate-100"
+                        >
+                          <img src={selectedCustDetail.shmSplitImage} alt="SHM Split" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-bold text-xs gap-1">
+                            <Eye className="w-4 h-4" /> Perbesar SHM Split
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-1 text-[11px]">
+                          <label className="text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer">
+                            <span>Ganti Berkas</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleDetailFileUpload(e, 'shmSplitImage')}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateDetailDoc({ shmSplitImage: null })}
+                            className="text-rose-600 hover:text-rose-700 font-semibold"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <label className="h-20 rounded-lg border border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/20 hover:bg-emerald-50/50 flex flex-col items-center justify-center text-emerald-800 text-xs cursor-pointer transition p-2">
+                          <UploadCloud className="w-5 h-5 text-emerald-600 mb-0.5" />
+                          <span className="font-bold text-[11px]">Unggah Berkas SHM Split</span>
+                          <span className="text-[9px] text-slate-400">Klik untuk upload scan sertifikat</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleDetailFileUpload(e, 'shmSplitImage', {
+                              noShmSplit: selectedCustDetail.noShmSplit || `SHM No. 04291/Klw/${new Date().getFullYear()}`,
+                              tanggalShmSplit: new Date().toISOString().split('T')[0]
+                            })}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateDetailDoc({
+                            shmSplitImage: generateSampleDoc('SERTIPIKAT HAK MILIK (SHM)', `Kantor Pertanahan Kab. Kendal • Unit ${selectedCustDetail.kavlingKode}`, '#064e3b'),
+                            noShmSplit: selectedCustDetail.noShmSplit || `SHM No. 04291/Klw/${new Date().getFullYear()}`,
+                            tanggalShmSplit: new Date().toISOString().split('T')[0]
+                          })}
+                          className="w-full py-1 text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded font-semibold text-center border border-emerald-300 transition"
+                        >
+                          + Isi Sampel SHM Split
+                        </button>
                       </div>
                     )}
                   </div>

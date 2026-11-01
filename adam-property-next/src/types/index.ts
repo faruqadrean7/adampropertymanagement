@@ -56,6 +56,12 @@ export interface Customer {
   ktpImage?: string | null;
   kkImage?: string | null;
   ajbImage?: string | null;
+  shmSplitImage?: string | null;
+  noAjb?: string;
+  noShmSplit?: string;
+  tanggalAjb?: string;
+  tanggalShmSplit?: string;
+  notarisPpat?: string;
 }
 
 export interface Payment {
