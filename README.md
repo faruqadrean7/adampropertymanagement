@@ -1,7 +1,23 @@
-# ADAM PROPERTY GROUP - ENTERPRISE REAL ESTATE SYSTEM
+# PT ADAM PROPERTY INDONESIA - DEVELOPER UTAMA
 **Sistem Manajemen Kavling, Customer CRM, Barter Material, Hutang Petani, Kas Besar Investor, Kas Kecil, Inventaris Kantor, Data Karyawan & Marketing, Payroll Otomatis & Dashboard Eksekutif**
 
 Aplikasi sistem pengelolaan properti terpadu berbasis Web (HTML5, Tailwind CSS, Chart.js, SweetAlert2, JavaScript, IndexedDB v7) dengan tampilan **Corporate Executive**, dirancang khusus untuk direksi, manajer, kasir, dan tim marketing pengembang tanah kavling dan perumahan mandiri.
+
+---
+
+## 🏛️ Identitas & Logo Perusahaan (Corporate Brand Identity)
+Aplikasi mengintegrasikan logo resmi **PT Adam Property Indonesia - Developer Utama** sesuai standar identitas korporat:
+* **Simbol House Vector & Ground Contour**: Siluet rumah 2 lantai modern beratap pelana (*gable roof*) dengan cerobong asap (*chimney*), dua jendela lantai atas, jendela & pintu lantai dasar, serta kontur pondasi tanah bertingkat (*stepped land contour*) yang melambangkan keahlian penataan kavling tanah matang siap bangun.
+* **Tipografi & Warna Resmi**:
+  * **`PT Adam Property`**: Bold Dark Slate (`#0f172a`), melambangkan ketegasan, kekuatan struktur, dan integritas perusahaan.
+  * **`Indonesia`**: Bold Crimson Maroon (`#881337`), melambangkan identitas nasional dan semangat pengembang tanah air.
+  * **`Developer Utama`**: Medium Slate Charcoal (`#334155`), melambangkan profesionalitas manajemen real estate.
+* **Aset Vector & Favicon**:
+  * `assets/logo.svg` : Master Logo Horizontal (Light Background).
+  * `assets/logo-white.svg` : Master Logo Horizontal (Dark Sidebar Background).
+  * `assets/logo-icon.svg` : Simbol Ikon Rumah & Kontur Tanah (Square Icon).
+  * `assets/favicon.svg` : Favicon Tab Browser.
+  * `assets/logo.png` : High-Resolution Raster Image (960×240).
 
 ---
 
@@ -14,7 +30,7 @@ Aplikasi sistem pengelolaan properti terpadu berbasis Web (HTML5, Tailwind CSS, 
 
 ## 🏢 Navigasi Samping Eksekutif (Executive Sidebar Navigation)
 Tata letak navigasi menggunakan **Sidebar Samping Kiri (*Left Sidebar*)** bergaya Enterprise ERP Properti:
-* **Identitas Korporat**: Logo `AP` gradient emerald, `ADAM PROPERTY GROUP - Real Estate Dev`, status sistem `v7.0 OFFLINE`.
+* **Identitas Korporat**: Badge logo resmi rumah 2 lantai, `PT Adam Property Indonesia - Developer Utama`, status sistem `v7.0 OFFLINE`.
 * **Pengelompokan Modul Vertikal**:
   * **DASHBOARD UTAMA**:
     * 📊 **Dashboard Eksekutif**: Grafik tren penjualan, arus kas, pembebasan lahan, okupansi unit & monitoring usaha.

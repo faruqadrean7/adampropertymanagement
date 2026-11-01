@@ -2269,14 +2269,20 @@ function printSingleReceipt(paymentId) {
     const isBarter = payment.metodeBayar === 'barter' || payment.metodeBayar === 'campuran';
 
     printableArea.innerHTML = `
-        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 25px; border: 2px solid #0f766e; border-radius: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f766e; padding-bottom: 15px; margin-bottom: 20px;">
-                <div>
-                    <h1 style="margin: 0; color: #047857; font-size: 24px; font-weight: bold; letter-spacing: 1px;">ADAM PROPERTY GROUP</h1>
-                    <p style="margin: 3px 0 0; color: #475569; font-size: 13px;">Pengembangan Lahan, Kavling Mandiri & Bangunan Komersil</p>
+        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 25px; border: 2px solid #0f172a; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <img src="assets/logo-icon.svg" style="height: 52px; width: 52px; object-fit: contain;" alt="Logo">
+                    <div>
+                        <div style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 900; line-height: 1.1;">
+                            PT Adam Property <span style="color: #881337;">Indonesia</span>
+                        </div>
+                        <p style="margin: 3px 0 0; color: #334155; font-size: 11px; font-weight: bold; text-transform: uppercase;">Developer Utama</p>
+                        <p style="margin: 2px 0 0; color: #64748b; font-size: 11px;">Pengembangan Lahan, Kavling Mandiri & Perumahan</p>
+                    </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="background-color: #047857; color: white; padding: 6px 16px; border-radius: 4px; font-weight: bold; font-size: 15px;">
+                    <div style="background-color: #0f172a; color: white; padding: 6px 16px; border-radius: 4px; font-weight: bold; font-size: 14px;">
                         ${isBarter ? 'TANDA TERIMA BARTER MATERIAL' : 'KWITANSI PEMBAYARAN'}
                     </div>
                     <p style="margin: 6px 0 0; font-size: 12px; color: #64748b;">No: AP-${currentCustomer.id}-${payment.id}</p>
@@ -2338,7 +2344,7 @@ function printSingleReceipt(paymentId) {
                 <div style="text-align: center; width: 220px;">
                     <p style="margin: 0; font-size: 13px; color: #475569;">Tanggal: ${formatTanggalIndo(payment.tanggal)}</p>
                     <p style="margin: 4px 0 60px; font-size: 13px; font-weight: bold; color: #334155;">Penerima,</p>
-                    <p style="margin: 0; font-weight: bold; border-top: 1px solid #334155; padding-top: 4px; color: #0f172a;">( ADAM PROPERTY GROUP )</p>
+                    <p style="margin: 0; font-weight: bold; border-top: 1px solid #334155; padding-top: 4px; color: #0f172a;">( PT ADAM PROPERTY INDONESIA )</p>
                 </div>
             </div>
         </div>
@@ -2366,12 +2372,18 @@ function printCustomerStatement() {
 
     printableArea.innerHTML = `
         <div style="font-family: Arial, sans-serif; max-width: 850px; margin: 0 auto; padding: 20px;">
-            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
-                <div>
-                    <h2 style="margin:0; color: #047857;">ADAM PROPERTY GROUP</h2>
-                    <p style="margin:2px 0 0; font-size: 12px; color: #64748b;">Lembar Rekapitulasi Riwayat Pembayaran & Barter Customer</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <img src="assets/logo-icon.svg" style="height: 48px; width: 48px; object-fit: contain;" alt="Logo">
+                    <div>
+                        <div style="font-size: 18px; font-weight: 900; color: #0f172a; line-height: 1.1;">
+                            PT Adam Property <span style="color: #881337;">Indonesia</span>
+                        </div>
+                        <p style="margin: 2px 0 0; font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase;">Developer Utama</p>
+                        <p style="margin: 2px 0 0; font-size: 11px; color: #64748b;">Lembar Rekapitulasi Riwayat Pembayaran & Barter Customer</p>
+                    </div>
                 </div>
-                <div style="text-align: right; font-size: 12px; color: #475569;">
+                <div style="text-align: right; font-size: 11px; color: #64748b;">
                     <p style="margin:0;">Dicetak pada: ${formatTanggalIndo(new Date().toISOString().split('T')[0])}</p>
                 </div>
             </div>
@@ -3816,10 +3828,15 @@ function printCurrentCashVoucher() {
         <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 800px; margin: 0 auto; color: #1e293b; border: 2px solid #0f172a; border-radius: 8px;">
             <!-- Header Voucher -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 15px;">
-                <div>
-                    <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #047857; text-transform: uppercase; letter-spacing: 0.5px;">ADAM PROPERTY GROUP</h2>
-                    <p style="margin: 3px 0 0 0; font-size: 11px; color: #64748b;">Pengembang Properti & Kavling Mandiri Siap Bangun</p>
-                    <p style="margin: 2px 0 0 0; font-size: 11px; font-weight: bold; color: #334155;">Proyek: ${escapeHtml(projName)}</p>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <img src="assets/logo-icon.svg" style="height: 48px; width: 48px; object-fit: contain;" alt="Logo">
+                    <div>
+                        <div style="margin: 0; font-size: 18px; font-weight: 900; color: #0f172a; line-height: 1.1;">
+                            PT Adam Property <span style="color: #881337;">Indonesia</span>
+                        </div>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase;">Developer Utama</p>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; font-weight: bold; color: #047857;">Proyek: ${escapeHtml(projName)}</p>
+                    </div>
                 </div>
                 <div style="text-align: right;">
                     <div style="display: inline-block; padding: 4px 10px; background: #0f172a; color: white; font-weight: bold; font-size: 13px; border-radius: 4px;">
@@ -3864,13 +3881,13 @@ function printCurrentCashVoucher() {
                     <p style="margin: 0; color: #64748b;">Disetujui Oleh,</p>
                     <div style="height: 60px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Direktur Operasional</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">PT ADAM PROPERTY INDONESIA</p>
                 </div>
                 <div style="width: 28%;">
                     <p style="margin: 0; color: #64748b;">Kasir / Akuntan,</p>
                     <div style="height: 60px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Bagian Keuangan</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">PT ADAM PROPERTY INDONESIA</p>
                 </div>
                 <div style="width: 28%;">
                     <p style="margin: 0; color: #64748b;">${isMasuk ? 'Penyetor / Investor' : 'Penerima Uang'},</p>
@@ -3882,7 +3899,7 @@ function printCurrentCashVoucher() {
 
             <!-- Footer note -->
             <div style="margin-top: 25px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 10px; color: #94a3b8; text-align: center;">
-                Voucher ini sah dan diterbitkan secara digital oleh Sistem Manajemen Keuangan ADAM PROPERTY GROUP pada ${new Date().toLocaleString('id-ID')}.
+                Voucher ini sah dan diterbitkan secara digital oleh Sistem Manajemen Keuangan PT Adam Property Indonesia pada ${new Date().toLocaleString('id-ID')}.
             </div>
         </div>
     `;
@@ -3942,10 +3959,16 @@ function printCashbookReport() {
 
     printable.innerHTML = `
         <div style="font-family: Arial, sans-serif; padding: 25px; color: #0f172a;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #047857; padding-bottom: 12px; margin-bottom: 15px;">
-                <div>
-                    <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #047857;">ADAM PROPERTY GROUP</h1>
-                    <p style="margin: 3px 0 0 0; font-size: 12px; color: #475569;">Laporan Resmi Rekapitulasi Arus Kas Besar & Modal Investor</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0f172a; padding-bottom: 12px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <img src="assets/logo-icon.svg" style="height: 48px; width: 48px; object-fit: contain;" alt="Logo">
+                    <div>
+                        <div style="margin: 0; font-size: 20px; font-weight: 900; color: #0f172a; line-height: 1.1;">
+                            PT Adam Property <span style="color: #881337;">Indonesia</span>
+                        </div>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase;">Developer Utama</p>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Laporan Resmi Rekapitulasi Arus Kas Besar & Modal Investor</p>
+                    </div>
                 </div>
                 <div style="text-align: right; font-size: 11px; color: #64748b;">
                     <p style="margin: 0;">Dicetak: <b>${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</b></p>
@@ -3998,13 +4021,13 @@ function printCashbookReport() {
                     <p style="margin: 0; color: #64748b;">Disiapkan Oleh,</p>
                     <div style="height: 60px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Bagian Administrasi & Keuangan</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">PT ADAM PROPERTY INDONESIA</p>
                 </div>
                 <div style="width: 30%;">
                     <p style="margin: 0; color: #64748b;">Mengetahui,</p>
                     <div style="height: 60px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Direktur Utama</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">PT ADAM PROPERTY INDONESIA</p>
                 </div>
             </div>
         </div>
@@ -4589,9 +4612,15 @@ function printCurrentPettyVoucher() {
         <div style="font-family: Arial, sans-serif; padding: 25px; max-width: 700px; margin: 0 auto; color: #1e293b; border: 2px dashed #475569; border-radius: 8px;">
             <!-- Header -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px;">
-                <div>
-                    <h2 style="margin: 0; font-size: 16px; font-weight: bold; color: #4338ca; text-transform: uppercase;">ADAM PROPERTY GROUP</h2>
-                    <p style="margin: 2px 0 0 0; font-size: 10px; color: #64748b;">Pengelolaan Dana Kas Kecil Kantor & Operasional Harian</p>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="assets/logo-icon.svg" style="height: 42px; width: 42px; object-fit: contain;" alt="Logo">
+                    <div>
+                        <div style="margin: 0; font-size: 16px; font-weight: 900; color: #0f172a; line-height: 1.1;">
+                            PT Adam Property <span style="color: #881337;">Indonesia</span>
+                        </div>
+                        <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: bold; color: #334155; text-transform: uppercase;">Developer Utama</p>
+                        <p style="margin: 1px 0 0 0; font-size: 9px; color: #64748b;">Pengelolaan Dana Kas Kecil Kantor & Operasional Harian</p>
+                    </div>
                 </div>
                 <div style="text-align: right;">
                     <span style="display: inline-block; padding: 3px 8px; background: #312e81; color: white; font-weight: bold; font-size: 11px; border-radius: 4px;">
@@ -4688,10 +4717,16 @@ function printPettyCashReport() {
 
     printable.innerHTML = `
         <div style="font-family: Arial, sans-serif; padding: 25px; color: #0f172a;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #6366f1; padding-bottom: 10px; margin-bottom: 12px;">
-                <div>
-                    <h1 style="margin: 0; font-size: 18px; font-weight: 800; color: #4338ca;">ADAM PROPERTY GROUP</h1>
-                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #475569;">Laporan Pertanggungjawaban Mutasi Kas Kecil Harian (Petty Cash)</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0f172a; padding-bottom: 12px; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <img src="assets/logo-icon.svg" style="height: 48px; width: 48px; object-fit: contain;" alt="Logo">
+                    <div>
+                        <div style="margin: 0; font-size: 18px; font-weight: 900; color: #0f172a; line-height: 1.1;">
+                            PT Adam Property <span style="color: #881337;">Indonesia</span>
+                        </div>
+                        <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: bold; color: #334155; text-transform: uppercase;">Developer Utama</p>
+                        <p style="margin: 1px 0 0 0; font-size: 10px; color: #475569;">Laporan Pertanggungjawaban Mutasi Kas Kecil Harian (Petty Cash)</p>
+                    </div>
                 </div>
                 <div style="text-align: right; font-size: 10px; color: #64748b;">
                     <p style="margin: 0;">Dicetak: <b>${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</b></p>
@@ -4738,13 +4773,13 @@ function printPettyCashReport() {
                     <p style="margin: 0; color: #64748b;">Pemegang Kas Kecil,</p>
                     <div style="height: 50px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Kasir Kantor</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">PT ADAM PROPERTY INDONESIA</p>
                 </div>
                 <div style="width: 30%;">
                     <p style="margin: 0; color: #64748b;">Mengetahui & Menyetujui,</p>
                     <div style="height: 50px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Pimpinan Operasional</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">PT ADAM PROPERTY INDONESIA</p>
                 </div>
             </div>
         </div>
@@ -5278,9 +5313,14 @@ async function printInventorySticker(id = null) {
             
             <!-- Header Label -->
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px;">
-                <div>
-                    <h3 style="margin: 0; font-size: 13px; font-weight: 900; letter-spacing: 0.5px; color: #047857;">ADAM PROPERTY GROUP</h3>
-                    <p style="margin: 1px 0 0 0; font-size: 9px; font-weight: bold; color: #475569; text-transform: uppercase;">Label Inventaris & Aset Tetap</p>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <img src="assets/logo-icon.svg" style="height: 32px; width: 32px; object-fit: contain;" alt="Logo">
+                    <div>
+                        <div style="margin: 0; font-size: 11px; font-weight: 900; color: #0f172a; line-height: 1.1;">
+                            PT Adam Property <span style="color: #881337;">Indonesia</span>
+                        </div>
+                        <p style="margin: 1px 0 0 0; font-size: 8px; font-weight: bold; color: #475569; text-transform: uppercase;">Label Inventaris Aset</p>
+                    </div>
                 </div>
                 <div style="background: #0f172a; color: white; font-family: monospace; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 4px;">
                     ${escapeHtml(item.kode)}
@@ -5329,7 +5369,7 @@ async function printInventorySticker(id = null) {
 
             <!-- Footer Warning Note -->
             <div style="margin-top: 12px; padding-top: 6px; border-top: 1px dashed #cbd5e1; font-size: 8px; color: #94a3b8; text-align: center; text-transform: uppercase;">
-                MILIK RESMI ADAM PROPERTY GROUP &bull; DILARANG DIBAWA TANPA IZIN LOGISTIK
+                MILIK RESMI PT ADAM PROPERTY INDONESIA &bull; DILARANG DIBAWA TANPA IZIN LOGISTIK
             </div>
         </div>
     `;
@@ -5387,10 +5427,16 @@ function printInventoryReport() {
 
     printable.innerHTML = `
         <div style="font-family: Arial, sans-serif; padding: 25px; color: #0f172a;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #e11d48; padding-bottom: 10px; margin-bottom: 15px;">
-                <div>
-                    <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #881337;">ADAM PROPERTY GROUP</h1>
-                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #475569;">Laporan Resmi Daftar Inventaris & Aset Tetap Kantor</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0f172a; padding-bottom: 12px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <img src="assets/logo-icon.svg" style="height: 48px; width: 48px; object-fit: contain;" alt="Logo">
+                    <div>
+                        <div style="margin: 0; font-size: 18px; font-weight: 900; color: #0f172a; line-height: 1.1;">
+                            PT Adam Property <span style="color: #881337;">Indonesia</span>
+                        </div>
+                        <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: bold; color: #334155; text-transform: uppercase;">Developer Utama</p>
+                        <p style="margin: 1px 0 0 0; font-size: 10px; color: #64748b;">Laporan Resmi Daftar Inventaris & Aset Tetap Kantor</p>
+                    </div>
                 </div>
                 <div style="text-align: right; font-size: 10px; color: #64748b;">
                     <p style="margin: 0;">Tanggal Cetak: <b>${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</b></p>
@@ -5435,13 +5481,13 @@ function printInventoryReport() {
                     <p style="margin: 0; color: #64748b;">Pengelola Inventaris & Sarana,</p>
                     <div style="height: 60px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Bagian Umum & Aset</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">PT ADAM PROPERTY INDONESIA</p>
                 </div>
                 <div style="width: 30%;">
                     <p style="margin: 0; color: #64748b;">Mengetahui & Mengesahkan,</p>
                     <div style="height: 60px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Direktur Utama</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">PT ADAM PROPERTY INDONESIA</p>
                 </div>
             </div>
         </div>
@@ -6399,11 +6445,16 @@ function printDashboardSummary() {
     printable.innerHTML = `
         <div style="font-family: Arial, sans-serif; padding: 25px; color: #1e293b; max-width: 800px; margin: auto;">
             <!-- Header Surat / Kop Perusahaan -->
-            <div style="border-bottom: 3px double #0f172a; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h1 style="margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 0.5px; color: #0f172a;">ADAM PROPERTY GROUP</h1>
-                    <p style="margin: 3px 0 0 0; font-size: 11px; color: #64748b;">Pengembang Real Estate, Kavling Mandiri & Pembebasan Lahan</p>
-                    <p style="margin: 2px 0 0 0; font-size: 10px; color: #94a3b8;">Jl. Properti Mandiri No. 88 · Telp: (021) 7788-9900 · Email: corporate@adamproperty.id</p>
+            <div style="border-bottom: 3px double #0f172a; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <img src="assets/logo-icon.svg" style="height: 52px; width: 52px; object-fit: contain;" alt="Logo">
+                    <div>
+                        <div style="margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 0.5px; color: #0f172a; line-height: 1.1;">
+                            PT Adam Property <span style="color: #881337;">Indonesia</span>
+                        </div>
+                        <p style="margin: 3px 0 0 0; font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase;">Developer Utama &bull; Real Estate & Kavling Mandiri</p>
+                        <p style="margin: 2px 0 0 0; font-size: 10px; color: #94a3b8;">Jl. Raya Kavling Baitul Makmur Regency, Jawa Timur &bull; Telp: 0812-3456-7890</p>
+                    </div>
                 </div>
                 <div style="text-align: right;">
                     <span style="display: inline-block; padding: 4px 10px; background: #0f172a; color: white; border-radius: 6px; font-size: 10px; font-weight: bold; text-transform: uppercase;">
@@ -6475,13 +6526,13 @@ function printDashboardSummary() {
                     <p style="margin: 0; color: #64748b;">Disiapkan oleh,</p>
                     <div style="height: 60px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Manager Keuangan & Accounting</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">PT ADAM PROPERTY INDONESIA</p>
                 </div>
                 <div style="width: 30%;">
                     <p style="margin: 0; color: #64748b;">Menyetujui & Mengesahkan,</p>
                     <div style="height: 60px;"></div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">Direktur Utama</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b;">ADAM PROPERTY GROUP</p>
+                    <p style="margin: 2px 0 0 0; color: #64748b;">PT ADAM PROPERTY INDONESIA</p>
                 </div>
             </div>
         </div>
@@ -7548,14 +7599,15 @@ async function openSalarySlipModal(payrollId) {
     container.innerHTML = `
         <!-- Kop Surat Perusahaan -->
         <div class="border-b-2 border-slate-900 pb-3 flex justify-between items-start">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center text-xl font-black shadow-xs">
-                    APG
-                </div>
+            <div class="flex items-center gap-3.5">
+                <img src="assets/logo-icon.svg" alt="Logo" class="w-12 h-12 object-contain p-1 bg-slate-50 rounded-xl border border-slate-200">
                 <div>
-                    <h2 class="text-base font-black text-slate-900 tracking-tight">ADAM PROPERTY GROUP</h2>
-                    <p class="text-[11px] text-slate-600 font-medium">Developer & Pengembang Kavling Tanah Siap Bangun</p>
-                    <p class="text-[10px] text-slate-400">Jl. Raya Kavling Baitul Makmur Regency, Jawa Timur • Telp: 0812-3456-7890</p>
+                    <div class="flex items-baseline gap-1.5">
+                        <span class="text-base font-black text-slate-900 tracking-tight">PT Adam Property</span>
+                        <span class="text-base font-black text-rose-900" style="color: #881337;">Indonesia</span>
+                    </div>
+                    <p class="text-[11px] font-bold text-slate-700 tracking-wide uppercase">Developer Utama &bull; Kavling Siap Bangun</p>
+                    <p class="text-[10px] text-slate-400">Kawasan Baitul Makmur Regency, Jawa Timur &bull; Telp: 0812-3456-7890</p>
                 </div>
             </div>
             <div class="text-right">
@@ -7660,13 +7712,13 @@ async function openSalarySlipModal(payrollId) {
                 <p class="text-slate-500">Kasir / Keuangan,</p>
                 <div class="h-14"></div>
                 <p class="font-bold underline text-slate-800">Bagian Keuangan & Kasir</p>
-                <p class="text-slate-400">ADAM PROPERTY GROUP</p>
+                <p class="text-slate-400">PT ADAM PROPERTY INDONESIA</p>
             </div>
             <div>
                 <p class="text-slate-500">Menyetujui & Mengesahkan,</p>
                 <div class="h-14"></div>
                 <p class="font-bold underline text-slate-800">Direktur Utama</p>
-                <p class="text-slate-400">ADAM PROPERTY GROUP</p>
+                <p class="text-slate-400">PT ADAM PROPERTY INDONESIA</p>
             </div>
         </div>
     `;
