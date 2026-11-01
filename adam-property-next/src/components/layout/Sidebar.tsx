@@ -14,13 +14,9 @@ import {
   Coins, 
   Boxes, 
   UserCheck, 
-  Plus, 
-  Database, 
   RotateCw,
   LogOut,
   X,
-  Eye,
-  Receipt,
   ShieldCheck
 } from 'lucide-react';
 
@@ -30,7 +26,7 @@ interface SidebarProps {
   onOpenPrimaryModal?: () => void;
 }
 
-export default function Sidebar({ isOpen, onClose, onOpenPrimaryModal }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { activeTab, setActiveTab, syncAllToCashbook } = useProperty();
   const { user, isReadOnly, canManagePayments, canFullAccess, logout } = useAuth();
 
@@ -44,35 +40,6 @@ export default function Sidebar({ isOpen, onClose, onOpenPrimaryModal }: Sidebar
     { tab: 'inventory', label: '6. Inventaris & Aset Tetap', icon: <Boxes className="w-4 h-4" /> },
     { tab: 'employee', label: '7. Karyawan & Payroll Gaji', icon: <UserCheck className="w-4 h-4" /> },
   ];
-
-  const getPrimaryActionLabel = () => {
-    switch (activeTab) {
-      case 'dashboard': return '+ Tambah Kavling Baru';
-      case 'kavling': return '+ Tambah Kavling Baru';
-      case 'customer': return '+ Tambah Customer';
-      case 'landDebt': return '+ Beli Lahan Petani';
-      case 'cashbook': return '+ Catat Kas Besar';
-      case 'pettyCash': return '+ Top Up Kas Kecil';
-      case 'inventory': return '+ Tambah Inventaris';
-      case 'employee': return '+ Tambah Karyawan';
-      default: return '+ Tambah Data';
-    }
-  };
-
-  const handleExportBackup = () => {
-    const data = {
-      timestamp: new Date().toISOString(),
-      company: 'PT Adam Property Indonesia',
-      note: 'Next.js + Supabase Ready Backup'
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `adam-property-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <>
@@ -191,53 +158,17 @@ export default function Sidebar({ isOpen, onClose, onOpenPrimaryModal }: Sidebar
         </div>
 
         {/* Bottom Actions */}
-        <div className="p-3.5 border-t border-white/10 shrink-0 space-y-2.5 bg-black/20">
-          {isReadOnly ? (
-            <div 
-              className="w-full py-2.5 px-4 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 to-amber-200 rounded-xl shadow-lg shadow-amber-950/20 flex items-center justify-center gap-2 cursor-not-allowed select-none"
-              title="Akses Management: Hanya Lihat (Read-Only)"
-            >
-              <Eye className="w-4 h-4 text-amber-800" />
-              <span>Mode Pantau (Hanya Lihat)</span>
-            </div>
-          ) : user?.role === 'admin' ? (
-            <button 
-              onClick={onOpenPrimaryModal}
-              className="w-full py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] rounded-xl shadow-lg shadow-blue-950/40 transition flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Receipt className="w-4 h-4" />
-              <span>+ Catat Transaksi Pembayaran</span>
-            </button>
-          ) : (
-            <button 
-              onClick={onOpenPrimaryModal}
-              className="w-full py-2.5 px-4 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 active:scale-[0.98] rounded-xl shadow-lg shadow-emerald-950/40 transition flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>{getPrimaryActionLabel()}</span>
-            </button>
-          )}
+        <div className="p-3.5 border-t border-white/10 shrink-0 space-y-2 bg-black/20">
+          <button 
+            onClick={syncAllToCashbook}
+            className="w-full py-2.5 px-3 text-xs font-bold text-teal-300 hover:text-white bg-teal-500/15 hover:bg-teal-500/25 border border-teal-400/30 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-98"
+            title="Sinkronisasi Seluruh Transaksi ke Kas Besar"
+          >
+            <RotateCw className="w-4 h-4 text-teal-400" />
+            <span>Sinkron Kas</span>
+          </button>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button 
-              onClick={handleExportBackup}
-              className="px-2.5 py-2 text-[11px] font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition flex items-center justify-center gap-1.5"
-              title="Cadangkan Database"
-            >
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Backup</span>
-            </button>
-            <button 
-              onClick={syncAllToCashbook}
-              className="px-2.5 py-2 text-[11px] font-semibold text-teal-300 hover:text-teal-200 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-400/20 rounded-lg transition flex items-center justify-center gap-1.5"
-              title="Sinkronisasi Seluruh Transaksi ke Kas Besar"
-            >
-              <RotateCw className="w-3.5 h-3.5 text-teal-400" />
-              <span>Sinkron Kas</span>
-            </button>
-          </div>
-
-          <div className="text-[10px] text-center text-slate-400 pt-1">
+          <div className="text-[10px] text-center text-slate-400 pt-0.5">
             PT Adam Property Indonesia &bull; Next.js 16
           </div>
         </div>

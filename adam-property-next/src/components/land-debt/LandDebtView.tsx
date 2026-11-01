@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useProperty } from '@/context/PropertyContext';
+import ExportButtons from '@/components/common/ExportButtons';
 import { 
   Tractor, 
   Plus, 
@@ -125,6 +126,30 @@ export default function LandDebtView() {
     ? 'Semua Lahan Proyek (Rekap Terpadu)' 
     : (projects.find(p => p.id === selectedProjectId)?.nama || 'Lahan Terpilih');
 
+  const getExportData = () => ({
+    filename: `Laporan-Hutang-Lahan-${new Date().toISOString().split('T')[0]}`,
+    title: 'Laporan Hutang Lahan & Pembebasan Tanah Petani',
+    subtitle: activeProjectLabel,
+    category: 'KEWAJIBAN & HUTANG TANAH INDUK',
+    headers: ['Nama Proyek', 'Pemilik Lahan / Petani', 'Luas Tanah', 'Alas Hak', 'Harga Kesepakatan (Rp)', 'Total Terbayar (Rp)', 'Sisa Hutang (Rp)', 'Status Bayar'],
+    rows: filteredLands.map(l => [
+      l.projectNama,
+      l.namaPetani,
+      l.luasTanah,
+      l.alasHak,
+      `Rp ${l.hargaKesepakatan.toLocaleString('id-ID')}`,
+      `Rp ${(l.dpDibayar + l.totalCicilan).toLocaleString('id-ID')}`,
+      `Rp ${l.sisaHutang.toLocaleString('id-ID')}`,
+      l.status === 'lunas' ? 'LUNAS' : 'BELUM LUNAS'
+    ]),
+    summary: [
+      { label: 'Total Kesepakatan Tanah', value: `Rp ${totalNilaiTanah.toLocaleString('id-ID')}` },
+      { label: 'Total Uang Terbayar', value: `Rp ${totalTerbayar.toLocaleString('id-ID')}` },
+      { label: 'Sisa Kewajiban Hutang', value: `Rp ${totalSisaHutang.toLocaleString('id-ID')}` },
+      { label: 'Jumlah Lahan', value: `${filteredLands.length} Lahan` }
+    ]
+  });
+
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     addLandDebt({
@@ -183,27 +208,30 @@ export default function LandDebtView() {
               Pencatatan pembebasan lahan mentah, perjanjian jual beli notaris, dan cicilan bertahap.
             </p>
           </div>
-          {canFullAccess && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Beli Lahan Petani Baru</span>
-            </button>
-          )}
-          {isReadOnly && (
-            <div className="px-3.5 py-1.5 bg-amber-100/90 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 select-none">
-              <Eye className="w-3.5 h-3.5 text-amber-700" />
-              <span>Monitoring Lahan (Read-Only)</span>
-            </div>
-          )}
-          {user?.role === 'admin' && (
-            <div className="px-3 py-1.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-              <Coins className="w-3.5 h-3.5 text-blue-600" />
-              <span>Admin: Hak Akses Cicilan Pembayaran Lahan</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {canFullAccess && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Beli Lahan Petani Baru</span>
+              </button>
+            )}
+            {isReadOnly && (
+              <div className="px-3.5 py-1.5 bg-amber-100/90 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 select-none">
+                <Eye className="w-3.5 h-3.5 text-amber-700" />
+                <span>Monitoring Lahan (Read-Only)</span>
+              </div>
+            )}
+            {user?.role === 'admin' && (
+              <div className="px-3 py-1.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-xl text-xs font-semibold flex items-center gap-1.5">
+                <Coins className="w-3.5 h-3.5 text-blue-600" />
+                <span>Admin: Hak Akses Cicilan Pembayaran Lahan</span>
+              </div>
+            )}
+            <ExportButtons getData={getExportData} />
+          </div>
         </div>
 
         {/* DROPDOWN FILTER PILIH LAHAN AGAR TIDAK TERCAMPUR */}

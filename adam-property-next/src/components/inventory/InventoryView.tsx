@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useProperty } from '@/context/PropertyContext';
+import ExportButtons from '@/components/common/ExportButtons';
 import { 
   Boxes, 
   Plus, 
-  Printer, 
   Search, 
   Laptop, 
   Compass, 
@@ -13,7 +13,8 @@ import {
   Armchair, 
   Trash2, 
   QrCode, 
-  Tag 
+  Tag,
+  Printer
 } from 'lucide-react';
 import { InventoryItem } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -57,6 +58,32 @@ export default function InventoryView() {
   const totalUnits = inventory.reduce((sum, i) => sum + i.jumlah, 0);
   const goodUnits = inventory.filter(i => i.kondisi === 'baik').reduce((sum, i) => sum + i.jumlah, 0);
   const repairUnits = inventory.filter(i => i.kondisi !== 'baik').reduce((sum, i) => sum + i.jumlah, 0);
+
+  const getExportData = () => ({
+    filename: `Laporan-Inventaris-${new Date().toISOString().split('T')[0]}`,
+    title: 'Laporan Inventaris & Aset Tetap Kantor',
+    subtitle: 'PT Adam Property Indonesia - Kantor Operasional',
+    category: 'INVENTARIS & AKTIVA TETAP',
+    headers: ['Kode', 'Nama Barang', 'Kategori', 'Jumlah', 'Satuan', 'Kondisi', 'Lokasi', 'Penanggung Jawab', 'Nilai Perolehan (Rp)', 'Sumber Dana'],
+    rows: filteredItems.map(item => [
+      item.kode,
+      item.nama,
+      item.kategori.toUpperCase(),
+      item.jumlah,
+      item.satuan,
+      item.kondisi.toUpperCase(),
+      item.lokasi,
+      item.penanggungJawab,
+      `Rp ${item.nilaiPerolehan.toLocaleString('id-ID')}`,
+      item.sumberDana
+    ]),
+    summary: [
+      { label: 'Total Nilai Buku Aset', value: `Rp ${totalAssetValue.toLocaleString('id-ID')}` },
+      { label: 'Total Unit Aset', value: `${totalUnits} Unit` },
+      { label: 'Kondisi Baik', value: `${goodUnits} Unit` },
+      { label: 'Perlu Servis / Rusak', value: `${repairUnits} Unit` }
+    ]
+  });
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,13 +163,7 @@ export default function InventoryView() {
               <span>+ Tambah Inventaris</span>
             </button>
           )}
-          <button
-            onClick={() => window.print()}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">Cetak Rekap</span>
-          </button>
+          <ExportButtons getData={getExportData} />
         </div>
       </div>
 

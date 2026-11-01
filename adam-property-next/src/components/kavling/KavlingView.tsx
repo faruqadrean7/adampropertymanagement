@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useProperty } from '@/context/PropertyContext';
+import ExportButtons from '@/components/common/ExportButtons';
 import { 
   Building2, 
   Plus, 
@@ -132,6 +133,31 @@ export default function KavlingView() {
   const openLots = kavlings.filter(k => (selectedProjectId === 'all' || k.projectId === selectedProjectId) && k.status === 'terbuka').length;
   const bookingLots = kavlings.filter(k => (selectedProjectId === 'all' || k.projectId === selectedProjectId) && k.status === 'booking').length;
   const soldLots = kavlings.filter(k => (selectedProjectId === 'all' || k.projectId === selectedProjectId) && k.status === 'terjual').length;
+
+  const getExportData = () => ({
+    filename: `Laporan-Siteplan-Kavling-${new Date().toISOString().split('T')[0]}`,
+    title: 'Laporan Master Kavling & Status Penjualan Unit',
+    subtitle: activeProject?.nama || 'Semua Cluster Lahan',
+    category: 'DATA MASTER KAVLING',
+    headers: ['Nomor Unit', 'Blok', 'Tipe', 'Luas (m²)', 'Dimensi', 'Harga (Rp)', 'Status Unit', 'Nama Konsumen / Pembeli', 'Keterangan'],
+    rows: filteredKavlings.map(k => [
+      k.nomor,
+      k.blok,
+      k.tipe,
+      k.luas,
+      k.dimensi,
+      `Rp ${k.harga.toLocaleString('id-ID')}`,
+      k.status.toUpperCase(),
+      k.customerNama || '-',
+      k.keterangan || '-'
+    ]),
+    summary: [
+      { label: 'Total Kavling', value: `${totalLots} Unit` },
+      { label: 'Unit Terjual / Lunas', value: `${soldLots} Unit` },
+      { label: 'Unit Booking', value: `${bookingLots} Unit` },
+      { label: 'Unit Siap Jual', value: `${openLots} Unit` }
+    ]
+  });
 
   const handleProjectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -320,6 +346,7 @@ export default function KavlingView() {
               )}
             </>
           )}
+          <ExportButtons getData={getExportData} />
         </div>
       </div>
 

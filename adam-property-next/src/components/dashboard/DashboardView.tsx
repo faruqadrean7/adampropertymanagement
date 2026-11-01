@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useProperty } from '@/context/PropertyContext';
+import ExportButtons from '@/components/common/ExportButtons';
 import { CashbookItem } from '@/types';
 import { 
   TrendingUp, 
@@ -12,7 +13,6 @@ import {
   Vault, 
   Building2, 
   RotateCw, 
-  Printer, 
   ArrowUpRight, 
   ArrowDownLeft 
 } from 'lucide-react';
@@ -173,6 +173,29 @@ export default function DashboardView() {
     ]
   };
 
+  const getExportData = () => ({
+    filename: `Executive-Analytics-${new Date().toISOString().split('T')[0]}`,
+    title: 'Ringkasan Eksekutif & Analisis Keuangan Perusahaan',
+    subtitle: selectedProjectId === 'all' ? 'Semua Kawasan Proyek Lahan' : (projects.find(p => p.id === selectedProjectId)?.nama || 'Proyek Lahan'),
+    category: 'EXECUTIVE BUSINESS REPORT',
+    headers: ['Indikator Kinerja Utama (KPI)', 'Nilai Finansial / Metrik', 'Keterangan Analisis'],
+    rows: [
+      ['Omzet Penjualan Kavling', `Rp ${totalSalesValue.toLocaleString('id-ID')}`, `${soldCount + bookingCount} Unit Terjual / Booking`],
+      ['Total Kas Masuk Real', `Rp ${totalCashIn.toLocaleString('id-ID')}`, 'DP Kavling, Angsuran & Modal Investor'],
+      ['Sisa Piutang Konsumen Berjalan', `Rp ${totalReceivables.toLocaleString('id-ID')}`, 'Kewajiban pelunasan kavling konsumen'],
+      ['Kewajiban Hutang Tanah ke Petani', `Rp ${totalFarmerDebt.toLocaleString('id-ID')}`, 'Sisa hutang pokok pembebasan lahan mentah'],
+      ['Okupansi Unit Terjual/Booking', `${occupancyRate}%`, `${soldCount + bookingCount} dari ${totalCount} Total Unit`],
+      ['Total Likuiditas Kas Perusahaan', `Rp ${totalLiquidity.toLocaleString('id-ID')}`, `Kas Besar (Rp ${cashbookBalance.toLocaleString('id-ID')}) + Kas Kecil (Rp ${pettyCashBalance.toLocaleString('id-ID')})`],
+      ['Total Valuasi Nilai Inventaris', `Rp ${totalAssetValue.toLocaleString('id-ID')}`, 'Aktiva tetap sarana kantor & lapangan']
+    ],
+    summary: [
+      { label: 'Total Likuiditas Kas', value: `Rp ${totalLiquidity.toLocaleString('id-ID')}` },
+      { label: 'Sisa Piutang Berjalan', value: `Rp ${totalReceivables.toLocaleString('id-ID')}` },
+      { label: 'Hutang Tanah Petani', value: `Rp ${totalFarmerDebt.toLocaleString('id-ID')}` },
+      { label: 'Valuasi Inventaris', value: `Rp ${totalAssetValue.toLocaleString('id-ID')}` }
+    ]
+  });
+
   return (
     <div className="space-y-6">
       {/* Executive Header Banner */}
@@ -216,13 +239,7 @@ export default function DashboardView() {
             <span>Refresh</span>
           </button>
 
-          <button 
-            onClick={() => window.print()}
-            className="px-3.5 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-white/20"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Cetak Laporan</span>
-          </button>
+          <ExportButtons getData={getExportData} />
         </div>
       </div>
 

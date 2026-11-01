@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { useProperty } from '@/context/PropertyContext';
+import ExportButtons from '@/components/common/ExportButtons';
 import { 
   Vault, 
   Plus, 
   ArrowDownLeft, 
   ArrowUpRight, 
   Briefcase, 
-  Printer, 
   Search, 
   CheckCircle2, 
   Home, 
@@ -67,6 +67,29 @@ export default function CashbookView() {
   const totalInvestor = cashbook
     .filter(c => c.kategori === 'investor')
     .reduce((sum, c) => sum + c.nominal, 0);
+
+  const getExportData = () => ({
+    filename: `Laporan-Kas-Besar-${new Date().toISOString().split('T')[0]}`,
+    title: 'Buku Kas Besar & Arus Modal Perusahaan',
+    subtitle: 'Cluster Baitul Makmur, Jatikerto, Kromengan, Malang',
+    category: 'BUKU KAS BESAR (GENERAL LEDGER)',
+    headers: ['Tanggal', 'Tipe', 'Kategori', 'Sumber / Pihak', 'Keterangan', 'Nominal (Rp)', 'Metode Transaksi'],
+    rows: filteredCash.map(c => [
+      c.tanggal,
+      c.tipe === 'masuk' ? 'PEMASUKAN' : 'PENGELUARAN',
+      c.kategori.toUpperCase(),
+      c.sumber,
+      c.keterangan,
+      `Rp ${c.nominal.toLocaleString('id-ID')}`,
+      c.metode || '-'
+    ]),
+    summary: [
+      { label: 'Total Kas Masuk', value: `Rp ${totalCashIn.toLocaleString('id-ID')}` },
+      { label: 'Total Kas Keluar', value: `Rp ${totalCashOut.toLocaleString('id-ID')}` },
+      { label: 'Saldo Kas Besar', value: `Rp ${cashbookBalance.toLocaleString('id-ID')}` },
+      { label: 'Total Transaksi', value: `${filteredCash.length} Transaksi` }
+    ]
+  });
 
   const handleInvestorSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,13 +183,7 @@ export default function CashbookView() {
                 </button>
               </>
             )}
-            <button
-              onClick={() => window.print()}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Cetak Rekap</span>
-            </button>
+            <ExportButtons getData={getExportData} />
           </div>
         </div>
 

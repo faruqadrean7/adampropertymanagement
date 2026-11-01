@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useProperty } from '@/context/PropertyContext';
+import ExportButtons from '@/components/common/ExportButtons';
 import { 
   Users, 
   Plus, 
@@ -175,6 +176,30 @@ export default function CustomerView() {
   const totalNilaiKavling = customers.reduce((sum, c) => sum + c.totalHarga, 0);
   const totalUangMasuk = customers.reduce((sum, c) => sum + c.totalMasuk, 0);
   const totalSisaPiutang = customers.reduce((sum, c) => sum + c.sisaPiutang, 0);
+
+  const getExportData = () => ({
+    filename: `Laporan-Customer-${new Date().toISOString().split('T')[0]}`,
+    title: 'Laporan Data Konsumen & Status Piutang Kavling',
+    subtitle: 'Cluster Baitul Makmur, Jatikerto, Kromengan, Malang',
+    category: 'DATA KONSUMEN & PIUTANG KAVLING',
+    headers: ['Nama Konsumen', 'NIK', 'No. Telepon', 'Kavling / Unit', 'Total Harga (Rp)', 'Total Terbayar (Rp)', 'Sisa Piutang (Rp)', 'Status Bayar'],
+    rows: filteredCustomers.map(c => [
+      c.nama,
+      c.nik,
+      c.telepon,
+      c.kavlingKode || '-',
+      `Rp ${c.totalHarga.toLocaleString('id-ID')}`,
+      `Rp ${c.totalMasuk.toLocaleString('id-ID')}`,
+      `Rp ${c.sisaPiutang.toLocaleString('id-ID')}`,
+      c.statusBayar === 'lunas' ? 'LUNAS' : 'BELUM LUNAS'
+    ]),
+    summary: [
+      { label: 'Total Kontrak Penjualan', value: `Rp ${totalNilaiKavling.toLocaleString('id-ID')}` },
+      { label: 'Total Uang Masuk', value: `Rp ${totalUangMasuk.toLocaleString('id-ID')}` },
+      { label: 'Sisa Piutang Berjalan', value: `Rp ${totalSisaPiutang.toLocaleString('id-ID')}` },
+      { label: 'Jumlah Konsumen', value: `${filteredCustomers.length} Konsumen` }
+    ]
+  });
 
   const availableLots = kavlings.filter(k => k.status === 'terbuka');
 
@@ -362,6 +387,8 @@ export default function CustomerView() {
               Lunas
             </button>
           </div>
+
+          <ExportButtons getData={getExportData} />
 
           {isReadOnly ? (
             <div className="px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-500 rounded-xl text-xs font-semibold flex items-center gap-1.5 select-none">

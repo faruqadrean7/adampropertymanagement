@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useProperty } from '@/context/PropertyContext';
+import ExportButtons from '@/components/common/ExportButtons';
 import { 
   UserCheck, 
   Plus, 
@@ -69,6 +70,35 @@ export default function EmployeeView() {
   const totalPaidThisMonth = salaryPayments
     .filter(s => s.bulan === currentMonth)
     .reduce((sum, s) => sum + s.thp, 0);
+
+  const getExportData = () => ({
+    filename: `Laporan-Karyawan-Payroll-${new Date().toISOString().split('T')[0]}`,
+    title: 'Laporan Data Karyawan & Payroll Gaji',
+    subtitle: 'PT Adam Property Indonesia',
+    category: 'DATA KARYAWAN & STRUKTUR GAJI',
+    headers: ['Nama Karyawan', 'NIK', 'Jabatan', 'Departemen', 'Status', 'Gaji Pokok (Rp)', 'Tunjangan (Rp)', 'Komisi (Rp)', 'Potongan (Rp)', 'Total THP (Rp)'],
+    rows: filteredEmployees.map(e => {
+      const thp = e.gajiPokok + e.tunjanganJabatan + e.tunjanganMakan + e.komisiPenjualan - e.potongan;
+      return [
+        e.nama,
+        e.nik,
+        e.jabatan,
+        e.departemen.toUpperCase(),
+        e.status.toUpperCase(),
+        `Rp ${e.gajiPokok.toLocaleString('id-ID')}`,
+        `Rp ${(e.tunjanganJabatan + e.tunjanganMakan).toLocaleString('id-ID')}`,
+        `Rp ${e.komisiPenjualan.toLocaleString('id-ID')}`,
+        `Rp ${e.potongan.toLocaleString('id-ID')}`,
+        `Rp ${thp.toLocaleString('id-ID')}`
+      ];
+    }),
+    summary: [
+      { label: 'Total Karyawan', value: `${employees.length} Orang` },
+      { label: 'Karyawan Aktif', value: `${employees.filter(e => e.status === 'aktif').length} Orang` },
+      { label: 'Estimasi Anggaran Gaji/Bln', value: `Rp ${totalMonthlyBudget.toLocaleString('id-ID')}` },
+      { label: 'Realisasi Bayar Bulan Ini', value: `Rp ${totalPaidThisMonth.toLocaleString('id-ID')}` }
+    ]
+  });
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,6 +203,7 @@ export default function EmployeeView() {
             <Receipt className="w-4 h-4" />
             <span>Riwayat Slip</span>
           </button>
+          <ExportButtons getData={getExportData} />
         </div>
       </div>
 

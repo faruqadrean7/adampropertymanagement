@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { useProperty } from '@/context/PropertyContext';
+import ExportButtons from '@/components/common/ExportButtons';
 import { 
   Coins, 
   Plus, 
   ArrowDownLeft, 
   ArrowUpRight, 
   ShoppingCart, 
-  Printer, 
   Search, 
   Fuel, 
   Coffee, 
@@ -57,6 +57,29 @@ export default function PettyCashView() {
   const totalPayrollFromPetty = pettyCash
     .filter(p => p.kategori === 'gaji_karyawan')
     .reduce((sum, p) => sum + p.nominal, 0);
+
+  const getExportData = () => ({
+    filename: `Laporan-Kas-Kecil-${new Date().toISOString().split('T')[0]}`,
+    title: 'Buku Kas Kecil Kantor (Petty Cash)',
+    subtitle: 'Cluster Baitul Makmur, Jatikerto, Kromengan, Malang',
+    category: 'BUKU KAS KECIL OPERASIONAL',
+    headers: ['Tanggal', 'Tipe', 'Kategori', 'Penerima / Toko', 'Keterangan', 'Nominal (Rp)', 'Sumber Dana'],
+    rows: filteredPetty.map(p => [
+      p.tanggal,
+      p.tipe === 'masuk' ? 'TOP UP MASUK' : 'PENGELUARAN',
+      p.kategori.toUpperCase(),
+      p.penerima || '-',
+      p.keterangan,
+      `Rp ${p.nominal.toLocaleString('id-ID')}`,
+      p.sumberDana || 'Kas Besar'
+    ]),
+    summary: [
+      { label: 'Total Top Up Masuk', value: `Rp ${pettyCashIn.toLocaleString('id-ID')}` },
+      { label: 'Total Pengeluaran Kasir', value: `Rp ${pettyCashOut.toLocaleString('id-ID')}` },
+      { label: 'Saldo Kas Kecil Fisik', value: `Rp ${pettyCashBalance.toLocaleString('id-ID')}` },
+      { label: 'Jumlah Transaksi', value: `${filteredPetty.length} Transaksi` }
+    ]
+  });
 
   const handleTopupSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,13 +156,7 @@ export default function PettyCashView() {
               </button>
             </>
           )}
-          <button
-            onClick={() => window.print()}
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Cetak Buku</span>
-          </button>
+          <ExportButtons getData={getExportData} />
         </div>
       </div>
 
