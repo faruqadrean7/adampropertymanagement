@@ -32,103 +32,226 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col lg:flex-row antialiased">
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="sidebarBackdrop" onclick="toggleSidebar(false)" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 hidden lg:hidden transition-opacity"></div>
 
     <!-- ======================================================== -->
-    <!-- CORPORATE APP BAR & NAVIGATION (COMPANY FEELS) -->
+    <!-- CORPORATE EXECUTIVE SIDEBAR (NAVIGASI SAMPING) -->
     <!-- ======================================================== -->
-    <header class="corporate-header text-white sticky top-0 z-30 shadow-md">
+    <aside id="sidebarNav" class="sidebar-container fixed lg:sticky top-0 left-0 bottom-0 w-72 shrink-0 h-screen flex flex-col justify-between border-r border-slate-800/80 text-white z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out select-none">
         
-        <!-- Top Executive Bar -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-white/10">
-            <div class="flex justify-between items-center h-16">
-                
-                <!-- Brand & Company Identity -->
+        <!-- Top Brand & Header Section -->
+        <div class="p-5 border-b border-white/10 shrink-0">
+            <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-emerald-900/40 border border-emerald-300/30">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-emerald-900/50 border border-emerald-300/30">
                         AP
                     </div>
                     <div>
-                        <div class="flex items-center gap-2">
-                            <h1 class="text-base sm:text-lg font-black tracking-tight text-white leading-tight">
-                                ADAM PROPERTY GROUP
-                            </h1>
-                            <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full tracking-wide uppercase">
-                                Real Estate & Land Dev
+                        <h1 class="text-sm font-black tracking-tight text-white leading-tight">
+                            ADAM PROPERTY
+                        </h1>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded uppercase tracking-wider">
+                                GROUP
                             </span>
+                            <span class="text-[10px] text-slate-400 font-medium">Real Estate Dev</span>
                         </div>
-                        <p class="text-[11px] text-slate-300 font-medium hidden sm:block">
-                            Enterprise Land Acquisition, Site Plan & Customer Financial System
-                        </p>
                     </div>
                 </div>
 
-                <!-- Corporate Action Toolbar -->
-                <div class="flex items-center gap-2">
-                    <button onclick="openBackupModal()" class="px-3 py-1.5 text-xs font-semibold text-slate-200 bg-white/10 hover:bg-white/15 rounded-lg border border-white/15 transition flex items-center gap-1.5" title="Backup / Restore Database">
-                        <i class="fa-solid fa-database text-emerald-400"></i>
-                        <span class="hidden md:inline">Backup / Restore</span>
-                    </button>
-                    <button onclick="loadDemoData()" class="px-3 py-1.5 text-xs font-semibold text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 rounded-lg transition flex items-center gap-1.5" title="Muat Data Sampel">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        <span class="hidden md:inline">Data Demo</span>
-                    </button>
-                    <button id="btnHeaderPrimaryAction" onclick="handlePrimaryAction()" class="px-4 py-1.5 text-xs font-bold text-slate-900 bg-emerald-400 hover:bg-emerald-300 active:bg-emerald-500 rounded-lg shadow-md transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-plus text-xs"></i>
-                        <span id="headerPrimaryActionText">+ Tambah Kavling</span>
-                    </button>
-                </div>
+                <!-- Mobile Close Button -->
+                <button onclick="toggleSidebar(false)" class="lg:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition" title="Tutup Menu">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <!-- System Status Pill -->
+            <div class="mt-4 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between text-[10px]">
+                <span class="text-slate-300 font-medium flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Sistem Terhubung
+                </span>
+                <span class="font-bold text-emerald-400 font-mono">v5.0 OFFLINE</span>
             </div>
         </div>
 
-        <!-- Corporate Navigation Tabs (5 Main Modules) -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav class="flex space-x-1 sm:space-x-3 py-2 overflow-x-auto custom-scrollbar">
-                
-                <!-- Tab 1: Peta Kavling & Site Plan -->
-                <button id="navTabKavling" onclick="switchMainTab('kavling')" class="corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-shapes"></i>
-                    <span>1. Peta & Site Plan Kavling</span>
-                </button>
+        <!-- Middle: Vertical Navigation Links -->
+        <div class="flex-1 overflow-y-auto sidebar-scroll px-3 py-4 space-y-6">
+            
+            <!-- Group 1: Operasional Properti -->
+            <div>
+                <div class="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>OPERASIONAL PROPERTI</span>
+                    <i class="fa-solid fa-layer-group text-[9px]"></i>
+                </div>
+                <nav class="space-y-1">
+                    
+                    <!-- Tab 1: Peta Kavling & Site Plan -->
+                    <button id="navTabKavling" onclick="switchMainTab('kavling')" class="corp-tab-active w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition flex items-center justify-between gap-3 group shadow-md">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 group-hover:bg-emerald-500/30 flex items-center justify-center text-sm transition">
+                                <i class="fa-solid fa-shapes"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-100 group-hover:text-white">1. Peta & Site Plan</div>
+                                <div class="text-[10px] text-slate-400 font-normal">Kavling, Blok & Spek</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-500 group-hover:text-emerald-400 transition"></i>
+                    </button>
 
-                <!-- Tab 2: Customer & Piutang (Termasuk Barter Material) -->
-                <button id="navTabCustomer" onclick="switchMainTab('customer')" class="corp-tab-inactive px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-users"></i>
-                    <span>2. Customer & Piutang (Kwitansi / Barter)</span>
-                </button>
+                    <!-- Tab 2: Customer & Piutang -->
+                    <button id="navTabCustomer" onclick="switchMainTab('customer')" class="corp-tab-inactive w-full text-left px-3.5 py-3 rounded-xl text-xs font-semibold transition flex items-center justify-between gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 flex items-center justify-center text-sm transition">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-200 group-hover:text-white">2. Customer CRM</div>
+                                <div class="text-[10px] text-slate-400 font-normal">KTP, KK, AJB & Barter</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-500 group-hover:text-emerald-400 transition"></i>
+                    </button>
 
-                <!-- Tab 3: Hutang Lahan Petani -->
-                <button id="navTabLandDebt" onclick="switchMainTab('land_debt')" class="corp-tab-inactive px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-tractor text-amber-400"></i>
-                    <span>3. Hutang Lahan ke Petani / Pemilik</span>
-                </button>
+                    <!-- Tab 3: Hutang Lahan Petani -->
+                    <button id="navTabLandDebt" onclick="switchMainTab('land_debt')" class="corp-tab-inactive w-full text-left px-3.5 py-3 rounded-xl text-xs font-semibold transition flex items-center justify-between gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 flex items-center justify-center text-sm transition">
+                                <i class="fa-solid fa-tractor"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-200 group-hover:text-white">3. Hutang Petani</div>
+                                <div class="text-[10px] text-slate-400 font-normal">Lahan Mentah & Cicilan</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-500 group-hover:text-emerald-400 transition"></i>
+                    </button>
 
-                <!-- Tab 4: Kas Besar & Investor -->
-                <button id="navTabCashbook" onclick="switchMainTab('cashbook')" class="corp-tab-inactive px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-vault text-emerald-400"></i>
-                    <span>4. Kas Besar & Investor (Arus Kas)</span>
-                    <span id="cashbookBadgeCount" class="bg-emerald-500/25 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-400/30 font-bold">Auto</span>
-                </button>
+                </nav>
+            </div>
 
-                <!-- Tab 5: Kas Kecil Kantor (NEW: Petty Cash Harian) -->
-                <button id="navTabPettyCash" onclick="switchMainTab('petty_cash')" class="corp-tab-inactive px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-cash-register text-violet-400"></i>
-                    <span>5. Kas Kecil Kantor (Petty Cash)</span>
-                    <span id="pettyNavBalanceBadge" class="bg-violet-500/25 text-violet-300 text-[10px] px-2 py-0.5 rounded-full border border-violet-400/30 font-bold">Rp 0</span>
-                </button>
+            <!-- Group 2: Manajemen Keuangan -->
+            <div>
+                <div class="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>MANAJEMEN KEUANGAN</span>
+                    <i class="fa-solid fa-coins text-[9px]"></i>
+                </div>
+                <nav class="space-y-1">
+                    
+                    <!-- Tab 4: Kas Besar & Investor -->
+                    <button id="navTabCashbook" onclick="switchMainTab('cashbook')" class="corp-tab-inactive w-full text-left px-3.5 py-3 rounded-xl text-xs font-semibold transition flex items-center justify-between gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 flex items-center justify-center text-sm transition">
+                                <i class="fa-solid fa-vault"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-200 group-hover:text-white">4. Kas Besar</div>
+                                <div class="text-[10px] text-slate-400 font-normal">Arus Kas & Investor</div>
+                            </div>
+                        </div>
+                        <span id="cashbookBadgeCount" class="bg-emerald-500/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-400/30 font-bold">Auto</span>
+                    </button>
 
-            </nav>
+                    <!-- Tab 5: Kas Kecil Kantor -->
+                    <button id="navTabPettyCash" onclick="switchMainTab('petty_cash')" class="corp-tab-inactive w-full text-left px-3.5 py-3 rounded-xl text-xs font-semibold transition flex items-center justify-between gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-violet-500/10 text-violet-400 group-hover:bg-violet-500/20 flex items-center justify-center text-sm transition">
+                                <i class="fa-solid fa-cash-register"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-200 group-hover:text-white">5. Kas Kecil</div>
+                                <div class="text-[10px] text-slate-400 font-normal">Petty Cash Operasional</div>
+                            </div>
+                        </div>
+                        <span id="pettyNavBalanceBadge" class="bg-violet-500/20 text-violet-300 text-[10px] px-2 py-0.5 rounded-full border border-violet-400/30 font-bold truncate max-w-[85px]">Rp 0</span>
+                    </button>
+
+                </nav>
+            </div>
+
         </div>
 
-    </header>
+        <!-- Bottom: Quick Actions & Database Status -->
+        <div class="p-3.5 border-t border-white/10 shrink-0 space-y-2.5 bg-black/20">
+            
+            <!-- Primary Dynamic Action Button -->
+            <button id="btnHeaderPrimaryAction" onclick="handlePrimaryAction()" class="w-full py-2.5 px-4 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 active:scale-[0.98] rounded-xl shadow-lg shadow-emerald-950/40 transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-plus text-xs"></i>
+                <span id="headerPrimaryActionText">+ Tambah Kavling</span>
+            </button>
 
-    <!-- Main Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="openBackupModal()" class="px-2.5 py-2 text-[11px] font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition flex items-center justify-center gap-1.5" title="Backup / Restore Database">
+                    <i class="fa-solid fa-database text-emerald-400"></i>
+                    <span>Backup</span>
+                </button>
+                <button onclick="loadDemoData()" class="px-2.5 py-2 text-[11px] font-semibold text-emerald-300 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/20 rounded-lg transition flex items-center justify-center gap-1.5" title="Muat Data Sampel">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Demo</span>
+                </button>
+            </div>
 
-        <!-- ======================================================== -->
-        <!-- VIEW 1: PETA & SITE PLAN KAVLING -->
-        <!-- ======================================================== -->
-        <section id="viewKavling" class="space-y-6">
+            <div class="text-[10px] text-center text-slate-400 pt-1">
+                ADAM PROPERTY &bull; IndexedDB Local
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ======================================================== -->
+    <!-- MAIN APPLICATION WRAPPER (TOPBAR + CONTENT + FOOTER) -->
+    <!-- ======================================================== -->
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+        
+        <!-- Executive Top Bar -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+            
+            <!-- Left: Mobile Toggle & Page Title / Breadcrumb -->
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar(true)" class="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition focus:outline-none" title="Buka Menu Navigasi">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+
+                <div>
+                    <div class="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                        <span>ADAM PROPERTY GROUP</span>
+                        <i class="fa-solid fa-chevron-right text-[8px] text-slate-300"></i>
+                        <span id="topbarModuleBreadcrumb" class="text-emerald-700 font-bold">1. Peta & Site Plan Kavling</span>
+                    </div>
+                    <h2 id="topbarModuleTitle" class="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                        Peta & Site Plan Kavling
+                    </h2>
+                </div>
+            </div>
+
+            <!-- Right: Date/Status & Quick Actions -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                
+                <!-- Live Date/Clock Badge -->
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">
+                    <i class="fa-regular fa-calendar-days text-emerald-600"></i>
+                    <span id="topbarLiveDate">-</span>
+                </div>
+
+                <!-- Topbar Primary Action Shortcut -->
+                <button onclick="handlePrimaryAction()" class="px-3.5 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 shadow-xs">
+                    <i class="fa-solid fa-plus text-xs text-emerald-400"></i>
+                    <span id="topbarPrimaryActionText">+ Tambah Kavling</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Scrollable Views Content -->
+        <main class="p-4 sm:p-6 lg:p-8 flex-1 w-full max-w-[1600px] mx-auto">
+
+            <!-- ======================================================== -->
+            <!-- VIEW 1: PETA & SITE PLAN KAVLING -->
+            <!-- ======================================================== -->
+            <section id="viewKavling" class="space-y-6">
             
             <!-- Baris Kontrol Induk Kavling & Tombol Aksi -->
             <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -913,17 +1036,20 @@
 
         </section>
 
-    </main>
+        </main>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-4 mt-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
-            <p>&copy; 2026 ADAM PROPERTY GROUP. Sistem Manajemen Properti & Keuangan Mandiri.</p>
-            <p class="flex items-center gap-1">
-                <i class="fa-solid fa-shield-halved text-emerald-600"></i> Database Lokal IndexedDB v3 Aman di Perangkat Anda.
-            </p>
-        </div>
-    </footer>
+        <!-- Corporate Footer -->
+        <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+            <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
+                <p>&copy; 2026 ADAM PROPERTY GROUP. Sistem Manajemen Properti & Keuangan Mandiri.</p>
+                <p class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved text-emerald-600"></i> Database Lokal IndexedDB v5 Aman di Komputer Anda (100% Offline).
+                </p>
+            </div>
+        </footer>
+
+    </div>
+    <!-- END MAIN APPLICATION WRAPPER -->
 
 
     <!-- ======================================================== -->

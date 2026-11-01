@@ -12,15 +12,19 @@ Aplikasi sistem pengelolaan properti terpadu berbasis Web (HTML5, Tailwind CSS, 
 
 ---
 
-## 🏢 Tampilan Navigasi Perusahaan (Company Feels)
-Navigasi atas dirancang menyerupai portal ERP pengembang properti profesional:
-* **Identitas Korporat**: `ADAM PROPERTY GROUP - Real Estate & Land Dev`.
-* **5 Modul Eksekutif Terpadu**:
-  1. 🗺️ **1. Peta & Site Plan Kavling**: Manajemen unit kavling, pengelompokan blok (Ruko, A, B, C), spek ukuran fisik asli, dan 3 status (*Terbuka*, *Booking*, *Terjual*).
-  2. 👥 **2. Customer & Piutang Kavling**: CRM customer, berkas identitas (**KTP, KK, & AJB setelah DP**), kwitansi tunai, serta **Barter Material Bangunan**.
-  3. 🚜 **3. Hutang Lahan ke Petani / Pemilik**: Manajemen pembebasan lahan mentah, perjanjian notaris, sertifikat/Letter C tanah petani, serta cicilan pembayaran bertahap dengan dropdown filter per lahan proyek agar tidak tercampur.
-  4. 💰 **4. Kas Besar & Investor (Arus Kas)**: Buku kas besar sentral yang mencatat seluruh mutasi uang masuk (Penjualan Kavling **AUTO-SYNC**, Dana Modal Investor) serta pengeluaran modal/operasional besar & pembayaran lahan ke petani.
-  5. 🧾 **5. Kas Kecil Kantor (Petty Cash)**: Pencatatan operasional harian kantor, pembelian barang rutin, ATK, konsumsi, BBM lapangan, dengan sumber dana dari **Top Up Kas Besar (Auto-Sync)** dan **Dana Langsung dari Investor**.
+## 🏢 Navigasi Samping Eksekutif (Executive Sidebar Navigation)
+Tata letak navigasi kini menggunakan **Sidebar Samping Kiri (*Left Sidebar*)** bergaya Enterprise ERP Properti:
+* **Identitas Korporat**: Logo `AP` gradient emerald, `ADAM PROPERTY GROUP - Real Estate Dev`, status sistem `v5.0 OFFLINE`.
+* **Pengelompokan Modul Vertikal**:
+  * **OPERASIONAL PROPERTI**:
+    1. 🗺️ **1. Peta & Site Plan Kavling**: Manajemen unit kavling, pengelompokan blok (Ruko, A, B, C), spek fisik asli, dan status (*Terbuka*, *Booking*, *Terjual*).
+    2. 👥 **2. Customer & Piutang Kavling**: CRM customer, identitas (**KTP, KK, & AJB setelah DP**), kwitansi tunai, serta **Barter Material Bangunan**.
+    3. 🚜 **3. Hutang Lahan ke Petani / Pemilik**: Pembebasan lahan mentah, perjanjian notaris, alas hak tanah petani, serta cicilan bertahap berfilter per proyek.
+  * **MANAJEMEN KEUANGAN**:
+    4. 💰 **4. Kas Besar & Investor (Arus Kas)**: Buku kas besar sentral, pencatatan uang masuk (**AUTO-SYNC dari Customer**), modal investor, serta pengeluaran proyek.
+    5. 🧾 **5. Kas Kecil Kantor (Petty Cash)**: Operasional harian laci kantor, belanja ATK/konsumsi/BBM, dengan top up dari **Kas Besar (Auto-Sync)** dan **Investor**.
+* **Toolbar Bawah Sidebar**: Tombol aksi dinamis (*+ Tambah Kavling / Customer / Top Up*), tombol Backup/Restore, dan Muat Data Demo.
+* **Responsive Mobile Drawer**: Pada layar ponsel/tablet, navigasi samping dapat dibuka-tutup dengan tombol hamburger menu.
 
 ---
 

@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await syncAllToCashbook();
         await refreshCashbookView();
         await refreshPettyCashView();
+        updateTopbarDate();
 
     } catch (error) {
         console.error('Gagal inisialisasi aplikasi:', error);
@@ -101,7 +102,7 @@ async function initializeData() {
     await refreshPettyCashView();
 }
 
-// Navigasi Tab Utama (Company Feels: 5 Modul Terintegrasi)
+// Navigasi Tab Utama (Executive Sidebar Navigation: 5 Modul Terintegrasi)
 function switchMainTab(tab) {
     currentTab = tab;
 
@@ -118,10 +119,17 @@ function switchMainTab(tab) {
     const viewPettyCash = document.getElementById('viewPettyCash');
 
     const headerActionText = document.getElementById('headerPrimaryActionText');
+    const topbarActionText = document.getElementById('topbarPrimaryActionText');
+    const topbarModuleTitle = document.getElementById('topbarModuleTitle');
+    const topbarModuleBreadcrumb = document.getElementById('topbarModuleBreadcrumb');
+
+    const baseClasses = 'w-full text-left px-3.5 py-3 rounded-xl text-xs transition flex items-center justify-between gap-3 group';
+    const inactiveClasses = `corp-tab-inactive ${baseClasses} font-semibold`;
+    const activeClasses = `corp-tab-active ${baseClasses} font-bold shadow-md`;
 
     // Reset tab styles
     [navKavling, navCustomer, navLandDebt, navCashbook, navPettyCash].forEach(el => {
-        if (el) el.className = 'corp-tab-inactive px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap';
+        if (el) el.className = inactiveClasses;
     });
 
     if (viewKavling) viewKavling.classList.add('hidden');
@@ -130,31 +138,86 @@ function switchMainTab(tab) {
     if (viewCashbook) viewCashbook.classList.add('hidden');
     if (viewPettyCash) viewPettyCash.classList.add('hidden');
 
+    let actionLabel = '+ Tambah Kavling';
+    let moduleTitle = '1. Peta & Site Plan Kavling';
+    let breadcrumbLabel = 'Site Plan & Unit Kavling';
+
     if (tab === 'kavling') {
-        if (navKavling) navKavling.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
+        if (navKavling) navKavling.className = activeClasses;
         if (viewKavling) viewKavling.classList.remove('hidden');
-        if (headerActionText) headerActionText.textContent = '+ Tambah Kavling';
+        actionLabel = '+ Tambah Kavling';
+        moduleTitle = '1. Peta & Site Plan Kavling';
+        breadcrumbLabel = 'Site Plan & Unit Kavling';
         refreshKavlingView();
     } else if (tab === 'customer') {
-        if (navCustomer) navCustomer.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
+        if (navCustomer) navCustomer.className = activeClasses;
         if (viewCustomer) viewCustomer.classList.remove('hidden');
-        if (headerActionText) headerActionText.textContent = '+ Tambah Customer';
+        actionLabel = '+ Tambah Customer';
+        moduleTitle = '2. Customer CRM & Piutang';
+        breadcrumbLabel = 'Data Customer, AJB & Barter';
         refreshCustomerList();
     } else if (tab === 'land_debt') {
-        if (navLandDebt) navLandDebt.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
+        if (navLandDebt) navLandDebt.className = activeClasses;
         if (viewLandDebt) viewLandDebt.classList.remove('hidden');
-        if (headerActionText) headerActionText.textContent = '+ Lahan Petani';
+        actionLabel = '+ Lahan Petani';
+        moduleTitle = '3. Hutang Lahan Petani';
+        breadcrumbLabel = 'Pembebasan Lahan & Cicilan';
         refreshLandDebtList();
     } else if (tab === 'cashbook') {
-        if (navCashbook) navCashbook.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
+        if (navCashbook) navCashbook.className = activeClasses;
         if (viewCashbook) viewCashbook.classList.remove('hidden');
-        if (headerActionText) headerActionText.textContent = '+ Dana Investor';
+        actionLabel = '+ Dana Investor';
+        moduleTitle = '4. Kas Besar & Investor';
+        breadcrumbLabel = 'Arus Kas Sentral & Modal';
         refreshCashbookView();
     } else if (tab === 'petty_cash') {
-        if (navPettyCash) navPettyCash.className = 'corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap';
+        if (navPettyCash) navPettyCash.className = activeClasses;
         if (viewPettyCash) viewPettyCash.classList.remove('hidden');
-        if (headerActionText) headerActionText.textContent = '+ Top Up Kas Kecil';
+        actionLabel = '+ Top Up Kas Kecil';
+        moduleTitle = '5. Kas Kecil Kantor (Petty Cash)';
+        breadcrumbLabel = 'Operasional Harian Kantor';
         refreshPettyCashView();
+    }
+
+    if (headerActionText) headerActionText.textContent = actionLabel;
+    if (topbarActionText) topbarActionText.textContent = actionLabel;
+    if (topbarModuleTitle) topbarModuleTitle.textContent = moduleTitle;
+    if (topbarModuleBreadcrumb) topbarModuleBreadcrumb.textContent = breadcrumbLabel;
+
+    // Tutup drawer di mobile secara otomatis jika sedang terbuka
+    toggleSidebar(false);
+}
+
+// Drawer Sidebar Mobile Toggle
+function toggleSidebar(open) {
+    const sidebar = document.getElementById('sidebarNav');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (!sidebar) return;
+
+    const isOpen = !sidebar.classList.contains('-translate-x-full');
+    const shouldOpen = open !== undefined ? open : !isOpen;
+
+    if (shouldOpen) {
+        sidebar.classList.remove('-translate-x-full');
+        if (backdrop) backdrop.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden', 'lg:overflow-auto');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        if (backdrop) backdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden', 'lg:overflow-auto');
+    }
+}
+
+// Update Tanggal Live di Topbar
+function updateTopbarDate() {
+    const el = document.getElementById('topbarLiveDate');
+    if (el) {
+        el.textContent = new Date().toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
     }
 }
 

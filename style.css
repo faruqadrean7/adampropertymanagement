@@ -94,21 +94,43 @@
     }
 }
 
-/* Corporate Navigation Active Tab */
+/* Sidebar Theme & Corporate Navigation */
+.sidebar-container {
+    background: linear-gradient(180deg, #091220 0%, #0d1b2e 55%, #052e24 100%);
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Corporate Navigation Active & Inactive State */
 .corp-tab-active {
-    background-color: #059669 !important;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
     color: #ffffff !important;
     font-weight: 700 !important;
-    box-shadow: 0 4px 14px -2px rgba(5, 150, 105, 0.4) !important;
+    border: 1px solid rgba(110, 231, 183, 0.35) !important;
+    box-shadow: 0 4px 16px -2px rgba(5, 150, 105, 0.45) !important;
 }
 
 .corp-tab-inactive {
-    color: #cbd5e1 !important;
+    color: #94a3b8 !important;
     background-color: transparent !important;
+    border: 1px solid transparent !important;
 }
 .corp-tab-inactive:hover {
     color: #ffffff !important;
-    background-color: rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Badge Barter Material */
