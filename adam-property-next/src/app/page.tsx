@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { PropertyProvider, useProperty } from '@/context/PropertyContext';
+import LoginPage from '@/components/auth/LoginPage';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
 import DashboardView from '@/components/dashboard/DashboardView';
@@ -12,7 +14,7 @@ import CashbookView from '@/components/cashbook/CashbookView';
 import PettyCashView from '@/components/petty-cash/PettyCashView';
 import InventoryView from '@/components/inventory/InventoryView';
 import EmployeeView from '@/components/employee/EmployeeView';
-import { ShieldCheck, Database } from 'lucide-react';
+import { Database, Loader2 } from 'lucide-react';
 
 function MainApp() {
   const { activeTab } = useProperty();
@@ -67,7 +69,7 @@ function MainApp() {
             <div className="flex items-center gap-2">
               <img src="/assets/logo-icon.svg" alt="Logo" className="w-5 h-5 object-contain" />
               <p>
-                &copy; 2026 <strong>PT Adam Property Indonesia</strong> &bull; Developer Utama. Next.js Enterprise Frontend.
+                &copy; 2026 <strong>PT Adam Property Indonesia</strong> &bull; Developer Utama. Next.js Enterprise ERP.
               </p>
             </div>
             <p className="flex items-center gap-1.5 font-medium text-emerald-700">
@@ -81,10 +83,38 @@ function MainApp() {
   );
 }
 
-export default function Home() {
+function AppContent() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#091220] text-white">
+        <div className="w-12 h-12 rounded-2xl bg-white p-2 shadow-2xl mb-4 animate-bounce">
+          <img src="/assets/logo-icon.svg" alt="Logo" className="w-full h-full object-contain" />
+        </div>
+        <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Memuat Portal PT Adam Property Indonesia...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
   return (
     <PropertyProvider>
       <MainApp />
     </PropertyProvider>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { useProperty } from '@/context/PropertyContext';
+import { useAuth } from '@/context/AuthContext';
 import { NavTab } from '@/types';
 import { 
   BarChart3, 
@@ -16,6 +17,7 @@ import {
   Plus, 
   Database, 
   RotateCw,
+  LogOut,
   X
 } from 'lucide-react';
 
@@ -27,6 +29,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose, onOpenPrimaryModal }: SidebarProps) {
   const { activeTab, setActiveTab, syncAllToCashbook } = useProperty();
+  const { user, logout } = useAuth();
 
   const navItems: { tab: NavTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { tab: 'dashboard', label: 'Executive Analytics', icon: <BarChart3 className="w-4 h-4" /> },
@@ -124,6 +127,32 @@ export default function Sidebar({ isOpen, onClose, onOpenPrimaryModal }: Sidebar
             </span>
             <span className="font-bold text-emerald-400 font-mono">v7.0 NEXT.JS</span>
           </div>
+
+          {/* User Profile Info & Logout */}
+          {user && (
+            <div className="mt-3 p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold flex items-center justify-center text-xs border border-emerald-400/30 shrink-0">
+                  {user.nama.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white truncate">{user.nama}</div>
+                  <div className="text-[10px] text-emerald-400 capitalize truncate">{user.jabatan}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (confirm('Keluar dari sesi portal ERP PT Adam Property?')) {
+                    logout();
+                  }
+                }}
+                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition"
+                title="Keluar / Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Navigation List */}

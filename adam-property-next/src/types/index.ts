@@ -187,3 +187,14 @@ export interface SalaryPayment {
   status: 'terbayar' | 'pending';
   pettyCashId?: string;
 }
+
+export type UserRole = 'direktur' | 'keuangan' | 'marketing' | 'operasional' | 'legal';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  nama: string;
+  jabatan: string;
+  role: UserRole;
+  avatar?: string;
+}
