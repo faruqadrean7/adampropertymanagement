@@ -269,7 +269,9 @@ export const INITIAL_LAND_DEBTS: LandDebt[] = [
     sisaHutang: 300000000,
     status: 'belum_lunas',
     alamatLahan: 'Sebelah Barat Pasar Sore Kaliwungu',
-    keterangan: 'Perjanjian Notaris No. 12/2026. Tenor cicilan 6 bulan.'
+    keterangan: 'Perjanjian Notaris No. 12/2026. Tenor cicilan 6 bulan.',
+    sertifikatImage: makeMockSvg('SERTIFIKAT INDUK LAHAN', 'Letter C No. 45 Desa Kaliwungu • Luas 6.000 m² (428 Ru)', '#065f46'),
+    perjanjianImage: makeMockSvg('AKTA NOTARIS & PPJB LAHAN', 'Akta No. 12/2026 PPJB • Notaris Siti Rohmah, S.H., M.Kn', '#1e40af')
   }
 ];
 

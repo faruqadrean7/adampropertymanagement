@@ -14,7 +14,18 @@ import {
   Tag, 
   Maximize2,
   X,
-  MapPin
+  MapPin,
+  Tractor,
+  Coins,
+  FileCheck2,
+  FileText,
+  UploadCloud,
+  Eye,
+  Trash2,
+  Receipt,
+  FileCheck,
+  ShieldCheck,
+  AlertCircle
 } from 'lucide-react';
 import { Kavling } from '@/types';
 
@@ -39,10 +50,24 @@ export default function KavlingView() {
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [selectedKavling, setSelectedKavling] = useState<Kavling | null>(null);
 
-  // Form states for Add Induk Kavling / Project
+  // Form states for Add Induk Kavling / Project & Finansial Lahan Mentah
   const [projNama, setProjNama] = useState('');
   const [projLokasi, setProjLokasi] = useState('');
   const [projDeskripsi, setProjDeskripsi] = useState('');
+  const [projHasLandDebt, setProjHasLandDebt] = useState(true);
+  const [projNamaPetani, setProjNamaPetani] = useState('');
+  const [projTeleponPetani, setProjTeleponPetani] = useState('');
+  const [projLuasTanah, setProjLuasTanah] = useState('');
+  const [projAlasHak, setProjAlasHak] = useState('');
+  const [projHargaKesepakatan, setProjHargaKesepakatan] = useState<number>(500000000);
+  const [projDpDibayar, setProjDpDibayar] = useState<number>(150000000);
+  const [projMetodeBayarDp, setProjMetodeBayarDp] = useState('Transfer Bank Mandiri');
+  const [projCatatanHutang, setProjCatatanHutang] = useState('');
+  const [projSertifikatImage, setProjSertifikatImage] = useState<string | null>(null);
+  const [projPerjanjianImage, setProjPerjanjianImage] = useState<string | null>(null);
+
+  // Lightbox preview for document viewing
+  const [previewDocImage, setPreviewDocImage] = useState<{ title: string; src: string } | null>(null);
 
   // Form states for Add Single Kavling
   const [formProjectId, setFormProjectId] = useState('');
@@ -64,6 +89,33 @@ export default function KavlingView() {
   const [batchDimensi, setBatchDimensi] = useState('6 x 14 meter');
   const [batchHarga, setBatchHarga] = useState(120000000);
 
+  // Helper untuk membaca file upload gambar
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string | null) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Ukuran file maksimal 8 MB!');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setter(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const generateSampleDoc = (title: string, subtitle: string, bg: string) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">
+      <rect width="600" height="380" fill="${bg}" rx="12"/>
+      <rect x="20" y="20" width="560" height="340" fill="none" stroke="white" stroke-width="2" stroke-dasharray="6,6" opacity="0.4"/>
+      <circle cx="300" cy="140" r="45" fill="white" opacity="0.2"/>
+      <text x="300" y="215" font-family="Arial" font-size="22" font-weight="bold" fill="white" text-anchor="middle">${title}</text>
+      <text x="300" y="245" font-family="Arial" font-size="14" fill="white" opacity="0.8" text-anchor="middle">${subtitle}</text>
+      <text x="300" y="280" font-family="Arial" font-size="12" fill="white" opacity="0.6" text-anchor="middle">PT ADAM PROPERTY INDONESIA - LEGALITAS LAHAN</text>
+    </svg>`;
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  };
+
   // Filtered Kavling list
   const activeProject = projects.find(p => p.id === selectedProjectId);
   const filteredKavlings = kavlings.filter(k => {
@@ -82,19 +134,47 @@ export default function KavlingView() {
   const handleProjectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!projNama.trim() || !projLokasi.trim()) {
-      alert('Nama dan lokasi proyek wajib diisi!');
+      alert('Nama kawasan dan lokasi proyek wajib diisi!');
       return;
     }
+    if (projHasLandDebt && (!projNamaPetani.trim() || !projLuasTanah.trim() || !projAlasHak.trim())) {
+      alert('Nama pemilik lahan, luas tanah mentah, dan alas hak wajib diisi!');
+      return;
+    }
+
     const newProj = addProject({
       nama: projNama.trim(),
       lokasi: projLokasi.trim(),
-      deskripsi: projDeskripsi.trim() || undefined
+      deskripsi: projDeskripsi.trim() || undefined,
+      hasLandDebt: projHasLandDebt,
+      namaPetani: projNamaPetani.trim() || undefined,
+      teleponPetani: projTeleponPetani.trim() || undefined,
+      luasTanah: projLuasTanah.trim() || undefined,
+      alasHak: projAlasHak.trim() || undefined,
+      hargaKesepakatan: projHasLandDebt ? Number(projHargaKesepakatan) : 0,
+      dpDibayar: projHasLandDebt ? Number(projDpDibayar) : 0,
+      metodeBayarDp: projMetodeBayarDp,
+      catatanHutang: projCatatanHutang.trim() || undefined,
+      sertifikatImage: projSertifikatImage,
+      perjanjianImage: projPerjanjianImage
     });
+
     setSelectedProjectId(newProj.id);
     setShowProjectModal(false);
+
+    // Reset Form
     setProjNama('');
     setProjLokasi('');
     setProjDeskripsi('');
+    setProjNamaPetani('');
+    setProjTeleponPetani('');
+    setProjLuasTanah('');
+    setProjAlasHak('');
+    setProjHargaKesepakatan(500000000);
+    setProjDpDibayar(150000000);
+    setProjCatatanHutang('');
+    setProjSertifikatImage(null);
+    setProjPerjanjianImage(null);
   };
 
   const handleOpenAddModal = () => {
@@ -172,17 +252,6 @@ export default function KavlingView() {
                 + Tambah Induk Proyek Baru...
               </option>
             </select>
-
-            {/* Quick Add Induk Proyek Button */}
-            <button
-              type="button"
-              onClick={() => setShowProjectModal(true)}
-              className="px-3 py-2 bg-emerald-100 hover:bg-emerald-200 active:scale-95 text-emerald-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs border border-emerald-300"
-              title="Tambah Kawasan / Induk Kavling Baru"
-            >
-              <Plus className="w-3.5 h-3.5 text-emerald-700" />
-              <span>+ Induk Baru</span>
-            </button>
           </div>
         </div>
 
@@ -770,18 +839,18 @@ export default function KavlingView() {
       {/* Modal Tambah Induk Kavling / Master Proyek Baru */}
       {showProjectModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl shadow-2xs">
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900">
-                    Tambah Induk Kavling / Master Proyek
+                    Tambah Induk Kavling & Pembelian Lahan Mentah
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Daftarkan kawasan proyek perumahan / kavling tanah baru
+                    Daftarkan kawasan proyek baru, legalitas tanah induk, dan catat kewajiban hutang secara otomatis.
                   </p>
                 </div>
               </div>
@@ -794,57 +863,418 @@ export default function KavlingView() {
               </button>
             </div>
 
-            <form onSubmit={handleProjectSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Nama Induk Proyek / Kawasan *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={projNama}
-                  onChange={(e) => setProjNama(e.target.value)}
-                  placeholder="Contoh: Baitul Makmur Regency 2 / Griya Sakinah"
-                  className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
+            <form onSubmit={handleProjectSubmit} className="space-y-4 text-xs overflow-y-auto pr-1 custom-scrollbar flex-1">
+              {/* BAGIAN 1: IDENTITAS KAWASAN PROYEK */}
+              <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <Building2 className="w-4 h-4 text-emerald-600" />
+                  <span>1. Identitas Kawasan Proyek Induk</span>
+                </span>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Lokasi / Alamat Proyek *
-                </label>
-                <div className="relative">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">
+                      Nama Induk Proyek / Kawasan *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={projNama}
+                      onChange={(e) => setProjNama(e.target.value)}
+                      placeholder="Contoh: Baitul Makmur Regency 2"
+                      className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">
+                      Lokasi / Alamat Lahan *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={projLokasi}
+                        onChange={(e) => setProjLokasi(e.target.value)}
+                        placeholder="Contoh: Jl. Sukodono No. 12, Kaliwungu Selatan"
+                        className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 bg-white pl-8 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Deskripsi / Rencana Pengembangan (Opsional)
+                  </label>
                   <input
                     type="text"
-                    required
-                    value={projLokasi}
-                    onChange={(e) => setProjLokasi(e.target.value)}
-                    placeholder="Contoh: Jl. Sukodono No. 12, Kaliwungu Selatan, Kendal"
-                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 pl-9 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    value={projDeskripsi}
+                    onChange={(e) => setProjDeskripsi(e.target.value)}
+                    placeholder="Contoh: Kawasan seluas 6.000 m², rencana 45 unit kavling siap bangun SHM Split..."
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
-                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Deskripsi / Catatan Proyek (Opsional)
-                </label>
-                <textarea
-                  rows={3}
-                  value={projDeskripsi}
-                  onChange={(e) => setProjDeskripsi(e.target.value)}
-                  placeholder="Contoh: Pengembangan kawasan seluas 1.5 Ha, rencana 45 unit kavling siap bangun SHM Split."
-                  className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+              {/* BAGIAN 2: TRANSAKSI FINANSIAL PEMBELIAN LAHAN PETANI */}
+              <div className="bg-amber-50/50 p-3.5 rounded-xl border border-amber-200/80 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-amber-200/60">
+                  <span className="font-bold text-amber-950 flex items-center gap-1.5 text-xs">
+                    <Tractor className="w-4 h-4 text-amber-700" />
+                    <span>2. Transaksi Finansial Pembelian Tanah ke Petani / Pemilik</span>
+                  </span>
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-amber-900">
+                    <input
+                      type="checkbox"
+                      checked={projHasLandDebt}
+                      onChange={(e) => setProjHasLandDebt(e.target.checked)}
+                      className="rounded text-amber-600 focus:ring-amber-500 w-3.5 h-3.5"
+                    />
+                    <span>Catat Hutang & Sinkronisasi Keuangan</span>
+                  </label>
+                </div>
+
+                {projHasLandDebt && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          Nama Petani / Pemilik Lahan Asal *
+                        </label>
+                        <input
+                          type="text"
+                          required={projHasLandDebt}
+                          value={projNamaPetani}
+                          onChange={(e) => setProjNamaPetani(e.target.value)}
+                          placeholder="Contoh: Bpk. H. Sugeng Mulyono"
+                          className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          No. WhatsApp Pemilik
+                        </label>
+                        <input
+                          type="text"
+                          value={projTeleponPetani}
+                          onChange={(e) => setProjTeleponPetani(e.target.value)}
+                          placeholder="08123456789"
+                          className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          Luas Tanah Mentah *
+                        </label>
+                        <input
+                          type="text"
+                          required={projHasLandDebt}
+                          value={projLuasTanah}
+                          onChange={(e) => setProjLuasTanah(e.target.value)}
+                          placeholder="Contoh: 6.000 m² (428 Ru)"
+                          className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          Alas Hak / Surat Tanah Asal *
+                        </label>
+                        <input
+                          type="text"
+                          required={projHasLandDebt}
+                          value={projAlasHak}
+                          onChange={(e) => setProjAlasHak(e.target.value)}
+                          placeholder="Contoh: Letter C No. 45 / SHM No. 12"
+                          className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Nominal Keuangan */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          Harga Kesepakatan (Rp) *
+                        </label>
+                        <input
+                          type="number"
+                          required={projHasLandDebt}
+                          value={projHargaKesepakatan}
+                          onChange={(e) => setProjHargaKesepakatan(Number(e.target.value))}
+                          className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          Uang Muka / DP Dibayar (Rp)
+                        </label>
+                        <input
+                          type="number"
+                          value={projDpDibayar}
+                          onChange={(e) => setProjDpDibayar(Number(e.target.value))}
+                          className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-rose-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          Sisa Hutang Berjalan (Auto)
+                        </label>
+                        <div className="border border-rose-200 bg-rose-50 rounded-xl px-3 py-2 text-xs font-mono font-bold text-rose-700 flex items-center justify-between">
+                          <span>Rp</span>
+                          <span>{Math.max(0, projHargaKesepakatan - projDpDibayar).toLocaleString('id-ID')}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          Metode Pembayaran DP
+                        </label>
+                        <select
+                          value={projMetodeBayarDp}
+                          onChange={(e) => setProjMetodeBayarDp(e.target.value)}
+                          className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="Transfer Bank Mandiri">Transfer Bank Mandiri</option>
+                          <option value="Transfer Bank BCA">Transfer Bank BCA</option>
+                          <option value="Transfer Bank BRI / BNI">Transfer Bank BRI / BNI</option>
+                          <option value="Tunai Kasir Kantor">Tunai Kasir Kantor</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          Catatan Notaris / Skema Tempo
+                        </label>
+                        <input
+                          type="text"
+                          value={projCatatanHutang}
+                          onChange={(e) => setProjCatatanHutang(e.target.value)}
+                          placeholder="Akta PPJB No. 12/2026, tenor cicilan 6 bulan"
+                          className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800 flex items-start gap-2">
-                <span className="font-bold text-emerald-700">✓ Auto-Pilih:</span>
-                <span>Setelah disimpan, sistem akan langsung beralih ke proyek baru ini agar Anda bisa langsung menambahkan unit kavling.</span>
+              {/* BAGIAN 3: BERKAS DOKUMEN LEGALITAS LAHAN INDUK */}
+              <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <FileCheck2 className="w-4 h-4 text-emerald-600" />
+                  <span>3. Berkas Dokumen Legalitas Lahan Induk</span>
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Dokumen 1: Sertifikat Induk */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-800 text-[11px]">
+                        Sertifikat Induk / Alas Hak
+                      </span>
+                      {projSertifikatImage && (
+                        <span className="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold">
+                          Terunggah
+                        </span>
+                      )}
+                    </div>
+
+                    {projSertifikatImage ? (
+                      <div className="space-y-1.5">
+                        <div className="relative h-24 w-full rounded-lg overflow-hidden border border-emerald-300 bg-slate-100 group">
+                          <img
+                            src={projSertifikatImage}
+                            alt="Sertifikat Induk"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocImage({ title: `Sertifikat Induk: ${projNama || 'Proyek'}`, src: projSertifikatImage })}
+                              className="px-2 py-1 bg-white text-slate-900 rounded font-bold text-[10px] flex items-center gap-1"
+                            >
+                              <Eye className="w-3 h-3" /> Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setProjSertifikatImage(null)}
+                              className="px-2 py-1 bg-rose-600 text-white rounded font-bold text-[10px] flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" /> Hapus
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDocImage({ title: `Sertifikat Induk: ${projNama || 'Proyek'}`, src: projSertifikatImage })}
+                            className="text-emerald-700 hover:underline font-bold flex items-center gap-1"
+                          >
+                            <Eye className="w-3 h-3" /> Lihat Berkas
+                          </button>
+                          <label className="text-slate-500 hover:text-slate-800 cursor-pointer underline font-medium">
+                            <span>Ganti File</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleFileUpload(e, setProjSertifikatImage)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-3 flex flex-col items-center justify-center gap-1 text-center cursor-pointer transition bg-slate-50/50 hover:bg-emerald-50/30">
+                          <UploadCloud className="w-5 h-5 text-slate-400" />
+                          <span className="font-semibold text-slate-700 text-[11px]">
+                            Upload Foto Sertifikat / Alas Hak
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            Format JPG, PNG (Maks 8MB)
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, setProjSertifikatImage)}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sample = generateSampleDoc(
+                              'SERTIFIKAT INDUK LAHAN',
+                              `${projAlasHak || 'SHM / Letter C'} • Luas ${projLuasTanah || 'Tanah Mentah'} • ${projNama || 'Proyek'}`,
+                              '#065f46'
+                            );
+                            setProjSertifikatImage(sample);
+                          }}
+                          className="w-full py-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition"
+                        >
+                          + Gunakan Sampel SHM Induk
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dokumen 2: Akta Notaris / PPJB */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-800 text-[11px]">
+                        Surat Perjanjian PPJB / Akta Notaris
+                      </span>
+                      {projPerjanjianImage && (
+                        <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-bold">
+                          Terunggah
+                        </span>
+                      )}
+                    </div>
+
+                    {projPerjanjianImage ? (
+                      <div className="space-y-1.5">
+                        <div className="relative h-24 w-full rounded-lg overflow-hidden border border-blue-300 bg-slate-100 group">
+                          <img
+                            src={projPerjanjianImage}
+                            alt="Akta Notaris PPJB"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocImage({ title: `Akta PPJB: ${projNama || 'Proyek'}`, src: projPerjanjianImage })}
+                              className="px-2 py-1 bg-white text-slate-900 rounded font-bold text-[10px] flex items-center gap-1"
+                            >
+                              <Eye className="w-3 h-3" /> Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setProjPerjanjianImage(null)}
+                              className="px-2 py-1 bg-rose-600 text-white rounded font-bold text-[10px] flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" /> Hapus
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDocImage({ title: `Akta PPJB: ${projNama || 'Proyek'}`, src: projPerjanjianImage })}
+                            className="text-blue-700 hover:underline font-bold flex items-center gap-1"
+                          >
+                            <Eye className="w-3 h-3" /> Lihat Berkas
+                          </button>
+                          <label className="text-slate-500 hover:text-slate-800 cursor-pointer underline font-medium">
+                            <span>Ganti File</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleFileUpload(e, setProjPerjanjianImage)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-3 flex flex-col items-center justify-center gap-1 text-center cursor-pointer transition bg-slate-50/50 hover:bg-blue-50/30">
+                          <UploadCloud className="w-5 h-5 text-slate-400" />
+                          <span className="font-semibold text-slate-700 text-[11px]">
+                            Upload Foto Akta PPJB / SPK
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            Format JPG, PNG (Maks 8MB)
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, setProjPerjanjianImage)}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sample = generateSampleDoc(
+                              'AKTA NOTARIS & PPJB LAHAN',
+                              `Perjanjian Pengikatan Jual Beli • Bpk/Ibu ${projNamaPetani || 'Pemilik Lahan'} • ${projNama || 'Proyek'}`,
+                              '#1e40af'
+                            );
+                            setProjPerjanjianImage(sample);
+                          }}
+                          className="w-full py-1 text-[10px] font-semibold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition"
+                        >
+                          + Gunakan Sampel Akta PPJB
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              {/* INTEGRATION BANNER */}
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900 space-y-1">
+                <span className="font-bold text-emerald-800 flex items-center gap-1">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Koneksi Otomatis ke Keuangan & Site Plan:
+                </span>
+                <p className="text-[11px] text-slate-600">
+                  {projHasLandDebt ? (
+                    <>
+                      Kewajiban hutang lahan sebesar <b>Rp {Math.max(0, projHargaKesepakatan - projDpDibayar).toLocaleString('id-ID')}</b> otomatis tercatat di <b>Menu 4 (Hutang Lahan Petani)</b>. Uang muka <b>Rp {Number(projDpDibayar).toLocaleString('id-ID')}</b> otomatis tercatat sebagai mutasi keluar di <b>Buku Kas Besar (Menu 5)</b>.
+                    </>
+                  ) : (
+                    'Kawasan proyek akan terdaftar dan siap untuk penambahan kavling tanpa catatan kewajiban hutang lahan.'
+                  )}
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowProjectModal(false)}
@@ -854,12 +1284,43 @@ export default function KavlingView() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-xs transition active:scale-95"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-xs transition active:scale-95 flex items-center gap-1.5"
                 >
-                  Simpan Induk Proyek
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Simpan Induk Proyek & Sinkronkan Keuangan</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Preview Modal Berkas Dokumen */}
+      {previewDocImage && (
+        <div className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex flex-col items-center justify-between p-4">
+          <div className="w-full flex justify-between items-center text-white max-w-4xl pb-2 border-b border-white/20">
+            <div className="flex items-center gap-2">
+              <FileCheck className="w-5 h-5 text-amber-400" />
+              <span className="font-bold text-sm">{previewDocImage.title}</span>
+            </div>
+            <button
+              onClick={() => setPreviewDocImage(null)}
+              className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition"
+            >
+              ✕ Tutup [ESC]
+            </button>
+          </div>
+
+          <div className="flex-1 flex items-center justify-center p-4 max-w-4xl max-h-[82vh] overflow-hidden">
+            <img
+              src={previewDocImage.src}
+              alt="Preview Berkas"
+              className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-white/10"
+            />
+          </div>
+
+          <div className="text-white/60 text-xs text-center pb-2">
+            Klik Tutup untuk kembali ke aplikasi
           </div>
         </div>
       )}

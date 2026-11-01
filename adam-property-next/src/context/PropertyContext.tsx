@@ -29,6 +29,23 @@ import {
   INITIAL_SALARY_PAYMENTS
 } from '@/lib/mockData';
 
+export interface AddProjectData {
+  nama: string;
+  lokasi: string;
+  deskripsi?: string;
+  hasLandDebt?: boolean;
+  namaPetani?: string;
+  teleponPetani?: string;
+  luasTanah?: string;
+  alasHak?: string;
+  hargaKesepakatan?: number;
+  dpDibayar?: number;
+  metodeBayarDp?: string;
+  catatanHutang?: string;
+  sertifikatImage?: string | null;
+  perjanjianImage?: string | null;
+}
+
 interface PropertyContextType {
   activeTab: NavTab;
   setActiveTab: (tab: NavTab) => void;
@@ -47,7 +64,7 @@ interface PropertyContextType {
   salaryPayments: SalaryPayment[];
 
   // Actions
-  addProject: (data: { nama: string; lokasi: string; deskripsi?: string }) => Project;
+  addProject: (data: AddProjectData) => Project;
   addKavling: (data: Omit<Kavling, 'id'>) => void;
   addBatchKavling: (
     blok: string,
@@ -110,7 +127,16 @@ interface PropertyContextType {
     dpDibayar: number;
     alamatLahan?: string;
     keterangan?: string;
+    sertifikatImage?: string | null;
+    perjanjianImage?: string | null;
   }) => void;
+  updateLandDocuments: (
+    landDebtId: string,
+    docs: {
+      sertifikatImage?: string | null;
+      perjanjianImage?: string | null;
+    }
+  ) => void;
   addLandPayment: (data: Omit<LandPayment, 'id'>) => void;
   updateLandPaymentReceipt: (paymentId: string, kwitansiImage: string | null) => void;
   addCashbookItem: (data: Omit<CashbookItem, 'id'>) => void;
@@ -196,8 +222,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
 
   const totalAssetValue = inventory.reduce((sum, item) => sum + (item.nilaiPerolehan * item.jumlah), 0);
 
-  // 1. Projects
-  const addProject = (data: { nama: string; lokasi: string; deskripsi?: string }): Project => {
+  // 1. Projects & Land Induk Acquisition
+  const addProject = (data: AddProjectData): Project => {
     const newProject: Project = {
       id: `proj-${Date.now()}`,
       nama: data.nama,
@@ -206,6 +232,67 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString().split('T')[0]
     };
     setProjects(prev => [...prev, newProject]);
+
+    // Jika user menginput transaksi finansial pembelian lahan induk:
+    const harga = Number(data.hargaKesepakatan || 0);
+    const dp = Number(data.dpDibayar || 0);
+    if (data.hasLandDebt || harga > 0) {
+      const landId = `land-${Date.now()}`;
+      const sisa = Math.max(0, harga - dp);
+      const isLunas = sisa <= 0;
+
+      const newLand: LandDebt = {
+        id: landId,
+        projectId: newProject.id,
+        projectNama: newProject.nama,
+        namaPetani: data.namaPetani || 'Pemilik Lahan Asal',
+        telepon: data.teleponPetani || '-',
+        luasTanah: data.luasTanah || '-',
+        alasHak: data.alasHak || 'SHM / Girik Induk',
+        hargaKesepakatan: harga,
+        dpDibayar: dp,
+        totalCicilan: 0,
+        sisaHutang: sisa,
+        status: isLunas ? 'lunas' : 'belum_lunas',
+        alamatLahan: data.lokasi,
+        keterangan: data.catatanHutang || data.deskripsi || 'Pembelian lahan mentah proyek baru',
+        sertifikatImage: data.sertifikatImage || null,
+        perjanjianImage: data.perjanjianImage || null
+      };
+
+      setLandDebts(prev => [...prev, newLand]);
+
+      // Jika ada DP dibayar, catat mutasi pengeluaran kas di Kas Besar & riwayat pembayaran tanah
+      if (dp > 0) {
+        const lpayId = `lpay-${Date.now()}`;
+        const newLpay: LandPayment = {
+          id: lpayId,
+          landDebtId: landId,
+          tanggal: new Date().toISOString().split('T')[0],
+          nominal: dp,
+          metode: data.metodeBayarDp || 'Transfer Bank BCA',
+          keterangan: `DP Awal Pembebasan Lahan Induk ${newProject.nama} - ${data.namaPetani || 'Pemilik'}`,
+          kwitansiImage: data.perjanjianImage || null
+        };
+        setLandPayments(prev => [...prev, newLpay]);
+
+        const cashOut: CashbookItem = {
+          id: `cash-${Date.now()}`,
+          tanggal: new Date().toISOString().split('T')[0],
+          tipe: 'keluar',
+          kategori: 'lahan_petani',
+          sumber: `Petani / Pemilik: ${data.namaPetani || 'Pemilik Lahan'}`,
+          keterangan: `DP Pembebasan Lahan Induk ${data.luasTanah || ''} (${newProject.nama})`,
+          nominal: dp,
+          metode: data.metodeBayarDp || 'Transfer Bank',
+          projectId: newProject.id,
+          refType: 'land_payment',
+          refId: lpayId
+        };
+        setCashbook(prev => [...prev, cashOut]);
+      }
+    }
+
     return newProject;
   };
 
@@ -439,6 +526,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     dpDibayar: number;
     alamatLahan?: string;
     keterangan?: string;
+    sertifikatImage?: string | null;
+    perjanjianImage?: string | null;
   }) => {
     const landId = `land-${Date.now()}`;
     const proj = projects.find(p => p.id === data.projectId);
@@ -459,7 +548,9 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       sisaHutang: sisa,
       status: isLunas ? 'lunas' : 'belum_lunas',
       alamatLahan: data.alamatLahan,
-      keterangan: data.keterangan
+      keterangan: data.keterangan,
+      sertifikatImage: data.sertifikatImage || null,
+      perjanjianImage: data.perjanjianImage || null
     };
 
     setLandDebts(prev => [...prev, newLand]);
@@ -472,7 +563,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         tanggal: new Date().toISOString().split('T')[0],
         nominal: data.dpDibayar,
         metode: 'Transfer Bank',
-        keterangan: `DP Pembebasan Lahan Petani Bpk. ${data.namaPetani}`
+        keterangan: `DP Pembebasan Lahan Petani Bpk. ${data.namaPetani}`,
+        kwitansiImage: data.perjanjianImage || null
       };
       setLandPayments(prev => [...prev, newLpay]);
 
@@ -492,6 +584,18 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       };
       setCashbook(prev => [...prev, cashOut]);
     }
+  };
+
+  const updateLandDocuments = (
+    landDebtId: string,
+    docs: {
+      sertifikatImage?: string | null;
+      perjanjianImage?: string | null;
+    }
+  ) => {
+    setLandDebts(prev =>
+      prev.map(l => (l.id === landDebtId ? { ...l, ...docs } : l))
+    );
   };
 
   const addLandPayment = (data: Omit<LandPayment, 'id'>) => {
@@ -741,6 +845,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         updatePaymentReceipt,
         updateCustomerDocuments,
         addLandDebt,
+        updateLandDocuments,
         addLandPayment,
         updateLandPaymentReceipt,
         addCashbookItem,

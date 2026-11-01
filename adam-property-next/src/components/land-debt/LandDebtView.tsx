@@ -18,6 +18,7 @@ import {
   X,
   CheckCircle2,
   FileCheck,
+  FileText,
   Image as ImageIcon
 } from 'lucide-react';
 import { LandDebt } from '@/types';
@@ -28,6 +29,7 @@ export default function LandDebtView() {
     landDebts, 
     landPayments, 
     addLandDebt, 
+    updateLandDocuments,
     addLandPayment,
     updateLandPaymentReceipt
   } = useProperty();
@@ -48,6 +50,14 @@ export default function LandDebtView() {
   const [dpDibayar, setDpDibayar] = useState(250000000);
   const [alamatLahan, setAlamatLahan] = useState('');
   const [keterangan, setKeterangan] = useState('');
+  const [sertifikatImage, setSertifikatImage] = useState<string | null>(null);
+  const [perjanjianImage, setPerjanjianImage] = useState<string | null>(null);
+
+  const handleUpdateLandDoc = (updates: { sertifikatImage?: string | null; perjanjianImage?: string | null }) => {
+    if (!selectedLandDetail) return;
+    updateLandDocuments(selectedLandDetail.id, updates);
+    setSelectedLandDetail(prev => (prev ? { ...prev, ...updates } : null));
+  };
 
   // Form Land Payment
   const [payNominal, setPayNominal] = useState(50000000);
@@ -124,7 +134,9 @@ export default function LandDebtView() {
       hargaKesepakatan: Number(hargaKesepakatan),
       dpDibayar: Number(dpDibayar),
       alamatLahan,
-      keterangan
+      keterangan,
+      sertifikatImage,
+      perjanjianImage
     });
     setShowAddModal(false);
     setNamaPetani('');
@@ -132,6 +144,9 @@ export default function LandDebtView() {
     setLuasTanah('');
     setAlasHak('');
     setAlamatLahan('');
+    setKeterangan('');
+    setSertifikatImage(null);
+    setPerjanjianImage(null);
   };
 
   const handlePaySubmit = (e: React.FormEvent) => {
@@ -290,7 +305,38 @@ export default function LandDebtView() {
                     <td className="py-3 px-4">
                       <span className="font-bold text-amber-900 block">{land.projectNama}</span>
                       <span className="text-[11px] text-slate-600 block">{land.luasTanah}</span>
-                      <span className="text-[11px] text-slate-400 font-mono">{land.alasHak}</span>
+                      <span className="text-[11px] text-slate-400 font-mono block">{land.alasHak}</span>
+                      
+                      {/* Status Dokumen Legalitas Lahan */}
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        {land.sertifikatImage ? (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImage({ title: `Sertifikat Induk: ${land.namaPetani} (${land.projectNama})`, src: land.sertifikatImage! })}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition"
+                            title="Klik untuk melihat Sertifikat Induk"
+                          >
+                            <FileCheck className="w-3 h-3 text-emerald-700" />
+                            <span>SHM</span>
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-medium">SHM: -</span>
+                        )}
+
+                        {land.perjanjianImage ? (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImage({ title: `Akta PPJB / Notaris: ${land.namaPetani} (${land.projectNama})`, src: land.perjanjianImage! })}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 hover:bg-blue-200 transition"
+                            title="Klik untuk melihat Akta PPJB"
+                          >
+                            <FileText className="w-3 h-3 text-blue-700" />
+                            <span>PPJB</span>
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-medium">PPJB: -</span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
                       Rp {land.hargaKesepakatan.toLocaleString('id-ID')}
@@ -549,6 +595,186 @@ export default function LandDebtView() {
                 </div>
               </div>
 
+              {/* BERKAS DOKUMEN LEGALITAS LAHAN INDUK */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <FileCheck2 className="w-4 h-4 text-emerald-600" />
+                  <span>Berkas Dokumen Legalitas Lahan Induk</span>
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Dokumen 1: Sertifikat Induk */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-800 text-[11px]">Sertifikat / Alas Hak</span>
+                      {selectedLandDetail.sertifikatImage && (
+                        <span className="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold">
+                          Terunggah
+                        </span>
+                      )}
+                    </div>
+
+                    {selectedLandDetail.sertifikatImage ? (
+                      <div className="space-y-1.5">
+                        <div className="relative h-24 w-full rounded-lg overflow-hidden border border-emerald-300 bg-slate-100 group">
+                          <img
+                            src={selectedLandDetail.sertifikatImage}
+                            alt="Sertifikat Induk"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage({ title: `Sertifikat Induk: ${selectedLandDetail.namaPetani} (${selectedLandDetail.projectNama})`, src: selectedLandDetail.sertifikatImage! })}
+                              className="px-2 py-1 bg-white text-slate-900 rounded font-bold text-[10px] flex items-center gap-1"
+                            >
+                              <Eye className="w-3 h-3" /> Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateLandDoc({ sertifikatImage: null })}
+                              className="px-2 py-1 bg-rose-600 text-white rounded font-bold text-[10px] flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" /> Hapus
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImage({ title: `Sertifikat Induk: ${selectedLandDetail.namaPetani} (${selectedLandDetail.projectNama})`, src: selectedLandDetail.sertifikatImage! })}
+                            className="text-emerald-700 hover:underline font-bold flex items-center gap-1"
+                          >
+                            <Eye className="w-3 h-3" /> Lihat Dokumen
+                          </button>
+                          <label className="text-slate-500 hover:text-slate-800 cursor-pointer underline font-medium">
+                            <span>Ganti Berkas</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleFileUpload(e, (val) => handleUpdateLandDoc({ sertifikatImage: val }))}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-3 flex flex-col items-center justify-center gap-1 text-center cursor-pointer transition bg-slate-50/50 hover:bg-emerald-50/30">
+                          <UploadCloud className="w-5 h-5 text-slate-400" />
+                          <span className="font-semibold text-slate-700 text-[11px]">Upload Foto Sertifikat</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, (val) => handleUpdateLandDoc({ sertifikatImage: val }))}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sample = generateSampleDoc(
+                              'SERTIFIKAT INDUK LAHAN',
+                              `${selectedLandDetail.alasHak} • ${selectedLandDetail.luasTanah} • ${selectedLandDetail.namaPetani}`,
+                              '#065f46'
+                            );
+                            handleUpdateLandDoc({ sertifikatImage: sample });
+                          }}
+                          className="w-full py-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition"
+                        >
+                          + Pasang Sampel Sertifikat
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dokumen 2: Akta Notaris PPJB */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-800 text-[11px]">Surat Perjanjian / Akta PPJB</span>
+                      {selectedLandDetail.perjanjianImage && (
+                        <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-bold">
+                          Terunggah
+                        </span>
+                      )}
+                    </div>
+
+                    {selectedLandDetail.perjanjianImage ? (
+                      <div className="space-y-1.5">
+                        <div className="relative h-24 w-full rounded-lg overflow-hidden border border-blue-300 bg-slate-100 group">
+                          <img
+                            src={selectedLandDetail.perjanjianImage}
+                            alt="Akta PPJB"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage({ title: `Akta PPJB: ${selectedLandDetail.namaPetani} (${selectedLandDetail.projectNama})`, src: selectedLandDetail.perjanjianImage! })}
+                              className="px-2 py-1 bg-white text-slate-900 rounded font-bold text-[10px] flex items-center gap-1"
+                            >
+                              <Eye className="w-3 h-3" /> Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateLandDoc({ perjanjianImage: null })}
+                              className="px-2 py-1 bg-rose-600 text-white rounded font-bold text-[10px] flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" /> Hapus
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImage({ title: `Akta PPJB: ${selectedLandDetail.namaPetani} (${selectedLandDetail.projectNama})`, src: selectedLandDetail.perjanjianImage! })}
+                            className="text-blue-700 hover:underline font-bold flex items-center gap-1"
+                          >
+                            <Eye className="w-3 h-3" /> Lihat Berkas
+                          </button>
+                          <label className="text-slate-500 hover:text-slate-800 cursor-pointer underline font-medium">
+                            <span>Ganti Berkas</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleFileUpload(e, (val) => handleUpdateLandDoc({ perjanjianImage: val }))}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-3 flex flex-col items-center justify-center gap-1 text-center cursor-pointer transition bg-slate-50/50 hover:bg-blue-50/30">
+                          <UploadCloud className="w-5 h-5 text-slate-400" />
+                          <span className="font-semibold text-slate-700 text-[11px]">Upload Foto Akta PPJB</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, (val) => handleUpdateLandDoc({ perjanjianImage: val }))}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sample = generateSampleDoc(
+                              'AKTA NOTARIS & PPJB LAHAN',
+                              `PPJB Pembebasan Lahan • ${selectedLandDetail.namaPetani} • ${selectedLandDetail.projectNama}`,
+                              '#1e40af'
+                            );
+                            handleUpdateLandDoc({ perjanjianImage: sample });
+                          }}
+                          className="w-full py-1 text-[10px] font-semibold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition"
+                        >
+                          + Pasang Sampel Akta PPJB
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <h4 className="text-xs font-bold text-slate-700">Riwayat Pembayaran ke Petani:</h4>
                 <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200 text-xs">
@@ -769,6 +995,122 @@ export default function LandDebtView() {
                   placeholder="No. Akta Notaris, skema tempo 6 bulan..."
                   className="w-full border border-slate-300 rounded-xl px-3 py-2"
                 />
+              </div>
+
+              {/* UPLOAD BERKAS DOKUMEN LEGALITAS LAHAN */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <FileCheck2 className="w-4 h-4 text-emerald-600" />
+                  <span>Upload Berkas Legalitas Lahan Induk (Opsional)</span>
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Sertifikat Induk */}
+                  <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-800 text-[11px]">Sertifikat / Alas Hak</span>
+                      {sertifikatImage && (
+                        <span className="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold">
+                          Terunggah
+                        </span>
+                      )}
+                    </div>
+                    {sertifikatImage ? (
+                      <div className="space-y-1">
+                        <div className="relative h-20 w-full rounded-lg overflow-hidden border border-emerald-300 bg-slate-100 group">
+                          <img src={sertifikatImage} alt="Sertifikat" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage({ title: 'Preview Sertifikat Induk', src: sertifikatImage })}
+                              className="px-2 py-0.5 bg-white text-slate-900 rounded font-bold text-[10px]"
+                            >
+                              Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSertifikatImage(null)}
+                              className="px-2 py-0.5 bg-rose-600 text-white rounded font-bold text-[10px]"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-2.5 flex flex-col items-center justify-center gap-0.5 text-center cursor-pointer transition bg-slate-50/50 hover:bg-emerald-50/30">
+                          <UploadCloud className="w-4 h-4 text-slate-400" />
+                          <span className="font-semibold text-slate-700 text-[10px]">Upload Sertifikat</span>
+                          <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setSertifikatImage)} className="hidden" />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sample = generateSampleDoc('SERTIFIKAT INDUK LAHAN', `${alasHak || 'SHM / Letter C'} • ${luasTanah || 'Tanah Mentah'}`, '#065f46');
+                            setSertifikatImage(sample);
+                          }}
+                          className="w-full py-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition"
+                        >
+                          + Sampel SHM
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Akta Notaris PPJB */}
+                  <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-800 text-[11px]">Akta Notaris / PPJB</span>
+                      {perjanjianImage && (
+                        <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-bold">
+                          Terunggah
+                        </span>
+                      )}
+                    </div>
+                    {perjanjianImage ? (
+                      <div className="space-y-1">
+                        <div className="relative h-20 w-full rounded-lg overflow-hidden border border-blue-300 bg-slate-100 group">
+                          <img src={perjanjianImage} alt="Akta PPJB" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage({ title: 'Preview Akta PPJB', src: perjanjianImage })}
+                              className="px-2 py-0.5 bg-white text-slate-900 rounded font-bold text-[10px]"
+                            >
+                              Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPerjanjianImage(null)}
+                              className="px-2 py-0.5 bg-rose-600 text-white rounded font-bold text-[10px]"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <label className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-2.5 flex flex-col items-center justify-center gap-0.5 text-center cursor-pointer transition bg-slate-50/50 hover:bg-blue-50/30">
+                          <UploadCloud className="w-4 h-4 text-slate-400" />
+                          <span className="font-semibold text-slate-700 text-[10px]">Upload Akta PPJB</span>
+                          <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setPerjanjianImage)} className="hidden" />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sample = generateSampleDoc('AKTA NOTARIS & PPJB LAHAN', `Perjanjian Pembebasan Lahan • ${namaPetani || 'Pemilik'}`, '#1e40af');
+                            setPerjanjianImage(sample);
+                          }}
+                          className="w-full py-1 text-[10px] font-semibold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition"
+                        >
+                          + Sampel PPJB
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
