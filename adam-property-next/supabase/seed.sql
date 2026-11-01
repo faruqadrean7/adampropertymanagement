@@ -5,9 +5,9 @@
 
 -- 1. Create auth users (if using Supabase local CLI or self-hosted)
 -- In Supabase Cloud Dashboard, users can also be invited or created via Authentication tab:
--- User 1: management@adamproperty.co.id (Password: adam123)
--- User 2: it.manager@adamproperty.co.id (Password: adam123)
--- User 3: admin@adamproperty.co.id (Password: adam123)
+-- User 1: management@adamproperty.co.id (Password: adampropertyjaya1!)
+-- User 2: it.manager@adamproperty.co.id (Password: edc128xk92)
+-- User 3: admin@adamproperty.co.id (Password: adamproperty1)
 
 -- Insert/Update profiles for the 3 defined roles
 -- (Note: If using Supabase Cloud, sign up the users in Authentication -> Users, then run this to assign roles)

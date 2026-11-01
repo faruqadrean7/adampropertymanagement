@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAuth, DEMO_USERS } from '@/context/AuthContext';
-import { UserRole } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 import { 
   Lock, 
   Mail, 
@@ -10,16 +9,14 @@ import {
   EyeOff, 
   ArrowRight, 
   ShieldCheck, 
-  Building2, 
-  CheckCircle2, 
-  Zap, 
-  Loader2 
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login, quickLogin, isLoading, isSupabaseLive } = useAuth();
-  const [email, setEmail] = useState('it.manager@adamproperty.co.id');
-  const [password, setPassword] = useState('adam123');
+  const { login, isSupabaseLive } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -36,24 +33,15 @@ export default function LoginPage() {
         setErrorMessage(res.message || 'Login gagal, periksa email dan password.');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Terjadi kesalahan sistem.');
+      setErrorMessage(err.message || 'Terjadi kesalahan sistem saat mencoba masuk.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleQuickSelect = (role: UserRole) => {
-    const user = DEMO_USERS[role];
-    if (user) {
-      setEmail(user.email);
-      setPassword('adam123');
-      quickLogin(role);
-    }
-  };
-
   return (
     <div className="min-h-screen w-full flex bg-[#f8fafc] text-slate-800 antialiased">
-      {/* LEFT SECTION: BRAND IDENTITY & ARCHITECTURE SHOWCASE (Hidden on small mobile) */}
+      {/* LEFT SECTION: BRAND IDENTITY & VALUE PROPOSITION */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#091220] via-[#0d1b2e] to-[#052e24] text-white p-12 flex-col justify-between relative overflow-hidden select-none">
         {/* Subtle background glow circles */}
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -93,7 +81,7 @@ export default function LoginPage() {
           </h2>
 
           <p className="text-slate-300 text-sm leading-relaxed">
-            Platform operasional terpadu PT Adam Property Indonesia untuk monitoring site plan kavling, mutasi kas besar & kas kecil, piutang konsumen, kewajiban tanah mentah petani, hingga penggajian marketing.
+            Platform operasional terpadu PT Adam Property Indonesia untuk monitoring site plan kavling, mutasi kas besar & kas kecil, piutang konsumen, kewajiban tanah mentah petani, hingga penggajian karyawan.
           </p>
 
           <div className="space-y-3 pt-2">
@@ -107,22 +95,22 @@ export default function LoginPage() {
             </div>
             <div className="flex items-center gap-3 text-xs text-slate-200">
               <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">✓</span>
-              <span>Hutang Petani Per-Lahan & Dukungan Barter Material Bangunan</span>
+              <span>Hutang Petani Per-Lahan & Pencatatan Kwitansi/Slip Sah</span>
             </div>
           </div>
         </div>
 
         {/* Bottom: Version & Security */}
         <div className="flex items-center justify-between text-xs text-slate-400 pt-6 border-t border-white/10 z-10">
-          <span>&copy; 2026 PT Adam Property Indonesia</span>
+          <span>&copy; 2026 PT Adam Property Indonesia. Hak Cipta Dilindungi.</span>
           <span className="flex items-center gap-1.5 font-mono text-[11px] text-emerald-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            NEXT.JS &bull; SUPABASE READY
+            {isSupabaseLive ? 'SUPABASE CLOUD LIVE' : 'INTERNAL SECURE ERP'}
           </span>
         </div>
       </div>
 
-      {/* RIGHT SECTION: EXECUTIVE LOGIN FORM */}
+      {/* RIGHT SECTION: PROPER ENTERPRISE LOGIN FORM */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-10 lg:p-16">
         <div className="w-full max-w-md space-y-6">
           {/* Mobile Top Brand Icon (visible on mobile only) */}
@@ -138,18 +126,18 @@ export default function LoginPage() {
 
           <div>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              Selamat Datang Kembali
+              Portal Masuk Karyawan
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Silakan masuk ke portal kerja internal PT Adam Property Indonesia
+              Gunakan email kantor dan kata sandi yang telah didaftarkan oleh IT Administrator
             </p>
           </div>
 
           {/* Error Message Alert */}
           {errorMessage && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-              <span className="font-bold">⚠️</span>
-              <span>{errorMessage}</span>
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 animate-fadeIn">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span className="font-semibold">{errorMessage}</span>
             </div>
           )}
 
@@ -157,7 +145,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                Alamat Email Kantor
+                Alamat Email / ID Pengguna *
               </label>
               <div className="relative">
                 <input
@@ -165,8 +153,8 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nama@adamproperty.co.id"
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 transition shadow-2xs"
+                  placeholder="contoh: it.manager@adamproperty.co.id"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition shadow-2xs"
                 />
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               </div>
@@ -175,13 +163,13 @@ export default function LoginPage() {
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="text-xs font-bold text-slate-700">
-                  Kata Sandi (Password)
+                  Kata Sandi (Password) *
                 </label>
                 <a
                   href="#forgot"
                   onClick={(e) => {
                     e.preventDefault();
-                    alert('Silakan hubungi Administrator IT atau Direksi PT Adam Property untuk reset kata sandi Anda.');
+                    alert('Untuk reset kata sandi, hubungi IT Administrator atau Manajemen PT Adam Property Indonesia.');
                   }}
                   className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
                 >
@@ -194,14 +182,15 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-11 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 transition shadow-2xs"
+                  placeholder="Masukkan kata sandi Anda"
+                  className="w-full pl-10 pr-11 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition shadow-2xs"
                 />
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -216,20 +205,20 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
                 />
-                <span className="font-medium text-slate-700">Ingat sesi saya</span>
+                <span className="font-medium text-slate-700">Ingat sesi di perangkat ini</span>
               </label>
-              <span className="text-[11px] text-slate-400">Offline & Cloud Sync</span>
+              <span className="text-[11px] text-slate-400">256-bit SSL Terenkripsi</span>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.99] transition shadow-md shadow-slate-900/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+              className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.99] transition shadow-md shadow-slate-900/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 mt-2"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-                  <span>Memverifikasi Kredensial...</span>
+                  <span>Memverifikasi Akses Pengguna...</span>
                 </>
               ) : (
                 <>
@@ -240,101 +229,15 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Role Test Switcher - 3 ROLE SESUAI KEBIJAKAN */}
-          <div className="pt-6 border-t border-slate-200">
-            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-2.5 uppercase tracking-wider">
-              <span className="flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-500" />
-                <span>Pilih Login Sesuai 3 Role Hak Akses:</span>
-              </span>
-              {isSupabaseLive ? (
-                <span className="text-[10px] text-emerald-600 font-mono font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  ● Supabase Cloud
-                </span>
-              ) : (
-                <span className="text-[10px] text-slate-400 font-mono">
-                  Mode Lokal ERP
-                </span>
-              )}
+          {/* Secure System Badge & Notice */}
+          <div className="pt-6 border-t border-slate-200 text-center space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Sistem Hak Akses Berlapis (Management &bull; IT &bull; Admin Kasir)</span>
             </div>
-            
-            <div className="space-y-2">
-              {/* Role 1: IT MANAGER (Full Akses) */}
-              <button
-                type="button"
-                onClick={() => handleQuickSelect('it_manager')}
-                className="w-full p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 text-left transition flex items-center justify-between shadow-2xs group cursor-pointer"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-bold shrink-0">
-                    💻
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 group-hover:text-emerald-800">
-                      2. IT Manager (Full Akses)
-                    </div>
-                    <div className="text-[10px] text-slate-500 truncate">
-                      Bisa akses semua modul, CRUD master kavling, customer & kas
-                    </div>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
-                  Superadmin
-                </span>
-              </button>
-
-              {/* Role 2: ADMIN (Akses Pembayaran Saja) */}
-              <button
-                type="button"
-                onClick={() => handleQuickSelect('admin')}
-                className="w-full p-2.5 rounded-xl border border-slate-200 bg-white hover:border-blue-500 hover:bg-blue-50/50 text-left transition flex items-center justify-between shadow-2xs group cursor-pointer"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-9 h-9 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center text-sm font-bold shrink-0">
-                    💳
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 group-hover:text-blue-800">
-                      3. Admin (Akses Pembayaran)
-                    </div>
-                    <div className="text-[10px] text-slate-500 truncate">
-                      Catat uang masuk, uang keluar, cicilan customer & lahan petani
-                    </div>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
-                  Finance/Kasir
-                </span>
-              </button>
-
-              {/* Role 3: MANAGEMENT (Hanya Bisa Lihat) */}
-              <button
-                type="button"
-                onClick={() => handleQuickSelect('management')}
-                className="w-full p-2.5 rounded-xl border border-slate-200 bg-white hover:border-amber-500 hover:bg-amber-50/50 text-left transition flex items-center justify-between shadow-2xs group cursor-pointer"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-sm font-bold shrink-0">
-                    👔
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 group-hover:text-amber-800">
-                      1. Management (Hanya Bisa Lihat)
-                    </div>
-                    <div className="text-[10px] text-slate-500 truncate">
-                      Read-only audit seluruh laporan keuangan, kavling, & karyawan
-                    </div>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
-                  Read-Only
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <div className="text-center text-[10px] text-slate-400 pt-2">
-            PT Adam Property Indonesia &bull; Terproteksi Keamanan Terpusat
+            <p className="text-[10px] text-slate-400">
+              Hak cipta &copy; 2026 PT Adam Property Indonesia. Akses hanya untuk staf dan manajemen yang berwenang.
+            </p>
           </div>
         </div>
       </div>

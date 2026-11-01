@@ -4,28 +4,46 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthUser, UserRole, ROLE_PERMISSIONS, RolePermission } from '@/types';
 import { supabaseSignIn, supabaseSignOut, isSupabaseConfigured } from '@/lib/supabaseService';
 
-export const DEMO_USERS: Record<UserRole, AuthUser> = {
+export const USER_CREDENTIALS: Record<UserRole, { email: string; password: string; user: AuthUser }> = {
   management: {
-    id: 'usr-management',
     email: 'management@adamproperty.co.id',
-    nama: 'Bpk. Ir. H. Adam Malik',
-    jabatan: 'Direksi Management (Hanya Lihat)',
-    role: 'management'
-  },
-  it_manager: {
-    id: 'usr-it-manager',
-    email: 'it.manager@adamproperty.co.id',
-    nama: 'Budi Santoso, S.Kom',
-    jabatan: 'Head of IT & Super Administrator',
-    role: 'it_manager'
+    password: 'adampropertyjaya1!',
+    user: {
+      id: 'usr-management',
+      email: 'management@adamproperty.co.id',
+      nama: 'Bpk. Ir. H. Adam Malik',
+      jabatan: 'Direksi Management (Hanya Lihat)',
+      role: 'management'
+    }
   },
   admin: {
-    id: 'usr-admin',
     email: 'admin@adamproperty.co.id',
-    nama: 'Siti Nurhaliza, S.Ak.',
-    jabatan: 'Admin Keuangan & Kasir Pembayaran',
-    role: 'admin'
+    password: 'adamproperty1',
+    user: {
+      id: 'usr-admin',
+      email: 'admin@adamproperty.co.id',
+      nama: 'Siti Nurhaliza, S.Ak.',
+      jabatan: 'Admin Keuangan & Kasir Pembayaran',
+      role: 'admin'
+    }
+  },
+  it_manager: {
+    email: 'it.manager@adamproperty.co.id',
+    password: 'edc128xk92',
+    user: {
+      id: 'usr-it-manager',
+      email: 'it.manager@adamproperty.co.id',
+      nama: 'Budi Santoso, S.Kom',
+      jabatan: 'Head of IT & Super Administrator',
+      role: 'it_manager'
+    }
   }
+};
+
+export const DEMO_USERS: Record<UserRole, AuthUser> = {
+  management: USER_CREDENTIALS.management.user,
+  it_manager: USER_CREDENTIALS.it_manager.user,
+  admin: USER_CREDENTIALS.admin.user
 };
 
 interface AuthContextType {
@@ -91,25 +109,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 2. Offline / local pre-configured accounts fallback
     await new Promise((resolve) => setTimeout(resolve, 400));
 
-    const matchedRole = Object.keys(DEMO_USERS).find(
-      key => DEMO_USERS[key as UserRole].email.toLowerCase() === email.trim().toLowerCase()
-    ) as UserRole | undefined;
+    const inputLower = email.trim().toLowerCase();
+    const matchedRole = (Object.keys(USER_CREDENTIALS) as UserRole[]).find(role => {
+      const accountEmail = USER_CREDENTIALS[role].email.toLowerCase();
+      const username = accountEmail.split('@')[0];
+      return inputLower === accountEmail || inputLower === username;
+    });
 
-    let loggedInUser: AuthUser;
-
-    if (matchedRole) {
-      loggedInUser = DEMO_USERS[matchedRole];
-    } else {
-      // Default to management (view-only) for unknown custom accounts
-      loggedInUser = {
-        id: `usr-${Date.now()}`,
-        email: email.trim(),
-        nama: email.split('@')[0].toUpperCase(),
-        jabatan: 'Staff Monitoring',
-        role: 'management'
+    if (!matchedRole) {
+      setIsLoading(false);
+      return { 
+        success: false, 
+        message: 'Akun email tidak terdaftar dalam sistem PT Adam Property.' 
       };
     }
 
+    const targetAccount = USER_CREDENTIALS[matchedRole];
+    if (password !== targetAccount.password) {
+      setIsLoading(false);
+      return { 
+        success: false, 
+        message: 'Kata sandi (password) salah! Silakan periksa kembali.' 
+      };
+    }
+
+    const loggedInUser: AuthUser = targetAccount.user;
     setUser(loggedInUser);
     localStorage.setItem('adam_property_auth_user', JSON.stringify(loggedInUser));
     setIsLoading(false);
