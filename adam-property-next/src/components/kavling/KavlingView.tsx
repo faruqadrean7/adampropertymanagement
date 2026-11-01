@@ -28,8 +28,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Kavling } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 export default function KavlingView() {
+  const { user, isReadOnly, canFullAccess, canManagePayments } = useAuth();
   const { 
     projects, 
     selectedProjectId, 
@@ -225,6 +227,21 @@ export default function KavlingView() {
 
   return (
     <div className="space-y-6">
+      {/* Management Read-Only Banner */}
+      {isReadOnly && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Eye className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>
+              <b>Mode Management (Read-Only):</b> Anda memiliki akses memantau seluruh site plan, harga, dan pembeli. Penambahan master kavling dan perubahan status dikunci.
+            </span>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 border border-amber-300 rounded-md shrink-0">
+            Hanya Lihat
+          </span>
+        </div>
+      )}
+
       {/* Top Bar Controls */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div className="flex items-center gap-3 flex-wrap">
@@ -237,7 +254,11 @@ export default function KavlingView() {
               value={selectedProjectId}
               onChange={(e) => {
                 if (e.target.value === '__NEW_PROJECT__') {
-                  setShowProjectModal(true);
+                  if (canFullAccess) {
+                    setShowProjectModal(true);
+                  } else {
+                    alert('Hanya IT Manager yang berwenang menambah induk proyek baru!');
+                  }
                 } else {
                   setSelectedProjectId(e.target.value);
                 }
@@ -248,35 +269,57 @@ export default function KavlingView() {
               {projects.map(p => (
                 <option key={p.id} value={p.id}>{p.nama}</option>
               ))}
-              <option value="__NEW_PROJECT__" className="text-emerald-700 font-bold bg-emerald-50">
-                + Tambah Induk Proyek Baru...
-              </option>
+              {canFullAccess && (
+                <option value="__NEW_PROJECT__" className="text-emerald-700 font-bold bg-emerald-50">
+                  + Tambah Induk Proyek Baru...
+                </option>
+              )}
             </select>
           </div>
         </div>
 
+        {/* Action Buttons depending on Role */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setShowProjectModal(true)}
-            className="px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
-          >
-            <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>+ Induk Proyek Baru</span>
-          </button>
-          <button
-            onClick={handleOpenBatchModal}
-            className="px-3.5 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition flex items-center gap-1.5 active:scale-95"
-          >
-            <Zap className="w-3.5 h-3.5 text-amber-500" />
-            <span>+ Buat Blok Sekaligus</span>
-          </button>
-          <button
-            onClick={handleOpenAddModal}
-            className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] rounded-xl shadow-xs transition flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Tambah Kavling Baru</span>
-          </button>
+          {isReadOnly ? (
+            <div className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold flex items-center gap-1.5 border border-slate-200">
+              <Eye className="w-3.5 h-3.5 text-slate-400" />
+              <span>Akses Monitoring Unit</span>
+            </div>
+          ) : (
+            <>
+              {canFullAccess && (
+                <>
+                  <button
+                    onClick={() => setShowProjectModal(true)}
+                    className="px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-2xs cursor-pointer"
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>+ Induk Proyek Baru</span>
+                  </button>
+                  <button
+                    onClick={handleOpenBatchModal}
+                    className="px-3.5 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                    <span>+ Buat Blok Sekaligus</span>
+                  </button>
+                  <button
+                    onClick={handleOpenAddModal}
+                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Tambah Kavling Baru</span>
+                  </button>
+                </>
+              )}
+              {user?.role === 'admin' && (
+                <div className="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-800 text-xs font-semibold flex items-center gap-1.5 border border-blue-200">
+                  <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Admin Pembayaran: Pantau Kavling Untuk Transaksi</span>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 

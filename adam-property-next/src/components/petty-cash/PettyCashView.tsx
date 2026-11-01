@@ -16,8 +16,10 @@ import {
   Users 
 } from 'lucide-react';
 import { PettyCashItem } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 export default function PettyCashView() {
+  const { user, isReadOnly, canManagePayments, canFullAccess } = useAuth();
   const { 
     pettyCash, 
     topUpPettyCash, 
@@ -77,6 +79,21 @@ export default function PettyCashView() {
 
   return (
     <div className="space-y-6">
+      {/* Management Read-Only Banner */}
+      {isReadOnly && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Coins className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>
+              <b>Mode Management (Read-Only):</b> Anda memiliki akses memantau mutasi kas kecil operasional, bon belanja, dan saldo fisik. Input pengeluaran baru dikunci.
+            </span>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 border border-amber-300 rounded-md shrink-0">
+            Hanya Lihat
+          </span>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -98,23 +115,27 @@ export default function PettyCashView() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setShowTopupModal(true)}
-            className="px-3.5 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5"
-          >
-            <ArrowDownLeft className="w-3.5 h-3.5" />
-            <span>+ Top Up Kas Kecil</span>
-          </button>
-          <button
-            onClick={() => setShowExpenseModal(true)}
-            className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5"
-          >
-            <ShoppingCart className="w-3.5 h-3.5" />
-            <span>+ Belanja Harian</span>
-          </button>
+          {!isReadOnly && (
+            <>
+              <button
+                onClick={() => setShowTopupModal(true)}
+                className="px-3.5 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <ArrowDownLeft className="w-3.5 h-3.5" />
+                <span>+ Top Up Kas Kecil</span>
+              </button>
+              <button
+                onClick={() => setShowExpenseModal(true)}
+                className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span>+ Belanja Harian</span>
+              </button>
+            </>
+          )}
           <button
             onClick={() => window.print()}
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition flex items-center gap-1.5"
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition flex items-center gap-1.5 cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Cetak Buku</span>

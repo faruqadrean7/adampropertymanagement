@@ -197,7 +197,7 @@ export interface SalaryPayment {
   pettyCashId?: string;
 }
 
-export type UserRole = 'direktur' | 'keuangan' | 'marketing' | 'operasional' | 'legal';
+export type UserRole = 'management' | 'it_manager' | 'admin';
 
 export interface AuthUser {
   id: string;
@@ -207,3 +207,59 @@ export interface AuthUser {
   role: UserRole;
   avatar?: string;
 }
+
+export interface RolePermission {
+  canViewAll: boolean;
+  canManagePayments: boolean;
+  canRecordCashflow: boolean;
+  canManageProjects: boolean;
+  canManageKavling: boolean;
+  canManageEmployees: boolean;
+  canManageInventory: boolean;
+  isReadOnly: boolean;
+  title: string;
+  description: string;
+  badgeColor: string;
+}
+
+export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
+  management: {
+    canViewAll: true,
+    canManagePayments: false,
+    canRecordCashflow: false,
+    canManageProjects: false,
+    canManageKavling: false,
+    canManageEmployees: false,
+    canManageInventory: false,
+    isReadOnly: true,
+    title: 'Management (Hanya Lihat)',
+    description: 'Akses monitoring dan pengawasan menyeluruh seluruh data, laporan bisnis, dan site plan (Read-Only).',
+    badgeColor: 'bg-amber-100 text-amber-900 border-amber-300'
+  },
+  it_manager: {
+    canViewAll: true,
+    canManagePayments: true,
+    canRecordCashflow: true,
+    canManageProjects: true,
+    canManageKavling: true,
+    canManageEmployees: true,
+    canManageInventory: true,
+    isReadOnly: false,
+    title: 'IT Manager (Full Akses)',
+    description: 'Superadmin dengan hak akses penuh ke seluruh modul, database, transaksi, dan konfigurasi master.',
+    badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-300'
+  },
+  admin: {
+    canViewAll: true,
+    canManagePayments: true,
+    canRecordCashflow: true,
+    canManageProjects: false,
+    canManageKavling: false,
+    canManageEmployees: false,
+    canManageInventory: false,
+    isReadOnly: false,
+    title: 'Admin (Akses Pembayaran)',
+    description: 'Mencatat transaksi uang masuk/keluar, menangani cicilan customer, pembayaran lahan, dan mutasi kas.',
+    badgeColor: 'bg-blue-100 text-blue-900 border-blue-300'
+  }
+};

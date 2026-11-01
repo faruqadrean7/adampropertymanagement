@@ -17,8 +17,8 @@ import {
 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login, quickLogin, isLoading } = useAuth();
-  const [email, setEmail] = useState('direktur@adamproperty.co.id');
+  const { login, quickLogin, isLoading, isSupabaseLive } = useAuth();
+  const [email, setEmail] = useState('it.manager@adamproperty.co.id');
   const [password, setPassword] = useState('adam123');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -240,68 +240,95 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Role Test Switcher */}
+          {/* Quick Role Test Switcher - 3 ROLE SESUAI KEBIJAKAN */}
           <div className="pt-6 border-t border-slate-200">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>Login Cepat Berdasarkan Jabatan:</span>
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-2.5 uppercase tracking-wider">
+              <span className="flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                <span>Pilih Login Sesuai 3 Role Hak Akses:</span>
+              </span>
+              {isSupabaseLive ? (
+                <span className="text-[10px] text-emerald-600 font-mono font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  ● Supabase Cloud
+                </span>
+              ) : (
+                <span className="text-[10px] text-slate-400 font-mono">
+                  Mode Lokal ERP
+                </span>
+              )}
             </div>
             
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
+              {/* Role 1: IT MANAGER (Full Akses) */}
               <button
                 type="button"
-                onClick={() => handleQuickSelect('direktur')}
-                className="p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-400 hover:bg-emerald-50/50 text-left transition flex items-center gap-2 shadow-2xs group"
+                onClick={() => handleQuickSelect('it_manager')}
+                className="w-full p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 text-left transition flex items-center justify-between shadow-2xs group cursor-pointer"
               >
-                <span className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold shrink-0">
-                  👔
-                </span>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 truncate">Direktur Utama</div>
-                  <div className="text-[10px] text-slate-500 truncate">Akses Penuh Semua Modul</div>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-bold shrink-0">
+                    💻
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 group-hover:text-emerald-800">
+                      2. IT Manager (Full Akses)
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">
+                      Bisa akses semua modul, CRUD master kavling, customer & kas
+                    </div>
+                  </div>
                 </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+                  Superadmin
+                </span>
               </button>
 
+              {/* Role 2: ADMIN (Akses Pembayaran Saja) */}
               <button
                 type="button"
-                onClick={() => handleQuickSelect('keuangan')}
-                className="p-2.5 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50/50 text-left transition flex items-center gap-2 shadow-2xs group"
+                onClick={() => handleQuickSelect('admin')}
+                className="w-full p-2.5 rounded-xl border border-slate-200 bg-white hover:border-blue-500 hover:bg-blue-50/50 text-left transition flex items-center justify-between shadow-2xs group cursor-pointer"
               >
-                <span className="w-7 h-7 rounded-lg bg-violet-100 text-violet-800 flex items-center justify-center text-xs font-bold shrink-0">
-                  💰
-                </span>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-900 group-hover:text-violet-800 truncate">Finance / Kasir</div>
-                  <div className="text-[10px] text-slate-500 truncate">Kas Besar & Kas Kecil</div>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-9 h-9 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center text-sm font-bold shrink-0">
+                    💳
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 group-hover:text-blue-800">
+                      3. Admin (Akses Pembayaran)
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">
+                      Catat uang masuk, uang keluar, cicilan customer & lahan petani
+                    </div>
+                  </div>
                 </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
+                  Finance/Kasir
+                </span>
               </button>
 
+              {/* Role 3: MANAGEMENT (Hanya Bisa Lihat) */}
               <button
                 type="button"
-                onClick={() => handleQuickSelect('marketing')}
-                className="p-2.5 rounded-xl border border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50/50 text-left transition flex items-center gap-2 shadow-2xs group"
+                onClick={() => handleQuickSelect('management')}
+                className="w-full p-2.5 rounded-xl border border-slate-200 bg-white hover:border-amber-500 hover:bg-amber-50/50 text-left transition flex items-center justify-between shadow-2xs group cursor-pointer"
               >
-                <span className="w-7 h-7 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-bold shrink-0">
-                  🏷️
-                </span>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-900 group-hover:text-blue-800 truncate">Tim Marketing</div>
-                  <div className="text-[10px] text-slate-500 truncate">Kavling & Customer</div>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-sm font-bold shrink-0">
+                    👔
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 group-hover:text-amber-800">
+                      1. Management (Hanya Bisa Lihat)
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">
+                      Read-only audit seluruh laporan keuangan, kavling, & karyawan
+                    </div>
+                  </div>
                 </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickSelect('legal')}
-                className="p-2.5 rounded-xl border border-slate-200 bg-white hover:border-amber-400 hover:bg-amber-50/50 text-left transition flex items-center gap-2 shadow-2xs group"
-              >
-                <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-bold shrink-0">
-                  ⚖️
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                  Read-Only
                 </span>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-900 group-hover:text-amber-800 truncate">Legal & Notaris</div>
-                  <div className="text-[10px] text-slate-500 truncate">PPJB & Lahan Petani</div>
-                </div>
               </button>
             </div>
           </div>

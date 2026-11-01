@@ -22,8 +22,10 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { LandDebt } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LandDebtView() {
+  const { user, isReadOnly, canManagePayments, canFullAccess } = useAuth();
   const { 
     projects, 
     landDebts, 
@@ -181,13 +183,27 @@ export default function LandDebtView() {
               Pencatatan pembebasan lahan mentah, perjanjian jual beli notaris, dan cicilan bertahap.
             </p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Beli Lahan Petani Baru</span>
-          </button>
+          {canFullAccess && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Beli Lahan Petani Baru</span>
+            </button>
+          )}
+          {isReadOnly && (
+            <div className="px-3.5 py-1.5 bg-amber-100/90 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 select-none">
+              <Eye className="w-3.5 h-3.5 text-amber-700" />
+              <span>Monitoring Lahan (Read-Only)</span>
+            </div>
+          )}
+          {user?.role === 'admin' && (
+            <div className="px-3 py-1.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-xl text-xs font-semibold flex items-center gap-1.5">
+              <Coins className="w-3.5 h-3.5 text-blue-600" />
+              <span>Admin: Hak Akses Cicilan Pembayaran Lahan</span>
+            </div>
+          )}
         </div>
 
         {/* DROPDOWN FILTER PILIH LAHAN AGAR TIDAK TERCAMPUR */}
@@ -359,13 +375,13 @@ export default function LandDebtView() {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center space-x-1.5">
-                      {!isLunas && (
+                      {!isLunas && !isReadOnly && (
                         <button
                           onClick={() => {
                             setSelectedLandForPay(land);
                             setPayKwitansiImage(null);
                           }}
-                          className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs"
+                          className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs cursor-pointer"
                         >
                           <Coins className="w-3.5 h-3.5" />
                           <span>Cicil</span>

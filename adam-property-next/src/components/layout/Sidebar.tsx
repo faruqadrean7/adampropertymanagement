@@ -18,7 +18,10 @@ import {
   Database, 
   RotateCw,
   LogOut,
-  X
+  X,
+  Eye,
+  Receipt,
+  ShieldCheck
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,7 +32,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose, onOpenPrimaryModal }: SidebarProps) {
   const { activeTab, setActiveTab, syncAllToCashbook } = useProperty();
-  const { user, logout } = useAuth();
+  const { user, isReadOnly, canManagePayments, canFullAccess, logout } = useAuth();
 
   const navItems: { tab: NavTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { tab: 'dashboard', label: 'Executive Analytics', icon: <BarChart3 className="w-4 h-4" /> },
@@ -189,13 +192,31 @@ export default function Sidebar({ isOpen, onClose, onOpenPrimaryModal }: Sidebar
 
         {/* Bottom Actions */}
         <div className="p-3.5 border-t border-white/10 shrink-0 space-y-2.5 bg-black/20">
-          <button 
-            onClick={onOpenPrimaryModal}
-            className="w-full py-2.5 px-4 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 active:scale-[0.98] rounded-xl shadow-lg shadow-emerald-950/40 transition flex items-center justify-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{getPrimaryActionLabel()}</span>
-          </button>
+          {isReadOnly ? (
+            <div 
+              className="w-full py-2.5 px-4 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-300 to-amber-200 rounded-xl shadow-lg shadow-amber-950/20 flex items-center justify-center gap-2 cursor-not-allowed select-none"
+              title="Akses Management: Hanya Lihat (Read-Only)"
+            >
+              <Eye className="w-4 h-4 text-amber-800" />
+              <span>Mode Pantau (Hanya Lihat)</span>
+            </div>
+          ) : user?.role === 'admin' ? (
+            <button 
+              onClick={onOpenPrimaryModal}
+              className="w-full py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] rounded-xl shadow-lg shadow-blue-950/40 transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Receipt className="w-4 h-4" />
+              <span>+ Catat Transaksi Pembayaran</span>
+            </button>
+          ) : (
+            <button 
+              onClick={onOpenPrimaryModal}
+              className="w-full py-2.5 px-4 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 active:scale-[0.98] rounded-xl shadow-lg shadow-emerald-950/40 transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{getPrimaryActionLabel()}</span>
+            </button>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <button 

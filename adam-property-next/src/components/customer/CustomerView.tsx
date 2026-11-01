@@ -30,8 +30,10 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { Customer, Payment } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 export default function CustomerView() {
+  const { user, isReadOnly, canManagePayments, canFullAccess } = useAuth();
   const { 
     customers, 
     payments, 
@@ -255,6 +257,20 @@ export default function CustomerView() {
 
   return (
     <div className="space-y-6">
+      {/* Management Read-Only Banner */}
+      {isReadOnly && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Eye className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>
+              <b>Mode Management (Read-Only):</b> Anda memiliki akses memantau seluruh transaksi, saldo piutang berjalan, dan legalitas konsumen. Fitur pencatatan pembayaran dan pendaftaran customer baru dikunci.
+            </span>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 border border-amber-300 rounded-md shrink-0">
+            Hanya Lihat
+          </span>
+        </div>
+      )}
       {/* 4 Financial Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
@@ -347,13 +363,20 @@ export default function CustomerView() {
             </button>
           </div>
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Tambah Customer & Upload Dokumen</span>
-          </button>
+          {isReadOnly ? (
+            <div className="px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-500 rounded-xl text-xs font-semibold flex items-center gap-1.5 select-none">
+              <Eye className="w-3.5 h-3.5 text-slate-400" />
+              <span>Monitoring Piutang</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Tambah Customer & Upload Dokumen</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -476,14 +499,14 @@ export default function CustomerView() {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center space-x-1.5">
-                      {!isLunas && (
+                      {!isLunas && !isReadOnly && (
                         <button
                           onClick={() => {
                             setSelectedCustForPay(cust);
                             setPayNominal(Math.min(cust.sisaPiutang, 10000000));
                             setPayKwitansiImage(null);
                           }}
-                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs"
+                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs cursor-pointer"
                           title="Input Pembayaran / Barter"
                         >
                           <Coins className="w-3.5 h-3.5" />
@@ -492,7 +515,7 @@ export default function CustomerView() {
                       )}
                       <button
                         onClick={() => setSelectedCustDetail(cust)}
-                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1"
+                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
                         title="Lihat Detail Customer & Berkas"
                       >
                         <Receipt className="w-3.5 h-3.5" />

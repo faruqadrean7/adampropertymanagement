@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useProperty } from '@/context/PropertyContext';
 import { useAuth } from '@/context/AuthContext';
-import { Menu, Plus, Calendar, ChevronRight, LogOut, User } from 'lucide-react';
+import { Menu, Plus, Calendar, ChevronRight, LogOut, User, Eye, ShieldCheck, Receipt } from 'lucide-react';
 
 interface TopBarProps {
   onToggleSidebar: () => void;
@@ -12,7 +12,7 @@ interface TopBarProps {
 
 export default function TopBar({ onToggleSidebar, onOpenPrimaryModal }: TopBarProps) {
   const { activeTab } = useProperty();
-  const { user, logout } = useAuth();
+  const { user, permissions, isReadOnly, canManagePayments, canFullAccess, logout } = useAuth();
   const [currentDate, setCurrentDate] = useState<string>('');
 
   useEffect(() => {
@@ -98,12 +98,20 @@ export default function TopBar({ onToggleSidebar, onOpenPrimaryModal }: TopBarPr
 
         {user && (
           <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-            <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-[10px]">
-              {user.nama.slice(0, 2).toUpperCase()}
+            <span className={`w-7 h-7 rounded-lg font-bold flex items-center justify-center text-xs shadow-2xs ${
+              user.role === 'it_manager' ? 'bg-emerald-100 text-emerald-800' :
+              user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
+            }`}>
+              {user.role === 'it_manager' ? '💻' : user.role === 'admin' ? '💳' : '👔'}
             </span>
             <div className="text-left leading-tight hidden lg:block">
-              <span className="font-bold text-slate-900 block text-[11px] truncate max-w-[120px]">{user.nama}</span>
-              <span className="text-[9px] text-emerald-700 capitalize font-medium">{user.role}</span>
+              <span className="font-bold text-slate-900 block text-[11px] truncate max-w-[130px]">{user.nama}</span>
+              <span className={`text-[9px] font-bold uppercase tracking-wider block ${
+                user.role === 'it_manager' ? 'text-emerald-700' :
+                user.role === 'admin' ? 'text-blue-700' : 'text-amber-700'
+              }`}>
+                {user.role === 'it_manager' ? 'IT Manager (Full)' : user.role === 'admin' ? 'Admin Pembayaran' : 'Management (View)'}
+              </span>
             </div>
             <button
               onClick={() => {
@@ -111,7 +119,7 @@ export default function TopBar({ onToggleSidebar, onOpenPrimaryModal }: TopBarPr
                   logout();
                 }
               }}
-              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition ml-1"
+              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition ml-1 cursor-pointer"
               title="Logout"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -119,13 +127,25 @@ export default function TopBar({ onToggleSidebar, onOpenPrimaryModal }: TopBarPr
           </div>
         )}
 
-        <button
-          onClick={onOpenPrimaryModal}
-          className="px-3.5 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.98] rounded-xl transition flex items-center gap-1.5 shadow-xs"
-        >
-          <Plus className="w-3.5 h-3.5 text-emerald-400" />
-          <span>{getButtonText()}</span>
-        </button>
+        {/* Action Button: Disabled / Read-Only for Management */}
+        {isReadOnly ? (
+          <div 
+            className="px-3.5 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 border border-amber-300 rounded-xl flex items-center gap-1.5 shadow-2xs cursor-not-allowed select-none"
+            title="Akun Management memiliki hak akses Hanya Lihat (Read-Only). Transaksi tidak diizinkan."
+          >
+            <Eye className="w-3.5 h-3.5 text-amber-600" />
+            <span className="hidden sm:inline">Mode Pantau</span>
+            <span className="sm:hidden">Pantau</span>
+          </div>
+        ) : (
+          <button
+            onClick={onOpenPrimaryModal}
+            className="px-3.5 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.98] rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{getButtonText()}</span>
+          </button>
+        )}
       </div>
     </header>
   );
