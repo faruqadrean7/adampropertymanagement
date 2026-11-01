@@ -1,79 +1,76 @@
-# PANDUAN APLIKASI PENCATATAN CUSTOMER KAVLING
-**ADAM PROPERTY**
+# ADAM PROPERTY GROUP - ENTERPRISE REAL ESTATE SYSTEM
+**Sistem Manajemen Kavling, Customer CRM, Barter Material & Hutang Lahan Petani**
 
-Aplikasi berbasis web modern (HTML, CSS, JavaScript) untuk pencatatan customer pembeli kavling tanah / perumahan, pengelolaan dokumen identitas (KK dan KTP), serta pencatatan riwayat uang masuk / pembayaran lengkap dengan bukti foto kwitansi.
+Aplikasi sistem pengelolaan properti terpadu berbasis Web (HTML5, Tailwind CSS, JavaScript, IndexedDB v3) dengan tampilan **Corporate Executive**, dirancang khusus untuk operasional pengembang tanah kavling dan perumahan.
 
 ---
 
 ## 🚀 Cara Menjalankan Aplikasi
-1. Buka folder `adamcustomer` di komputer Anda (`C:\Users\ADAM PROPERTY\Desktop\adamcustomer`).
-2. Klik ganda (**double-click**) pada file **`index.html`** untuk membukanya di browser (Google Chrome, Microsoft Edge, Mozilla Firefox, dll).
-3. Aplikasi langsung berjalan **100% tanpa perlu install server/database tambahan** (offline-first).
+1. Buka folder kerja: `C:\Users\ADAM PROPERTY\Desktop\adamcustomer\`.
+2. Klik ganda (**double-click**) pada file **`index.html`** untuk membukanya di browser (Google Chrome, Microsoft Edge, dll).
+3. Berjalan **100% offline** tanpa perlu internet maupun setup database server. Seluruh data tersimpan secara lokal dan aman di browser komputer Anda (IndexedDB).
 
 ---
 
-## 📋 Fitur Utama Sesuai Kebutuhan
-
-### 1. Kolom Pencatatan Customer Kavling
-- **Nama Customer**: Nama lengkap pembeli serta nomor WhatsApp / Telepon untuk kemudahan menghubungi.
-- **Kavling Yang Diambil**: Blok kavling atau nomor lot yang dibeli (contoh: *Blok A-03*, *Kavling Melati 12*).
-- **Harga Kavling**: Nilai total harga jual tanah kavling dalam format Rupiah (Rp) otomatis.
-- **Status Pembayaran & Keuangan**:
-  - Total Uang Masuk yang telah dibayarkan oleh customer.
-  - Sisa Pembayaran / Piutang yang belum terbayar.
-  - Status *Lunas* atau *Mengangsur (% persentase terbayar)*.
+## 🏢 Tampilan Navigasi Perusahaan (Company Feels)
+Navigasi atas dirancang menyerupai portal ERP pengembang properti profesional:
+* **Identitas Korporat**: `ADAM PROPERTY GROUP - Real Estate & Land Dev`.
+* **3 Modul Eksekutif Terpadu**:
+  1. 🗺️ **Peta & Site Plan Kavling**: Manajemen unit kavling, pengelompokan blok (Ruko, A, B, C), spek ukuran fisik, dan 3 status (Terbuka, Booking, Terjual).
+  2. 👥 **Customer & Piutang Kavling**: Data customer, berkas identitas (**KTP, KK, & AJB setelah DP**), serta kwitansi tunai maupun **Barter Material Bangunan**.
+  3. 🚜 **Hutang Lahan ke Petani / Pemilik**: Manajemen pembebasan lahan mentah, perjanjian notaris, sertifikat/Letter C tanah petani, serta cicilan pembayaran bertahap.
 
 ---
 
-### 2. Laman "Data Customer" (Dokumen KK & KTP)
-Ketika Anda mengklik tombol **"Buka Data Customer"** pada baris customer, akan terbuka laman detail khusus yang menampilkan:
-- **Dokumen KTP Customer**:
-  - Foto preview KTP yang Anda upload.
-  - Tombol **Ganti / Upload KTP** (mendukung foto dari galeri / kamera hp).
-  - Tombol **Perbesar (Zoom)** untuk melihat teks NIK dan foto KTP resolusi penuh di layar.
-  - Tombol **Unduh KTP** langsung ke komputer.
-- **Dokumen KK (Kartu Keluarga)**:
-  - Foto preview Kartu Keluarga yang Anda upload.
-  - Tombol **Ganti / Upload KK**.
-  - Tombol **Perbesar (Zoom)** dan **Unduh KK**.
+## 🧱 1. Fitur Transaksi Barter Material (Bahan Bangunan)
+Untuk kasus di mana customer / toko bangunan membeli kavling dengan cara barter material:
+* **Pilihan Metode Pembayaran**:
+  * `💵 Tunai / Transfer Bank`
+  * `🧱 Barter Material Bangunan (Non-Tunai)`
+  * `🔄 Campuran (Uang Muka Tunai + Sebagian Barter Material)`
+* **Nominal Nilai Barter (Rp)**: Dikonversi ke nilai Rupiah yang setara (misal: Rp 250.000.000) sehingga sisa tagihan kavling otomatis terhitung **LUNAS** dan kavling otomatis berstatus **🔴 TERJUAL**.
+* **Rincian Material yang Diterima**: Kolom khusus untuk mencatat spesifikasi bahan bangunan yang diserahkan (misal: *Semen 500 sak, Besi beton 10mm 1.000 batang, Bata hebel 120 m³, Pasir 25 truk*).
+* **Upload Bukti**: Unggah foto **Surat Jalan / Nota Toko Bahan Bangunan / BAST**.
+* **Kwitansi Cetak**: Menghasilkan lembar resmi *"Tanda Terima Barter Material Bahan Bangunan (Non-Tunai)"* lengkap dengan rincian material dan tanda tangan manajemen.
 
 ---
 
-### 3. Riwayat Uang Masuk & Foto Kwitansi
-Di bagian bawah dokumen KK & KTP pada laman Data Customer, terdapat pencatatan **Riwayat Uang Masuk**:
-- **Tanggal Uang Masuk**: Tanggal saat customer menyetorkan uang.
-- **Tujuan Pembayaran**:
-  - *Booking Fee / Tanda Jadi*
-  - *DP (Uang Muka)*
-  - *Angsuran / Cicilan Bulanan*
-  - *Pelunasan Kavling*
-  - *Biaya Notaris / AJB / Sertifikat*
-  - *Tujuan Lainnya (Bisa diketik bebas)*
-- **Nominal Masuk (Rp)**: Jumlah uang yang disetorkan. Total terbayar dan sisa tagihan kavling akan dihitung secara **otomatis dan realtime**.
-- **Keterangan**: Catatan metode pembayaran (contoh: *Transfer via BCA an. Bambang*, *Tunai di kantor*).
-- **Foto Kwitansi**:
-  - Unggah foto bukti transfer atau kwitansi fisik.
-  - Foto dikompres secara cerdas agar tidak memberatkan browser namun tetap tajam dan jelas terbaca.
-  - Klik foto kwitansi untuk memperbesar secara penuh.
+## 🚜 2. Fitur Hutang Lahan ke Petani / Pemilik Lahan
+Untuk mencatat kewajiban pengembang saat membeli lahan mentah sebelum dipetakan menjadi kavling:
+* **Data Lahan & Petani**:
+  * Nama Petani / Pemilik Lahan, Kontak WA, Alamat.
+  * Proyek Terkait (misal: *Baitul Makmur Regency*).
+  * Luas Lahan Mentah (misal: *6.000 m² / 420 Ru*).
+  * Jenis Dokumen Alas Hak (misal: *Letter C No. 45 / SHM No. 128*).
+  * Upload Foto: **Sertifikat / Letter C** dan **Surat Perjanjian Jual Beli / Notaris**.
+* **Status Finansial Lahan**:
+  * Total Harga Kesepakatan Tanah (Rp).
+  * Total yang Sudah Dibayarkan ke Petani (Rp).
+  * Sisa Hutang yang Belum Terbayar (Rp).
+  * Status: 🟢 *Lunas* atau 🔴 *Masih Ada Hutang*.
+* **Riwayat Uang Keluar (Cicilan ke Petani)**:
+  * Catatan bertahap (*DP Pembukaan Lahan*, *Termin 1 Pematangan Lahan*, *Termin 2*, *Pelunasan*).
+  * Nominal pembayaran (Rp).
+  * Metode bayar (*Transfer Bank* atau *Tunai di Rumah Petani*).
+  * Upload Foto: **Kwitansi Tanda Tangan Petani di Atas Materai**.
 
 ---
 
-### 4. Fitur Tambahan Pendukung
-- **Cetak Kwitansi Resmi**: Klik ikon printer di samping riwayat pembayaran untuk mencetak lembar kuitansi resmi atas nama **ADAM PROPERTY**.
-- **Cetak Rekap Pembayaran (Statement)**: Cetak seluruh riwayat pembayaran customer dalam satu lembar A4 sebagai bukti administrasi atau diserahkan ke pembeli kavling.
-- **Pencarian Cepat & Filter**: Cari nama customer atau nomor kavling, serta filter customer berdasarkan status *Lunas* atau *Belum Lunas*.
-- **Backup & Restore Data**:
-  - Tombol **Backup / Restore** di pojok kanan atas memungkinkan Anda mengunduh seluruh data (termasuk foto KTP, KK, dan kwitansi) ke dalam satu file `.json`.
-  - Anda bisa memindahkan file backup ini ke komputer/laptop lain kapan saja.
-- **Contoh Data (Demo)**: Terdapat tombol *"Contoh Data"* untuk langsung mengisi 2 sampel pembeli kavling (Blok A dan Blok B) agar Anda bisa langsung mencoba semua fitur.
+## 🗺️ 3. Peta Kavling & Spek Detail
+* **Site Plan Visual per Blok**: Blok Ruko, Blok A, Blok B, Blok C.
+* **Klik Kotak Kavling**: Menampilkan jendela spesifikasi (Luas tanah m², Ukuran dimensi asli P×L, Tipe hunian/ruko/hook, Harga Rp, serta Catatan keunggulan).
+* **Keterhubungan Langsung**: Jika kavling berstatus *Booking* atau *Terjual*, langsung muncul kartu customer pemiliknya dengan tombol cepat **"Buka Data Customer & Kwitansi"**.
 
 ---
 
-## 📁 Struktur File
-- **`index.html`** : Antarmuka halaman web utama, tabel, dan formulir modal.
-- **`app.js`** : Logika sistem, perhitungan uang masuk, cetak kuitansi, dan event.
-- **`db.js`** : Pengelola penyimpanan database lokal browser (IndexedDB) dan kompresi foto.
-- **`style.css`** : Pengaturan desain, layout animasi, dan tampilan cetak printer.
+## 💾 Backup & Restore Lengkap
+Tombol **Backup / Restore** di kanan atas mencadangkan seluruh 6 tabel database:
+1. Induk Proyek
+2. Unit Kavling & Site Plan
+3. Data Customer
+4. Dokumen KTP, KK, dan AJB
+5. Riwayat Kwitansi & Transaksi Barter Material
+6. Catatan Lahan & Cicilan Petani
 
 ---
-*Dibuat khusus untuk ADAM PROPERTY.*
+*Dikembangkan secara khusus untuk operasional ADAM PROPERTY GROUP.*

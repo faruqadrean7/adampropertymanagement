@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pencatatan Customer Kavling - Adam Property</title>
+    <title>ADAM PROPERTY GROUP - Sistem Manajemen Kavling, Customer & Hutang Lahan</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -11,14 +11,15 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
+                        corp: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
                             500: '#10b981',
                             600: '#059669',
                             700: '#047857',
                             800: '#065f46',
                             900: '#064e3b',
+                            dark: '#091220'
                         }
                     }
                 }
@@ -33,187 +34,1063 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
 
-    <!-- Top Navigation Header -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- ======================================================== -->
+    <!-- CORPORATE APP BAR & NAVIGATION (COMPANY FEELS) -->
+    <!-- ======================================================== -->
+    <header class="corporate-header text-white sticky top-0 z-30 shadow-md">
+        
+        <!-- Top Executive Bar -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-white/10">
             <div class="flex justify-between items-center h-16">
-                <!-- Logo & Brand Title -->
+                
+                <!-- Brand & Company Identity -->
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-200">
-                        <i class="fa-solid fa-map-location-dot text-xl"></i>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-emerald-900/40 border border-emerald-300/30">
+                        AP
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold text-slate-800 leading-tight tracking-tight flex items-center gap-2">
-                            ADAM PROPERTY
-                            <span class="text-xs font-semibold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full">Kavling</span>
-                        </h1>
-                        <p class="text-xs text-slate-500">Sistem Pencatatan Customer & Riwayat Pembayaran</p>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-base sm:text-lg font-black tracking-tight text-white leading-tight">
+                                ADAM PROPERTY GROUP
+                            </h1>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full tracking-wide uppercase">
+                                Real Estate & Land Dev
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-300 font-medium hidden sm:block">
+                            Enterprise Land Acquisition, Site Plan & Customer Financial System
+                        </p>
                     </div>
                 </div>
 
-                <!-- Action Buttons Header -->
+                <!-- Corporate Action Toolbar -->
                 <div class="flex items-center gap-2">
-                    <button onclick="openBackupModal()" class="px-3 py-2 text-xs sm:text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-2" title="Cadangkan atau Pulihkan Data">
-                        <i class="fa-solid fa-database text-slate-500"></i>
-                        <span class="hidden sm:inline">Backup / Restore</span>
+                    <button onclick="openBackupModal()" class="px-3 py-1.5 text-xs font-semibold text-slate-200 bg-white/10 hover:bg-white/15 rounded-lg border border-white/15 transition flex items-center gap-1.5" title="Backup / Restore Database">
+                        <i class="fa-solid fa-database text-emerald-400"></i>
+                        <span class="hidden md:inline">Backup / Restore</span>
                     </button>
-                    <button onclick="openCustomerModal()" class="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg shadow-sm shadow-emerald-200 transition flex items-center gap-2">
-                        <i class="fa-solid fa-user-plus"></i>
-                        <span>+ Tambah Customer</span>
+                    <button onclick="loadDemoData()" class="px-3 py-1.5 text-xs font-semibold text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 rounded-lg transition flex items-center gap-1.5" title="Muat Data Sampel">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span class="hidden md:inline">Data Demo</span>
+                    </button>
+                    <button id="btnHeaderPrimaryAction" onclick="handlePrimaryAction()" class="px-4 py-1.5 text-xs font-bold text-slate-900 bg-emerald-400 hover:bg-emerald-300 active:bg-emerald-500 rounded-lg shadow-md transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span id="headerPrimaryActionText">+ Tambah Kavling</span>
                     </button>
                 </div>
             </div>
         </div>
+
+        <!-- Corporate Navigation Tabs (3 Main Modules) -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav class="flex space-x-1 sm:space-x-3 py-2 overflow-x-auto custom-scrollbar">
+                
+                <!-- Tab 1: Peta Kavling & Site Plan -->
+                <button id="navTabKavling" onclick="switchMainTab('kavling')" class="corp-tab-active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-shapes"></i>
+                    <span>1. Peta & Site Plan Kavling</span>
+                </button>
+
+                <!-- Tab 2: Customer & Piutang (Termasuk Barter Material) -->
+                <button id="navTabCustomer" onclick="switchMainTab('customer')" class="corp-tab-inactive px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-users"></i>
+                    <span>2. Customer & Piutang (Kwitansi / Barter)</span>
+                </button>
+
+                <!-- Tab 3: Hutang Lahan Petani (NEW) -->
+                <button id="navTabLandDebt" onclick="switchMainTab('land_debt')" class="corp-tab-inactive px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-tractor text-amber-400"></i>
+                    <span>3. Hutang Lahan ke Petani / Pemilik</span>
+                </button>
+
+            </nav>
+        </div>
+
     </header>
 
     <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
 
-        <!-- Stat Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
-                    <i class="fa-solid fa-users"></i>
+        <!-- ======================================================== -->
+        <!-- VIEW 1: PETA & SITE PLAN KAVLING -->
+        <!-- ======================================================== -->
+        <section id="viewKavling" class="space-y-6">
+            
+            <!-- Baris Kontrol Induk Kavling & Tombol Aksi -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                
+                <div class="flex items-center gap-3 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            <i class="fa-solid fa-city text-emerald-600"></i> Induk Kavling:
+                        </span>
+                        <select id="projectSelect" onchange="handleProjectChange(this.value)" class="px-3.5 py-2 border-2 border-emerald-600/30 rounded-xl text-sm font-bold text-slate-800 bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <!-- Dimuat dinamis -->
+                        </select>
+                    </div>
+
+                    <button onclick="openProjectModal()" class="px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg border border-emerald-200 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Kelola Induk Proyek</span>
+                    </button>
                 </div>
-                <div>
-                    <p class="text-xs text-slate-500 font-medium">Total Customer</p>
-                    <h3 id="statTotalCustomers" class="text-xl font-bold text-slate-800">0</h3>
-                    <p class="text-[11px] text-slate-400">Pembeli Kavling Terdaftar</p>
+
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="openBatchKavlingModal()" class="px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-bolt text-amber-500"></i>
+                        <span>+ Buat Blok Sekaligus</span>
+                    </button>
+                    <button onclick="openKavlingModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-square-plus"></i>
+                        <span>+ Tambah Kavling Baru</span>
+                    </button>
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shrink-0">
-                    <i class="fa-solid fa-tag"></i>
+            <!-- Kartu Statistik Kavling -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center text-lg shrink-0">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Total Kavling</p>
+                        <h3 id="statKavlingTotal" class="text-xl font-bold text-slate-800">0</h3>
+                        <p class="text-[11px] text-slate-400" id="statProjectName">-</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-xs text-slate-500 font-medium">Total Nilai Kavling</p>
-                    <h3 id="statTotalHarga" class="text-xl font-bold text-slate-800">Rp 0</h3>
-                    <p class="text-[11px] text-slate-400">Total Transaksi Penjualan</p>
+
+                <div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-xs flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0">
+                        <i class="fa-solid fa-door-open"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Kavling Terbuka</p>
+                        <h3 id="statKavlingTerbuka" class="text-xl font-bold text-emerald-600">0</h3>
+                        <p class="text-[11px] text-emerald-700 font-medium">Siap Dipasarkan</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-amber-200 shadow-xs flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0">
+                        <i class="fa-solid fa-handshake-simple"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Kavling Booking</p>
+                        <h3 id="statKavlingBooking" class="text-xl font-bold text-amber-600">0</h3>
+                        <p class="text-[11px] text-amber-700 font-medium">Tanda Jadi Masuk</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-red-200 shadow-xs flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-lg bg-red-50 text-red-600 flex items-center justify-center text-lg shrink-0">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Kavling Terjual</p>
+                        <h3 id="statKavlingTerjual" class="text-xl font-bold text-red-600">0</h3>
+                        <p class="text-[11px] text-red-700 font-medium">Terjual / Lunas</p>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
-                    <i class="fa-solid fa-money-bill-wave"></i>
+            <!-- Toolbar Filter -->
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row justify-between items-center gap-3">
+                <div class="flex items-center gap-4 text-xs font-semibold">
+                    <span class="text-slate-400 font-normal">Status:</span>
+                    <span class="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 1. Terbuka
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 2. Booking
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 text-red-700 bg-red-50 px-2.5 py-1 rounded-md border border-red-200">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> 3. Terjual
+                    </span>
                 </div>
-                <div>
-                    <p class="text-xs text-slate-500 font-medium">Total Uang Masuk</p>
-                    <h3 id="statTotalMasuk" class="text-xl font-bold text-emerald-600">Rp 0</h3>
-                    <p class="text-[11px] text-emerald-600 font-medium" id="statPersenMasuk">0% dari target</p>
+
+                <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+                    <div class="relative w-full md:w-56">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="searchKavlingInput" oninput="handleSearchKavling(this.value)" placeholder="Cari blok / nomor..." class="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <select id="filterKavlingStatus" onchange="handleFilterKavlingStatus(this.value)" class="text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="all">Semua Status</option>
+                        <option value="terbuka">🟢 Hanya Terbuka</option>
+                        <option value="booking">🟡 Hanya Booking</option>
+                        <option value="terjual">🔴 Hanya Terjual</option>
+                    </select>
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-500 font-medium">Sisa Piutang / Belum Lunas</p>
-                    <h3 id="statTotalSisa" class="text-xl font-bold text-amber-600">Rp 0</h3>
-                    <p class="text-[11px] text-slate-400" id="statCustomerBelumLunas">0 Customer belum lunas</p>
-                </div>
-            </div>
-        </div>
+            <!-- Site Plan Per Blok Container -->
+            <div id="sitePlanContainer" class="space-y-6"></div>
 
-        <!-- Filter & Search Toolbar -->
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-3 justify-between items-center">
-            <div class="relative w-full md:w-80">
-                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Cari nama customer / no kavling..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
-            </div>
-
-            <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
-                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs font-medium">
-                    <button onclick="setFilter('all')" id="btnFilterAll" class="px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs font-semibold transition">Semua</button>
-                    <button onclick="setFilter('unpaid')" id="btnFilterUnpaid" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Belum Lunas</button>
-                    <button onclick="setFilter('paid')" id="btnFilterPaid" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Lunas</button>
-                </div>
-                <button onclick="loadDemoData()" class="px-3 py-1.5 text-xs text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg border border-slate-200 transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
-                    <span>Contoh Data</span>
+            <div id="emptyKavlingState" class="hidden bg-white rounded-2xl border border-slate-200 py-16 text-center px-4">
+                <i class="fa-solid fa-shapes text-3xl text-emerald-500 mb-2"></i>
+                <h3 class="text-base font-bold text-slate-800 mb-1">Belum Ada Kavling di Proyek Ini</h3>
+                <p class="text-xs text-slate-500 mb-4">Tambahkan kavling baru atau gunakan tombol buat blok sekaligus.</p>
+                <button onclick="openBatchKavlingModal()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition">
+                    + Buat Blok Sekaligus
                 </button>
             </div>
-        </div>
 
-        <!-- Tabel Customer Kavling -->
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="overflow-x-auto custom-scrollbar">
-                <table class="w-full text-left text-sm text-slate-600">
-                    <thead class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                        <tr>
-                            <th class="py-3.5 px-4 w-12 text-center">#</th>
-                            <th class="py-3.5 px-4">Nama Customer</th>
-                            <th class="py-3.5 px-4">Kavling Yang Diambil</th>
-                            <th class="py-3.5 px-4 text-right">Harga Kavling</th>
-                            <th class="py-3.5 px-4 text-right">Total Uang Masuk</th>
-                            <th class="py-3.5 px-4 text-right">Sisa Pembayaran</th>
-                            <th class="py-3.5 px-4 text-center">Status</th>
-                            <th class="py-3.5 px-4 text-center">Data Customer & Pembayaran</th>
-                            <th class="py-3.5 px-4 text-center w-24">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customerTableBody" class="divide-y divide-slate-100">
-                        <!-- Data Customer akan dimuat di sini secara dinamis -->
-                        <tr>
-                            <td colspan="9" class="py-12 text-center text-slate-400">
-                                <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-emerald-500"></i>
-                                <p>Memuat data customer...</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        </section>
+
+
+        <!-- ======================================================== -->
+        <!-- VIEW 2: DATA CUSTOMER & PIUTANG (MENDUKUNG BARTER MATERIAL) -->
+        <!-- ======================================================== -->
+        <section id="viewCustomer" class="hidden space-y-6">
+
+            <!-- Stat Cards Keuangan Customer -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Total Customer</p>
+                        <h3 id="statTotalCustomers" class="text-xl font-bold text-slate-800">0</h3>
+                        <p class="text-[11px] text-slate-400">Pembeli Kavling Terdaftar</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-tag"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Total Nilai Kavling</p>
+                        <h3 id="statTotalHarga" class="text-xl font-bold text-slate-800">Rp 0</h3>
+                        <p class="text-[11px] text-slate-400">Total Transaksi Penjualan</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Total Uang / Barter Masuk</p>
+                        <h3 id="statTotalMasuk" class="text-xl font-bold text-emerald-600">Rp 0</h3>
+                        <p class="text-[11px] text-emerald-600 font-medium" id="statPersenMasuk">0% terbayar</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Sisa Piutang Customer</p>
+                        <h3 id="statTotalSisa" class="text-xl font-bold text-amber-600">Rp 0</h3>
+                        <p class="text-[11px] text-slate-400" id="statCustomerBelumLunas">0 Belum Lunas</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Empty State -->
-            <div id="emptyState" class="hidden py-14 text-center px-4">
-                <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-2xl">
-                    <i class="fa-solid fa-folder-open"></i>
+            <!-- Filter & Search Toolbar Customer -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-3 justify-between items-center">
+                <div class="relative w-full md:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Cari nama customer / no kavling..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
-                <h3 class="text-base font-semibold text-slate-700 mb-1">Belum Ada Data Customer</h3>
-                <p class="text-sm text-slate-500 max-w-md mx-auto mb-4">Tambahkan pencatatan pembeli kavling baru untuk mulai mencatat dokumen KK, KTP, dan riwayat kwitansi uang masuk.</p>
-                <div class="flex items-center justify-center gap-3">
+
+                <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs font-medium">
+                        <button onclick="setFilter('all')" id="btnFilterAll" class="px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs font-semibold transition">Semua</button>
+                        <button onclick="setFilter('unpaid')" id="btnFilterUnpaid" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Belum Lunas</button>
+                        <button onclick="setFilter('paid')" id="btnFilterPaid" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Lunas</button>
+                    </div>
+                    <button onclick="openCustomerModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>+ Tambah Customer</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabel Customer Kavling -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            <tr>
+                                <th class="py-3.5 px-4 w-12 text-center">#</th>
+                                <th class="py-3.5 px-4">Nama Customer</th>
+                                <th class="py-3.5 px-4">Kavling Yang Diambil</th>
+                                <th class="py-3.5 px-4 text-right">Harga Kavling</th>
+                                <th class="py-3.5 px-4 text-right">Total Terbayar</th>
+                                <th class="py-3.5 px-4 text-right">Sisa Piutang</th>
+                                <th class="py-3.5 px-4 text-center">Status</th>
+                                <th class="py-3.5 px-4 text-center">Dokumen KTP/KK/AJB & Kwitansi</th>
+                                <th class="py-3.5 px-4 text-center w-24">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+
+                <div id="emptyState" class="hidden py-14 text-center px-4">
+                    <i class="fa-solid fa-folder-open text-slate-300 text-3xl mb-2"></i>
+                    <h3 class="text-base font-semibold text-slate-700 mb-1">Belum Ada Data Customer</h3>
+                    <p class="text-sm text-slate-500 mb-4">Tambahkan data customer pembeli kavling untuk mencatat dokumen identitas dan kwitansi.</p>
                     <button onclick="openCustomerModal()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">
                         + Tambah Customer Pertama
                     </button>
-                    <button onclick="loadDemoData()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition">
-                        Muat Contoh Data
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ======================================================== -->
+        <!-- VIEW 3: HUTANG LAHAN KE PETANI / PEMILIK LAHAN (NEW) -->
+        <!-- ======================================================== -->
+        <section id="viewLandDebt" class="hidden space-y-6">
+
+            <!-- Baris Kontrol Hutang Lahan & Pemilih Lahan Proyek -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-tractor text-amber-600"></i>
+                            Manajemen Hutang Tanah ke Petani / Pemilik Lahan
+                        </h2>
+                        <p class="text-xs text-slate-500">Pencatatan pembebasan lahan mentah, perjanjian jual beli, dan cicilan bertahap ke pemilik tanah.</p>
+                    </div>
+                    <button onclick="openLandDebtModal()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>+ Tambah Pembelian Lahan Petani</span>
+                    </button>
+                </div>
+
+                <!-- DROPDOWN FILTER PILIH LAHAN YANG SEDANG DIKELOLA (AGAR TIDAK TERCAMPUR) -->
+                <div class="p-3.5 bg-gradient-to-r from-amber-50 via-amber-50/70 to-orange-50 rounded-xl border border-amber-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <div class="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-900 block">Pilih Lahan Proyek yang Sedang Dikelola:</span>
+                            <div class="flex items-center gap-2">
+                                <select id="landDebtProjectSelect" onchange="handleLandDebtProjectChange(this.value)" class="mt-0.5 px-3 py-1.5 border-2 border-amber-400 rounded-lg text-xs font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
+                                    <!-- Pilihan: Semua Lahan (Rekap Gabungan), Baitul Makmur Regency, dll -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Indikator Banner Lahan Aktif -->
+                    <div class="flex items-center gap-2 text-xs font-semibold text-amber-950 bg-white/80 px-3 py-1.5 rounded-lg border border-amber-200 shadow-2xs">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Fokus Lahan: <b id="activeLandProjectLabel" class="text-amber-800">Semua Lahan</b></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Hutang Lahan -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-people-arrows"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Total Pemilik Lahan</p>
+                        <h3 id="statTotalLandOwners" class="text-xl font-bold text-slate-800">0</h3>
+                        <p class="text-[11px] text-slate-400">Petani / Penjual Lahan</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Total Nilai Lahan Mentah</p>
+                        <h3 id="statTotalLandValue" class="text-xl font-bold text-slate-800">Rp 0</h3>
+                        <p class="text-[11px] text-slate-400">Kesepakatan Harga Tanah</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-xs flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Sudah Dibayar ke Petani</p>
+                        <h3 id="statTotalLandPaid" class="text-xl font-bold text-emerald-600">Rp 0</h3>
+                        <p class="text-[11px] text-emerald-700 font-medium" id="statLandPaidPercent">0% terbayar</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-red-200 shadow-xs flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-red-50 text-red-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-scale-unbalanced text-red-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Sisa Hutang ke Petani</p>
+                        <h3 id="statTotalLandDebt" class="text-xl font-bold text-red-600">Rp 0</h3>
+                        <p class="text-[11px] text-red-700 font-medium">Kewajiban Pengembang</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Daftar Lahan & Hutang Petani -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            <tr>
+                                <th class="py-3.5 px-4 w-12 text-center">#</th>
+                                <th class="py-3.5 px-4">Nama Petani / Pemilik Lahan</th>
+                                <th class="py-3.5 px-4">Lokasi Proyek</th>
+                                <th class="py-3.5 px-4">Luas Lahan & Alas Hak</th>
+                                <th class="py-3.5 px-4 text-right">Harga Kesepakatan</th>
+                                <th class="py-3.5 px-4 text-right">Sudah Dibayar</th>
+                                <th class="py-3.5 px-4 text-right">Sisa Hutang</th>
+                                <th class="py-3.5 px-4 text-center">Status</th>
+                                <th class="py-3.5 px-4 text-center">Detail & Kwitansi Petani</th>
+                                <th class="py-3.5 px-4 text-center w-24">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="landDebtTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+
+                <div id="emptyLandDebtState" class="hidden py-14 text-center px-4">
+                    <i class="fa-solid fa-tractor text-slate-300 text-3xl mb-2"></i>
+                    <h3 class="text-base font-semibold text-slate-700 mb-1">Belum Ada Catatan Lahan Petani</h3>
+                    <p class="text-xs text-slate-500 mb-4">Catat pembelian lahan mentah ke petani sebelum proyek kavling dikembangkan.</p>
+                    <button onclick="openLandDebtModal()" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition">
+                        + Catat Lahan Petani Pertama
                     </button>
                 </div>
             </div>
-        </div>
+
+        </section>
 
     </main>
 
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-4 mt-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
-            <p>&copy; 2026 ADAM PROPERTY. Sistem Manajemen Pencatatan Kavling Mandiri.</p>
+            <p>&copy; 2026 ADAM PROPERTY GROUP. Sistem Manajemen Properti & Keuangan Mandiri.</p>
             <p class="flex items-center gap-1">
-                <i class="fa-solid fa-shield-halved text-emerald-600"></i> Data tersimpan aman secara lokal di perangkat Anda (IndexedDB).
+                <i class="fa-solid fa-shield-halved text-emerald-600"></i> Database Lokal IndexedDB v3 Aman di Perangkat Anda.
             </p>
         </div>
     </footer>
 
+
     <!-- ======================================================== -->
-    <!-- MODAL 1: LAMAN DETAIL "DATA CUSTOMER" (DOKUMEN KK/KTP + RIWAYAT PEMBAYARAN) -->
+    <!-- MODAL: DETAIL HUTANG LAHAN PETANI (DOKUMEN & KWITANSI CICILAN) -->
     <!-- ======================================================== -->
+    <div id="landDebtDetailModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
+            
+            <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 text-white flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-400/30 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-tractor"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold flex items-center gap-2" id="detailPetaniName">
+                            Nama Petani
+                        </h2>
+                        <p class="text-xs text-slate-300" id="detailPetaniSubtitle">
+                            Proyek: Baitul Makmur Regency | Kontak: 08123456789
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="editCurrentLandDebt()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-medium rounded-lg text-slate-200 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit Data Lahan
+                    </button>
+                    <button onclick="closeLandDebtDetailModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-sm transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+
+                <!-- Ringkasan Keuangan Lahan Petani -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-amber-50/40 p-4 rounded-xl border border-amber-200">
+                    <div>
+                        <span class="text-xs text-slate-500 font-medium block">Total Harga Kesepakatan Tanah</span>
+                        <span id="detailPetaniTotalHarga" class="text-lg font-bold text-slate-800">Rp 0</span>
+                        <div class="text-xs text-slate-500" id="detailPetaniLuas">Luas: -</div>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-500 font-medium block">Sudah Dibayar ke Petani</span>
+                        <span id="detailPetaniTotalBayar" class="text-lg font-bold text-emerald-600">Rp 0</span>
+                        <div class="text-xs text-emerald-700 font-medium" id="detailPetaniPersen">0% Terbayar</div>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-500 font-medium block">Sisa Hutang ke Petani</span>
+                        <span id="detailPetaniSisaHutang" class="text-lg font-bold text-red-600">Rp 0</span>
+                        <div id="detailPetaniStatusBadge" class="mt-0.5">
+                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">Masih Ada Hutang</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bagian 1: Dokumen Alas Hak Lahan (Sertifikat / Letter C & Perjanjian Notaris) -->
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-file-lines text-amber-600"></i>
+                        Dokumen Legalitas Lahan Petani
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <!-- Dokumen Sertifikat / Letter C -->
+                        <div class="doc-card border border-slate-200 rounded-xl p-4 bg-white flex flex-col justify-between">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-slate-800 text-xs">Foto Sertifikat / Letter C / SPPT</h4>
+                                <label class="cursor-pointer text-[11px] font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-md transition flex items-center gap-1">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleLandDocUpload(event, 'sertifikat')">
+                                </label>
+                            </div>
+                            <div id="landSertifikatPreviewBox" class="w-full h-40 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative group">
+                                <img id="landSertifikatImg" src="" alt="Sertifikat Lahan" class="hidden w-full h-full object-cover clickable-image" onclick="openLightbox(this.src, 'Sertifikat Lahan - ' + currentLandDebt.namaPetani)">
+                                <div id="landSertifikatEmpty" class="text-center p-3">
+                                    <i class="fa-solid fa-scroll text-2xl text-slate-300 mb-1"></i>
+                                    <p class="text-[11px] text-slate-500">Belum ada foto Sertifikat / Letter C</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dokumen Surat Perjanjian Jual Beli Petani -->
+                        <div class="doc-card border border-slate-200 rounded-xl p-4 bg-white flex flex-col justify-between">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-slate-800 text-xs">Foto Surat Perjanjian Notaris / Kuasa Jual</h4>
+                                <label class="cursor-pointer text-[11px] font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-md transition flex items-center gap-1">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleLandDocUpload(event, 'perjanjian')">
+                                </label>
+                            </div>
+                            <div id="landPerjanjianPreviewBox" class="w-full h-40 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative group">
+                                <img id="landPerjanjianImg" src="" alt="Perjanjian Lahan" class="hidden w-full h-full object-cover clickable-image" onclick="openLightbox(this.src, 'Surat Perjanjian Lahan - ' + currentLandDebt.namaPetani)">
+                                <div id="landPerjanjianEmpty" class="text-center p-3">
+                                    <i class="fa-solid fa-file-signature text-2xl text-slate-300 mb-1"></i>
+                                    <p class="text-[11px] text-slate-500">Belum ada foto Perjanjian / Kuasa Jual</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- Bagian 2: Riwayat Uang Keluar (Cicilan ke Petani) -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-money-bill-transfer text-amber-600"></i>
+                                Riwayat Pembayaran Cicilan ke Petani
+                            </h3>
+                            <p class="text-xs text-slate-500">Catatan pembayaran bertahap (DP, termin, pelunasan) lengkap dengan foto kwitansi bermaterai.</p>
+                        </div>
+                        <button onclick="openLandPaymentModal()" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> + Bayar Cicilan ke Petani
+                        </button>
+                    </div>
+
+                    <!-- Tabel Riwayat Cicilan Petani -->
+                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 border-b border-slate-200 font-bold uppercase text-[11px] text-slate-700">
+                                <tr>
+                                    <th class="py-3 px-3 text-center w-10">#</th>
+                                    <th class="py-3 px-3">Tanggal Bayar</th>
+                                    <th class="py-3 px-3">Tahap / Termin</th>
+                                    <th class="py-3 px-3 text-right">Nominal (Rp)</th>
+                                    <th class="py-3 px-3">Metode & Keterangan</th>
+                                    <th class="py-3 px-3 text-center">Kwitansi Materai</th>
+                                    <th class="py-3 px-3 text-center w-20">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="landPaymentTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+
+                        <div id="landPaymentEmptyState" class="hidden py-10 text-center px-4">
+                            <i class="fa-solid fa-handshake text-slate-300 text-2xl mb-1"></i>
+                            <p class="text-xs font-semibold text-slate-600">Belum Ada Pembayaran Dicatat</p>
+                            <p class="text-[11px] text-slate-400 mb-2">Klik tombol "+ Bayar Cicilan ke Petani" untuk mencatat DP atau termin pertama.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs shrink-0">
+                <span id="detailPetaniCreatedAtText">Tercatat: -</span>
+                <button onclick="closeLandDebtDetailModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg text-xs transition">
+                    Tutup
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: FORM TAMBAH / EDIT HUTANG LAHAN PETANI -->
+    <!-- ======================================================== -->
+    <div id="landDebtFormModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
+            
+            <div class="px-6 py-4 bg-amber-700 text-white flex justify-between items-center shrink-0">
+                <h3 class="text-base font-bold flex items-center gap-2" id="landDebtModalTitle">
+                    <i class="fa-solid fa-tractor"></i> Tambah Data Pembelian Lahan Petani
+                </h3>
+                <button onclick="closeLandDebtModal()" class="w-8 h-8 rounded-lg bg-amber-800 hover:bg-amber-900 text-amber-100 flex items-center justify-center text-sm transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="landDebtForm" onsubmit="handleLandDebtSubmit(event)" class="p-6 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
+                <input type="hidden" id="landDebtIdInput" value="">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Induk Kavling (Proyek Terkait) <span class="text-red-500">*</span>
+                    </label>
+                    <select id="formLandProjectId" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-xs bg-white"></select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            Nama Petani / Pemilik Lahan <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="formLandPetaniNama" required placeholder="Contoh: Bpk. H. Sugeng" class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            No. WhatsApp / HP
+                        </label>
+                        <input type="text" id="formLandPetaniTelepon" placeholder="Contoh: 081234567890" class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            Luas Lahan Mentah <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="formLandLuas" required placeholder="Contoh: 5.000 m² (350 Ru)" class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            Jenis Dokumen Alas Hak <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="formLandAlasHak" required placeholder="Contoh: Letter C No. 45 / SHM No. 128" class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Total Harga Kesepakatan Lahan (Rp) <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="formLandHarga" required placeholder="Contoh: 500.000.000" onkeyup="formatCurrencyInput(this)" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm font-bold text-amber-700">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Alamat / Lokasi Lahan
+                    </label>
+                    <input type="text" id="formLandAlamat" placeholder="Contoh: RT 03 / RW 02 Desa Sukamaju" class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs">
+                </div>
+
+                <!-- Upload Awal Dokumen Lahan -->
+                <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-200 space-y-2.5">
+                    <span class="text-xs font-bold text-amber-800 block">Upload Berkas Tanah (Opsional saat awal):</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-1">Foto Sertifikat / Letter C</label>
+                            <input type="file" id="formLandFileSertifikat" accept="image/*" class="w-full text-[11px] text-slate-500 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-amber-100 file:text-amber-800">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-1">Foto Perjanjian / Notaris</label>
+                            <input type="file" id="formLandFilePerjanjian" accept="image/*" class="w-full text-[11px] text-slate-500 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-amber-100 file:text-amber-800">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeLandDebtModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Data Lahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: FORM CATAT CICILAN KE PETANI -->
+    <!-- ======================================================== -->
+    <div id="landPaymentFormModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md modal-content-animated overflow-hidden">
+            
+            <div class="px-6 py-4 bg-amber-700 text-white flex justify-between items-center shrink-0">
+                <h3 class="text-base font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-money-bill-transfer"></i> Bayar Cicilan ke Petani
+                </h3>
+                <button onclick="closeLandPaymentModal()" class="w-7 h-7 rounded-lg text-amber-200 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleLandPaymentSubmit(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal Pembayaran <span class="text-red-500">*</span></label>
+                    <input type="date" id="landPayTanggal" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tahap / Termin Pembayaran <span class="text-red-500">*</span></label>
+                    <select id="landPayTermin" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="DP (Uang Muka Lahan)">DP (Uang Muka Lahan)</option>
+                        <option value="Termin 1 (Pematangan Lahan)">Termin 1 (Pematangan Lahan)</option>
+                        <option value="Termin 2">Termin 2</option>
+                        <option value="Termin 3">Termin 3</option>
+                        <option value="Pelunasan Lahan">Pelunasan Lahan</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jumlah Nominal Bayar (Rp) <span class="text-red-500">*</span></label>
+                    <input type="text" id="landPayNominal" required placeholder="0" onkeyup="formatCurrencyInput(this)" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm font-bold text-amber-700">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Metode Bayar</label>
+                    <select id="landPayMetode" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="Transfer Bank">Transfer Bank</option>
+                        <option value="Tunai / Cash di Rumah Petani">Tunai / Cash di Rumah Petani</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Keterangan / Saksi</label>
+                    <textarea id="landPayKeterangan" rows="2" placeholder="Contoh: Disaksikan oleh Pak RT dan Kepala Dusun..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"></textarea>
+                </div>
+
+                <!-- Foto Kwitansi Petani Materai -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Foto Kwitansi Petani (Materai)</label>
+                    <input type="file" id="landPayKwitansiFile" accept="image/*" class="w-full text-xs text-slate-500 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-amber-100 file:text-amber-800">
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeLandPaymentModal()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-xs">
+                        Simpan Pembayaran
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: FORM CATAT PEMBAYARAN CUSTOMER (MENDUKUNG BARTER MATERIAL) -->
+    <!-- ======================================================== -->
+    <div id="paymentFormModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
+            
+            <div class="px-6 py-4 bg-emerald-700 text-white flex justify-between items-center shrink-0">
+                <h3 class="text-base font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-receipt"></i> Catat Pembayaran / Barter Customer
+                </h3>
+                <button onclick="closePaymentModal()" class="w-8 h-8 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-emerald-100 flex items-center justify-center text-sm transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="paymentForm" onsubmit="handlePaymentSubmit(event)" class="p-6 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Tanggal Transaksi <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" id="payTanggalInput" required class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <!-- PILIHAN METODE BAYAR: TUNAI VS BARTER MATERIAL -->
+                <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-300 space-y-2">
+                    <label class="block text-xs font-bold text-amber-900 uppercase">
+                        Metode Pembayaran <span class="text-red-500">*</span>
+                    </label>
+                    <select id="payMetodeSelect" onchange="handlePaymentMethodChange(this.value)" class="w-full px-3.5 py-2 border border-amber-300 rounded-lg text-xs font-bold text-amber-900 bg-white">
+                        <option value="tunai">💵 1. Tunai / Transfer Bank</option>
+                        <option value="barter">🧱 2. Barter Material Bangunan (Non-Tunai)</option>
+                        <option value="campuran">🔄 3. Campuran (Uang Tunai + Sebagian Barter Material)</option>
+                    </select>
+                </div>
+
+                <!-- Kolom Khusus Jika Memilih Barter Material -->
+                <div id="barterMaterialSection" class="hidden p-3.5 bg-amber-50 rounded-xl border-2 border-dashed border-amber-400 space-y-3">
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                        <i class="fa-solid fa-cubes-stacked text-amber-600"></i>
+                        <span>Rincian Material Bangunan yang Diterima:</span>
+                    </div>
+                    <textarea id="payRincianBarterInput" rows="3" placeholder="Tuliskan rincian barang:&#10;Contoh: Semen Gresik 400 sak @ 65.000 = 26jt, Besi 10mm 1.000 batang = 85jt, Bata Ringan 120 m3 = 72jt..." class="w-full px-3 py-2 border border-amber-300 rounded-lg text-xs"></textarea>
+                    
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-1">
+                            Foto Surat Jalan / Nota Pengiriman Toko Material / BAST:
+                        </label>
+                        <input type="file" id="paySuratJalanFile" accept="image/*" class="w-full text-xs text-slate-500 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:bg-amber-200 file:text-amber-900">
+                    </div>
+                </div>
+
+                <!-- Nilai Nominal Setara (Rp) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1" id="labelNominalBayar">
+                        Jumlah Nilai Pembayaran / Nilai Barter (Rp) <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-sm">Rp</span>
+                        <input type="text" id="payNominalInput" required placeholder="0" onkeyup="formatCurrencyInput(this)" class="w-full pl-11 pr-4 py-2.5 border border-slate-300 rounded-lg text-base font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1" id="subtextNominalBayar">
+                        Nilai barter material ini akan mengurangi sisa tagihan kavling customer hingga lunas.
+                    </p>
+                </div>
+
+                <!-- Tujuan Pembayaran -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Tujuan Pembayaran <span class="text-red-500">*</span>
+                    </label>
+                    <select id="payTujuanSelect" onchange="handleTujuanChange(this.value)" class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="Pelunasan via Barter Material">Pelunasan via Barter Material</option>
+                        <option value="DP (Uang Muka)">DP (Uang Muka)</option>
+                        <option value="Booking Fee / Tanda Jadi">Booking Fee / Tanda Jadi</option>
+                        <option value="Angsuran / Cicilan Bulanan">Angsuran / Cicilan Bulanan</option>
+                        <option value="Pelunasan Kavling">Pelunasan Kavling</option>
+                        <option value="Biaya AJB / Notaris / Surat">Biaya AJB / Notaris / Surat</option>
+                        <option value="Lainnya">Lainnya (Ketik Manual)...</option>
+                    </select>
+                    <input type="text" id="payTujuanCustomInput" placeholder="Tuliskan tujuan pembayaran khusus..." class="hidden mt-2 w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Keterangan Tambahan
+                    </label>
+                    <textarea id="payKeteranganInput" rows="2" placeholder="Contoh: Barter material proyek ruko Blok B, diserahkan via Toko Bangunan Berkah..." class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs"></textarea>
+                </div>
+
+                <!-- Foto Kwitansi Bukti Bayar / Nota -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Foto Kwitansi / Bukti Pembayaran
+                    </label>
+                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-3 text-center bg-slate-50 hover:bg-slate-100 transition">
+                        <input type="file" id="payKwitansiFile" accept="image/*" onchange="previewKwitansiInput(this)" class="hidden">
+                        <div id="kwitansiUploadPrompt" onclick="document.getElementById('payKwitansiFile').click()" class="cursor-pointer">
+                            <i class="fa-solid fa-camera text-xl text-slate-400 mb-1"></i>
+                            <p class="text-xs font-medium text-slate-600">Klik untuk upload foto kwitansi / bukti transfer</p>
+                        </div>
+                        <div id="kwitansiPreviewBox" class="hidden relative">
+                            <img id="kwitansiPreviewImg" src="" alt="Preview Kwitansi" class="max-h-32 mx-auto rounded-lg shadow-xs">
+                            <button type="button" onclick="clearKwitansiPreview()" class="mt-1 text-xs text-red-600 hover:text-red-700">
+                                Hapus Foto
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closePaymentModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">
+                        Batal
+                    </button>
+                    <button type="submit" id="btnSubmitPayment" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-check"></i> Simpan Transaksi
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL LAIN: DETAIL KAVLING, FORM CUSTOMER, KELOLA PROYEK, DLL -->
+    <!-- ======================================================== -->
+
+    <!-- Modal Spek Kavling Detail -->
+    <div id="kavlingDetailModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 flex items-center justify-center text-lg font-bold" id="detailKavlingCodeBadge">
+                        A-01
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold flex items-center gap-2" id="detailKavlingTitle">Detail Kavling</h2>
+                        <p class="text-xs text-slate-300" id="detailKavlingProjectSubtitle">Baitul Makmur Regency</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="editCurrentKavling()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-medium rounded-lg text-slate-200 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit Spek
+                    </button>
+                    <button onclick="closeKavlingDetailModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-sm transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5 flex-1 custom-scrollbar">
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+                        <i class="fa-solid fa-ruler-combined text-emerald-600"></i> Spesifikasi & Dimensi Kavling
+                    </h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span class="text-[11px] text-slate-400 block font-medium">Luas Tanah (LT)</span>
+                            <span id="detailSpekLuas" class="text-base font-bold text-slate-800">84 m²</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span class="text-[11px] text-slate-400 block font-medium">Ukuran Asli (Dimensi)</span>
+                            <span id="detailSpekDimensi" class="text-base font-bold text-slate-800">6 x 14 meter</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span class="text-[11px] text-slate-400 block font-medium">Tipe Kavling</span>
+                            <span id="detailSpekTipe" class="text-sm font-bold text-slate-800">Hunian Standar</span>
+                        </div>
+                        <div class="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200">
+                            <span class="text-[11px] text-emerald-700 block font-medium">Harga Kavling</span>
+                            <span id="detailSpekHarga" class="text-base font-bold text-emerald-700">Rp 120.000.000</span>
+                        </div>
+                    </div>
+                    <div id="detailSpekCatatanBox" class="mt-2.5 text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <span class="font-semibold text-slate-700">Keterangan / Posisi:</span>
+                        <span id="detailSpekKeterangan">-</span>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                            <i class="fa-solid fa-flag text-emerald-600"></i> Status Kavling Saat Ini
+                        </h3>
+                        <span id="detailStatusPill" class="px-3 py-1 rounded-full text-xs font-bold uppercase">TERBUKA</span>
+                    </div>
+                    <div class="flex items-center gap-2 p-2.5 bg-slate-100 rounded-xl border border-slate-200">
+                        <span class="text-xs font-semibold text-slate-600">Ubah Status Cepat:</span>
+                        <div class="flex items-center gap-1.5 flex-1">
+                            <button onclick="quickUpdateKavlingStatus('terbuka')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-white text-emerald-700 border border-emerald-300 hover:bg-emerald-50 transition">
+                                🟢 Terbuka
+                            </button>
+                            <button onclick="quickUpdateKavlingStatus('booking')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 transition">
+                                🟡 Booking
+                            </button>
+                            <button onclick="quickUpdateKavlingStatus('terjual')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-white text-red-700 border border-red-300 hover:bg-red-50 transition">
+                                🔴 Terjual
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-check text-emerald-600"></i> Data Customer Pembooking / Pembeli
+                    </h3>
+                    <div id="kavlingCustomerOccupied" class="hidden bg-emerald-50/60 border border-emerald-200 rounded-xl p-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-sm" id="detailCustName">Nama Customer</h4>
+                                    <p class="text-xs text-slate-500" id="detailCustPhone">WA: 08123456789</p>
+                                </div>
+                            </div>
+                            <button onclick="openCustomerDetailFromKavling()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-folder-open"></i>
+                                <span>Buka Data Customer & Kwitansi</span>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-emerald-200/60 text-xs">
+                            <div>
+                                <span class="text-slate-500 block">Total Terbayar:</span>
+                                <span class="font-bold text-emerald-700 text-sm" id="detailCustTerbayar">Rp 0</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Sisa Pembayaran:</span>
+                                <span class="font-bold text-amber-700 text-sm" id="detailCustSisa">Rp 0</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Dokumen Tersedia:</span>
+                                <span class="font-semibold text-slate-700" id="detailCustDocBadge">KTP • KK • AJB</span>
+                            </div>
+                            <div class="text-right">
+                                <button onclick="unlinkCustomerFromKavling()" class="text-xs text-red-600 hover:text-red-700 hover:underline">
+                                    <i class="fa-solid fa-link-slash"></i> Lepas Kaitan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="kavlingCustomerAvailable" class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-5 text-center">
+                        <i class="fa-solid fa-hand-holding-dollar text-slate-400 text-2xl mb-2"></i>
+                        <p class="text-xs font-semibold text-slate-700 mb-1">Kavling ini Masih Tersedia (Status: Terbuka)</p>
+                        <p class="text-xs text-slate-500 max-w-sm mx-auto mb-4">Hubungkan kavling ini dengan customer yang membooking atau membeli untuk mengunci statusnya.</p>
+                        <button onclick="promptLinkCustomerToKavling()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-xs transition flex items-center gap-2 mx-auto">
+                            <i class="fa-solid fa-user-plus"></i>
+                            <span>Booking / Jual Kavling Ini ke Customer</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs shrink-0">
+                <button onclick="deleteCurrentKavling()" class="text-red-600 hover:text-red-700 font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-trash"></i> Hapus Kavling Ini
+                </button>
+                <button onclick="closeKavlingDetailModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal Laman Customer Detail (KTP, KK, AJB & Riwayat Bayar/Barter) -->
     <div id="customerDetailModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
         <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
             
-            <!-- Detail Header -->
             <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex justify-between items-center shrink-0">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 flex items-center justify-center text-lg">
                         <i class="fa-solid fa-id-card"></i>
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold flex items-center gap-2" id="detailCustomerName">
-                            Nama Customer
-                        </h2>
-                        <p class="text-xs text-slate-300" id="detailCustomerSubtitle">
-                            Kavling: Blok A-01 | Kontak: 08123456789
-                        </p>
+                        <h2 class="text-lg font-bold flex items-center gap-2" id="detailCustomerName">Nama Customer</h2>
+                        <p class="text-xs text-slate-300" id="detailCustomerSubtitle">Kavling: Blok A-01</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -226,10 +1103,8 @@
                 </div>
             </div>
 
-            <!-- Detail Body Scrollable -->
             <div class="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
 
-                <!-- Ringkasan Keuangan Kavling Customer Ini -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div>
                         <span class="text-xs text-slate-500 font-medium block">Harga Kavling</span>
@@ -237,12 +1112,12 @@
                         <div class="text-xs text-slate-500" id="detailKavlingName">Kavling: -</div>
                     </div>
                     <div>
-                        <span class="text-xs text-slate-500 font-medium block">Total Uang Masuk</span>
+                        <span class="text-xs text-slate-500 font-medium block">Total Terbayar / Barter</span>
                         <span id="detailTotalMasuk" class="text-lg font-bold text-emerald-600">Rp 0</span>
                         <div class="text-xs text-emerald-700 font-medium" id="detailPersenLunas">0% Terbayar</div>
                     </div>
                     <div>
-                        <span class="text-xs text-slate-500 font-medium block">Sisa Pembayaran / Piutang</span>
+                        <span class="text-xs text-slate-500 font-medium block">Sisa Tagihan Customer</span>
                         <span id="detailSisaPembayaran" class="text-lg font-bold text-amber-600">Rp 0</span>
                         <div id="detailStatusBadge" class="mt-0.5">
                             <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">Belum Lunas</span>
@@ -250,162 +1125,110 @@
                     </div>
                 </div>
 
-                <!-- ================= BAGIAN 1: DOKUMEN CUSTOMER (KTP & KK) ================= -->
+                <!-- Bagian Dokumen: KTP, KK, & AJB -->
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                             <i class="fa-solid fa-folder-closed text-emerald-600"></i>
-                            Dokumen Customer (KTP & KK)
+                            Dokumen Customer (KTP, KK, & Dokumen AJB)
                         </h3>
-                        <span class="text-xs text-slate-400">Klik gambar untuk memperbesar / zoom</span>
+                        <span class="text-xs text-slate-400">Upload berkas identitas dan bukti AJB jika sudah DP/Lunas</span>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        
-                        <!-- Card Dokumen KTP -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Card KTP -->
                         <div class="doc-card border border-slate-200 rounded-xl p-4 bg-white flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-start mb-2">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
-                                            <i class="fa-solid fa-address-card"></i>
-                                        </div>
-                                        <h4 class="font-bold text-slate-800 text-sm">Dokumen KTP</h4>
-                                    </div>
-                                    <label class="cursor-pointer text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md transition flex items-center gap-1">
-                                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                                        <span>Ganti / Upload KTP</span>
-                                        <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'ktp')">
-                                    </label>
-                                </div>
-                                <p class="text-xs text-slate-500 mb-3" id="ktpStatusText">Kartu Tanda Penduduk Pembeli</p>
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-slate-800 text-xs">Dokumen KTP</h4>
+                                <label class="cursor-pointer text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                                    Upload <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'ktp')">
+                                </label>
                             </div>
-
-                            <!-- Preview KTP -->
-                            <div id="ktpPreviewContainer" class="w-full h-48 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center overflow-hidden relative group">
-                                <div id="ktpEmptyState" class="text-center p-4">
-                                    <i class="fa-solid fa-id-card text-3xl text-slate-300 mb-2"></i>
-                                    <p class="text-xs text-slate-500 font-medium">Belum ada foto KTP diupload</p>
-                                    <label class="mt-2 inline-block px-3 py-1 bg-white border border-slate-300 rounded text-xs text-slate-700 cursor-pointer hover:bg-slate-50">
-                                        Pilih Foto KTP
-                                        <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'ktp')">
-                                    </label>
-                                </div>
-                                <img id="ktpImageEl" src="" alt="KTP Customer" class="hidden w-full h-full object-cover clickable-image" onclick="openLightbox(this.src, 'Dokumen KTP - ' + currentCustomer.nama)">
-                                <div id="ktpOverlay" class="hidden absolute inset-0 bg-black/40 group-hover:flex items-center justify-center gap-2 transition opacity-0 group-hover:opacity-100">
-                                    <button onclick="openLightbox(document.getElementById('ktpImageEl').src, 'Dokumen KTP - ' + currentCustomer.nama)" class="px-2.5 py-1.5 bg-white text-slate-800 rounded-md text-xs font-semibold hover:bg-slate-100 flex items-center gap-1 shadow">
-                                        <i class="fa-solid fa-magnifying-glass-plus"></i> Perbesar
-                                    </button>
-                                    <a id="ktpDownloadBtn" href="#" download="KTP_Customer.jpg" class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-semibold hover:bg-emerald-700 flex items-center gap-1 shadow">
-                                        <i class="fa-solid fa-download"></i> Unduh
-                                    </a>
-                                </div>
+                            <div id="ktpPreviewContainer" class="w-full h-36 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative group">
+                                <img id="ktpImageEl" src="" alt="KTP" class="hidden w-full h-full object-cover clickable-image" onclick="openLightbox(this.src, 'KTP - ' + currentCustomer.nama)">
+                                <div id="ktpEmptyState" class="text-center p-2 text-xs text-slate-400">Belum ada KTP</div>
                             </div>
+                            <p class="text-[10px] text-slate-400 mt-1" id="ktpStatusText">-</p>
                         </div>
 
-                        <!-- Card Dokumen KK (Kartu Keluarga) -->
+                        <!-- Card KK -->
                         <div class="doc-card border border-slate-200 rounded-xl p-4 bg-white flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-start mb-2">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-7 h-7 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center text-xs">
-                                            <i class="fa-solid fa-people-roof"></i>
-                                        </div>
-                                        <h4 class="font-bold text-slate-800 text-sm">Dokumen KK (Kartu Keluarga)</h4>
-                                    </div>
-                                    <label class="cursor-pointer text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md transition flex items-center gap-1">
-                                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                                        <span>Ganti / Upload KK</span>
-                                        <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'kk')">
-                                    </label>
-                                </div>
-                                <p class="text-xs text-slate-500 mb-3" id="kkStatusText">Kartu Keluarga Pembeli</p>
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-slate-800 text-xs">Dokumen KK</h4>
+                                <label class="cursor-pointer text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                                    Upload <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'kk')">
+                                </label>
                             </div>
-
-                            <!-- Preview KK -->
-                            <div id="kkPreviewContainer" class="w-full h-48 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center overflow-hidden relative group">
-                                <div id="kkEmptyState" class="text-center p-4">
-                                    <i class="fa-solid fa-file-invoice text-3xl text-slate-300 mb-2"></i>
-                                    <p class="text-xs text-slate-500 font-medium">Belum ada foto KK diupload</p>
-                                    <label class="mt-2 inline-block px-3 py-1 bg-white border border-slate-300 rounded text-xs text-slate-700 cursor-pointer hover:bg-slate-50">
-                                        Pilih Foto KK
-                                        <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'kk')">
-                                    </label>
-                                </div>
-                                <img id="kkImageEl" src="" alt="KK Customer" class="hidden w-full h-full object-cover clickable-image" onclick="openLightbox(this.src, 'Dokumen KK - ' + currentCustomer.nama)">
-                                <div id="kkOverlay" class="hidden absolute inset-0 bg-black/40 group-hover:flex items-center justify-center gap-2 transition opacity-0 group-hover:opacity-100">
-                                    <button onclick="openLightbox(document.getElementById('kkImageEl').src, 'Dokumen KK - ' + currentCustomer.nama)" class="px-2.5 py-1.5 bg-white text-slate-800 rounded-md text-xs font-semibold hover:bg-slate-100 flex items-center gap-1 shadow">
-                                        <i class="fa-solid fa-magnifying-glass-plus"></i> Perbesar
-                                    </button>
-                                    <a id="kkDownloadBtn" href="#" download="KK_Customer.jpg" class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-semibold hover:bg-emerald-700 flex items-center gap-1 shadow">
-                                        <i class="fa-solid fa-download"></i> Unduh
-                                    </a>
-                                </div>
+                            <div id="kkPreviewContainer" class="w-full h-36 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative group">
+                                <img id="kkImageEl" src="" alt="KK" class="hidden w-full h-full object-cover clickable-image" onclick="openLightbox(this.src, 'KK - ' + currentCustomer.nama)">
+                                <div id="kkEmptyState" class="text-center p-2 text-xs text-slate-400">Belum ada KK</div>
                             </div>
+                            <p class="text-[10px] text-slate-400 mt-1" id="kkStatusText">-</p>
                         </div>
 
+                        <!-- Card AJB -->
+                        <div class="doc-card border-2 border-emerald-500/40 rounded-xl p-4 bg-emerald-50/20 flex flex-col justify-between">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-slate-800 text-xs">Dokumen AJB / PPJB</h4>
+                                <label class="cursor-pointer text-[11px] font-semibold text-white bg-emerald-600 px-2 py-1 rounded-md">
+                                    Upload AJB <input type="file" accept="image/*" class="hidden" onchange="handleDocumentUpload(event, 'ajb')">
+                                </label>
+                            </div>
+                            <div id="ajbPreviewContainer" class="w-full h-36 bg-slate-100 rounded-lg border-2 border-dashed border-emerald-300 flex items-center justify-center overflow-hidden relative group">
+                                <img id="ajbImageEl" src="" alt="AJB" class="hidden w-full h-full object-cover clickable-image" onclick="openLightbox(this.src, 'Dokumen AJB - ' + currentCustomer.nama)">
+                                <div id="ajbEmptyState" class="text-center p-2 text-xs text-slate-400">Upload setelah DP/Lunas</div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1" id="ajbStatusText">-</p>
+                        </div>
                     </div>
                 </div>
 
                 <hr class="border-slate-200">
 
-                <!-- ================= BAGIAN 2: RIWAYAT UANG MASUK DARI CUSTOMER ================= -->
+                <!-- Riwayat Uang Masuk & Barter Material -->
                 <div>
-                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-3">
+                    <div class="flex justify-between items-center mb-3">
                         <div>
                             <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                                 <i class="fa-solid fa-receipt text-emerald-600"></i>
-                                Riwayat Uang Masuk dari Customer
+                                Riwayat Pembayaran & Barter Material
                             </h3>
-                            <p class="text-xs text-slate-500">Catatan pembayaran: tanggal, tujuan pembayaran, keterangan, dan foto kwitansi</p>
+                            <p class="text-xs text-slate-500">Mencatat pembayaran tunai/transfer maupun transaksi barter bahan bangunan</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <button onclick="printCustomerStatement()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition flex items-center gap-1.5">
                                 <i class="fa-solid fa-print"></i> Cetak Rekap
                             </button>
-                            <button onclick="openPaymentModal()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm shadow-emerald-200 transition flex items-center gap-1.5">
-                                <i class="fa-solid fa-circle-plus"></i> + Catat Uang Masuk
+                            <button onclick="openPaymentModal()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-plus"></i> + Catat Bayar / Barter
                             </button>
                         </div>
                     </div>
 
-                    <!-- Tabel Riwayat Pembayaran -->
-                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-                        <div class="overflow-x-auto custom-scrollbar">
-                            <table class="w-full text-left text-xs sm:text-sm text-slate-600">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[11px] tracking-wider">
-                                    <tr>
-                                        <th class="py-3 px-3 text-center w-10">#</th>
-                                        <th class="py-3 px-3">Tanggal</th>
-                                        <th class="py-3 px-3">Tujuan Pembayaran</th>
-                                        <th class="py-3 px-3 text-right">Nominal Masuk</th>
-                                        <th class="py-3 px-3">Keterangan</th>
-                                        <th class="py-3 px-3 text-center">Foto Kwitansi</th>
-                                        <th class="py-3 px-3 text-center w-24">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="detailPaymentTableBody" class="divide-y divide-slate-100">
-                                    <!-- List Pembayaran Di-generate di sini -->
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+                        <table class="w-full text-left text-xs sm:text-sm text-slate-600">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[11px]">
+                                <tr>
+                                    <th class="py-3 px-3 text-center w-10">#</th>
+                                    <th class="py-3 px-3">Tanggal</th>
+                                    <th class="py-3 px-3">Metode & Tujuan</th>
+                                    <th class="py-3 px-3 text-right">Nilai Nominal (Rp)</th>
+                                    <th class="py-3 px-3">Rincian Barter / Catatan</th>
+                                    <th class="py-3 px-3 text-center">Bukti / Kwitansi</th>
+                                    <th class="py-3 px-3 text-center w-24">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailPaymentTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
 
-                        <!-- Empty State Pembayaran -->
-                        <div id="paymentEmptyState" class="hidden py-10 text-center px-4">
-                            <i class="fa-solid fa-money-check-dollar text-slate-300 text-3xl mb-2"></i>
-                            <p class="text-sm font-medium text-slate-600">Belum Ada Riwayat Uang Masuk</p>
-                            <p class="text-xs text-slate-400 mb-3">Klik tombol "Catat Uang Masuk" untuk menambahkan bukti kwitansi pertama.</p>
-                            <button onclick="openPaymentModal()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition">
-                                + Tambah Pembayaran
-                            </button>
+                        <div id="paymentEmptyState" class="hidden py-8 text-center text-xs text-slate-400">
+                            Belum ada riwayat pembayaran tercatat.
                         </div>
                     </div>
-
                 </div>
 
             </div>
 
-            <!-- Detail Footer -->
             <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500 shrink-0">
                 <span id="detailCreatedAtText">Customer terdaftar: -</span>
                 <button onclick="closeCustomerDetailModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg text-xs transition">
@@ -416,12 +1239,154 @@
     </div>
 
 
-    <!-- ======================================================== -->
-    <!-- MODAL 2: FORM TAMBAH / EDIT CUSTOMER -->
-    <!-- ======================================================== -->
+    <!-- Modal Form Tambah / Edit Kavling -->
+    <div id="kavlingFormModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
+            <div class="px-6 py-4 bg-emerald-700 text-white flex justify-between items-center shrink-0">
+                <h3 class="text-base font-bold flex items-center gap-2" id="kavlingModalTitle">
+                    <i class="fa-solid fa-square-plus"></i> Tambah Unit Kavling
+                </h3>
+                <button onclick="closeKavlingModal()" class="w-8 h-8 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-emerald-100 flex items-center justify-center text-sm transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="kavlingForm" onsubmit="handleKavlingSubmit(event)" class="p-6 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
+                <input type="hidden" id="kavlingIdInput" value="">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Induk Kavling (Proyek) <span class="text-red-500">*</span></label>
+                    <select id="formKavlingProjectId" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-white"></select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Blok Kavling <span class="text-red-500">*</span></label>
+                        <input type="text" id="formKavlingBlok" list="blokSuggestions" required placeholder="Contoh: Blok A / Blok Ruko" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm">
+                        <datalist id="blokSuggestions">
+                            <option value="Blok Ruko">
+                            <option value="Blok A">
+                            <option value="Blok B">
+                            <option value="Blok C">
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nomor / Kode <span class="text-red-500">*</span></label>
+                        <input type="text" id="formKavlingNomor" required placeholder="Contoh: A-01 / Ruko-01" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm font-bold uppercase">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Luas Tanah (m²) <span class="text-red-500">*</span></label>
+                        <input type="number" id="formKavlingLuas" required placeholder="Contoh: 84" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Ukuran Asli (Dimensi) <span class="text-red-500">*</span></label>
+                        <input type="text" id="formKavlingDimensi" required placeholder="Contoh: 6 x 14 meter" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Harga Kavling (Rp) <span class="text-red-500">*</span></label>
+                        <input type="text" id="formKavlingHarga" required placeholder="Contoh: 120.000.000" onkeyup="formatCurrencyInput(this)" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm font-bold text-emerald-700">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipe Kavling</label>
+                        <select id="formKavlingTipe" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-white">
+                            <option value="Hunian Standar">Hunian Standar</option>
+                            <option value="Ruko Komersil">Ruko Komersil</option>
+                            <option value="Kavling Sudut (Hook)">Kavling Sudut (Hook)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Status</label>
+                        <select id="formKavlingStatus" onchange="toggleFormCustomerSelect(this.value)" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-white">
+                            <option value="terbuka">🟢 Terbuka (Belum Terjual)</option>
+                            <option value="booking">🟡 Booking (Tanda Jadi)</option>
+                            <option value="terjual">🔴 Terjual (Lunas/Akad)</option>
+                        </select>
+                    </div>
+                    <div id="formKavlingCustomerBox" class="hidden">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Customer Pembeli</label>
+                        <select id="formKavlingCustomerId" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-white">
+                            <option value="">-- Pilih Customer --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Keterangan / Keunggulan</label>
+                    <input type="text" id="formKavlingKeterangan" placeholder="Contoh: Hadap Timur, Dekat Masjid / Taman..." class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm">
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeKavlingModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs">Simpan Kavling</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Modal Batch Generate Kavling -->
+    <div id="batchKavlingModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 modal-content-animated">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-amber-500"></i> Buat Blok Kavling Sekaligus
+                </h3>
+                <button onclick="closeBatchKavlingModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">Buat nomor kavling secara berurutan dalam satu blok (misal: A-01 s/d A-10) sekali simpan.</p>
+
+            <form onsubmit="handleBatchGenerateSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Blok</label>
+                    <input type="text" id="batchBlok" required placeholder="Contoh: Blok A / Blok Ruko" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Dari Nomor</label>
+                        <input type="number" id="batchStart" required value="1" min="1" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sampai Nomor</label>
+                        <input type="number" id="batchEnd" required value="8" min="1" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Luas (m²)</label>
+                        <input type="number" id="batchLuas" required value="84" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Dimensi</label>
+                        <input type="text" id="batchDimensi" required value="6 x 14 meter" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Harga per Unit (Rp)</label>
+                    <input type="text" id="batchHarga" required value="120.000.000" onkeyup="formatCurrencyInput(this)" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-emerald-700">
+                </div>
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeBatchKavlingModal()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs">⚡ Buat Sekarang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Modal Form Tambah / Edit Customer -->
     <div id="customerFormModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
         <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
-            
             <div class="px-6 py-4 bg-emerald-700 text-white flex justify-between items-center shrink-0">
                 <h3 class="text-base font-bold flex items-center gap-2" id="customerModalTitle">
                     <i class="fa-solid fa-user-plus"></i> Tambah Data Customer Kavling
@@ -434,251 +1399,163 @@
             <form id="customerForm" onsubmit="handleCustomerSubmit(event)" class="p-6 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
                 <input type="hidden" id="customerIdInput" value="">
 
-                <!-- 1. Nama Customer -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-                        1. Nama Customer <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" id="namaInput" required placeholder="Contoh: Bapak Ahmad Dahlan" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Customer <span class="text-red-500">*</span></label>
+                    <input type="text" id="namaInput" required placeholder="Contoh: Bapak Ahmad Dahlan / PT Konstruksi..." class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm">
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- 2. Kavling Yang Diambil -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-                            2. Kavling Yang Diambil <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" id="kavlingInput" required placeholder="Contoh: Blok A-05 / Kavling 12" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
-                    </div>
-
-                    <!-- 3. Harga Kavling -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-                            3. Harga Kavling (Rp) <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" id="hargaInput" required placeholder="Contoh: 85.000.000" onkeyup="formatCurrencyInput(this)" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Nomor Telepon / WA -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-                            Nomor WhatsApp / HP
-                        </label>
-                        <input type="text" id="teleponInput" placeholder="Contoh: 081234567890" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
-                    </div>
-
-                    <!-- Alamat -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-                            Alamat / Domisili
-                        </label>
-                        <input type="text" id="alamatInput" placeholder="Contoh: Jl. Mawar No. 10" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
-                    </div>
-                </div>
-
-                <!-- Upload Awal Dokumen KTP & KK (Opsional saat pendaftaran) -->
-                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-                    <p class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                        <i class="fa-solid fa-file-arrow-up text-emerald-600"></i> Upload Dokumen Customer (Bisa diisi sekarang atau nanti)
-                    </p>
-                    
+                <div class="p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-3">
+                    <span class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shapes"></i> Kavling Yang Diambil
+                    </span>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs text-slate-600 font-medium mb-1">Foto / Scan KTP</label>
-                            <input type="file" id="formKtpFile" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Induk Kavling</label>
+                            <select id="custFormProjectSelect" onchange="populateKavlingDropdownForCustomer(this.value)" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white"></select>
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-600 font-medium mb-1">Foto / Scan KK</label>
-                            <input type="file" id="formKkFile" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Unit Tersedia</label>
+                            <select id="custFormKavlingSelect" onchange="handleCustomerKavlingSelect(this.value)" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-bold"></select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Keterangan Kavling Terpilih <span class="text-red-500">*</span></label>
+                        <input type="text" id="kavlingInput" required placeholder="Contoh: Baitul Makmur Regency - Blok A-03" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Harga Kavling (Rp) <span class="text-red-500">*</span></label>
+                        <input type="text" id="hargaInput" required placeholder="Contoh: 120.000.000" onkeyup="formatCurrencyInput(this)" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm font-bold text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">No. WhatsApp / HP</label>
+                        <input type="text" id="teleponInput" placeholder="Contoh: 081234567890" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Alamat Domisili Customer</label>
+                    <input type="text" id="alamatInput" placeholder="Contoh: Jl. Melati Indah No. 10" class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm">
+                </div>
+
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <p class="text-xs font-semibold text-slate-700">Upload Dokumen Identitas & AJB:</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-slate-600 mb-1">Foto KTP</label>
+                            <input type="file" id="formKtpFile" accept="image/*" class="w-full text-[10px] text-slate-500 file:py-1 file:px-2 file:rounded file:border-0 file:bg-emerald-50">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-600 mb-1">Foto KK</label>
+                            <input type="file" id="formKkFile" accept="image/*" class="w-full text-[10px] text-slate-500 file:py-1 file:px-2 file:rounded file:border-0 file:bg-emerald-50">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-emerald-800 font-semibold mb-1">Dokumen AJB (Bila ada DP)</label>
+                            <input type="file" id="formAjbFile" accept="image/*" class="w-full text-[10px] text-slate-500 file:py-1 file:px-2 file:rounded file:border-0 file:bg-emerald-600 file:text-white">
                         </div>
                     </div>
                 </div>
 
                 <div class="pt-3 flex justify-end gap-2">
-                    <button type="button" onclick="closeCustomerModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">
-                        Batal
-                    </button>
-                    <button type="submit" id="btnSubmitCustomer" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-floppy-disk"></i> Simpan Data Customer
-                    </button>
+                    <button type="button" onclick="closeCustomerModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Batal</button>
+                    <button type="submit" id="btnSubmitCustomer" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs">Simpan Data Customer</button>
                 </div>
             </form>
         </div>
     </div>
 
 
-    <!-- ======================================================== -->
-    <!-- MODAL 3: FORM CATAT PEMBAYARAN / UANG MASUK & KWITANSI -->
-    <!-- ======================================================== -->
-    <div id="paymentFormModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[92vh] flex flex-col modal-content-animated overflow-hidden">
-            
-            <div class="px-6 py-4 bg-emerald-700 text-white flex justify-between items-center shrink-0">
-                <h3 class="text-base font-bold flex items-center gap-2">
-                    <i class="fa-solid fa-receipt"></i> Catat Uang Masuk Customer
+    <!-- Modal Kelola Induk Proyek -->
+    <div id="projectModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg p-6 modal-content-animated">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-city text-emerald-600"></i> Kelola Induk Kavling (Proyek)
                 </h3>
-                <button onclick="closePaymentModal()" class="w-8 h-8 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-emerald-100 flex items-center justify-center text-sm transition">
+                <button onclick="closeProjectModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 flex items-center justify-center">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <form id="paymentForm" onsubmit="handlePaymentSubmit(event)" class="p-6 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
-                
-                <!-- Tanggal Pembayaran -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-                        Tanggal Uang Masuk <span class="text-red-500">*</span>
-                    </label>
-                    <input type="date" id="payTanggalInput" required class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
+            <form onsubmit="handleProjectSubmit(event)" class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2 mb-4">
+                <span class="text-xs font-bold text-slate-700 block">+ Tambah Induk Kavling Baru:</span>
+                <input type="text" id="newProjectName" required placeholder="Contoh: Baitul Makmur Regency" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold">
+                <input type="text" id="newProjectLocation" placeholder="Lokasi (Contoh: Jl. Raya Kaliwungu KM 3)" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                <div class="flex justify-end">
+                    <button type="submit" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg">Simpan Proyek</button>
                 </div>
-
-                <!-- Tujuan Pembayaran -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-                        Tujuan Pembayaran <span class="text-red-500">*</span>
-                    </label>
-                    <select id="payTujuanSelect" onchange="handleTujuanChange(this.value)" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
-                        <option value="Booking Fee / Tanda Jadi">Booking Fee / Tanda Jadi</option>
-                        <option value="DP (Uang Muka)">DP (Uang Muka)</option>
-                        <option value="Angsuran / Cicilan Bulanan">Angsuran / Cicilan Bulanan</option>
-                        <option value="Pelunasan Kavling">Pelunasan Kavling</option>
-                        <option value="Biaya AJB / Notaris / Surat">Biaya AJB / Notaris / Surat</option>
-                        <option value="Lainnya">Lainnya (Ketik Manual)...</option>
-                    </select>
-                    <input type="text" id="payTujuanCustomInput" placeholder="Tuliskan tujuan pembayaran khusus..." class="hidden mt-2 w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
-                </div>
-
-                <!-- Jumlah Nominal (Rp) -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-                        Jumlah Uang Masuk (Nominal Rp) <span class="text-red-500">*</span>
-                    </label>
-                    <div class="relative">
-                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-sm">Rp</span>
-                        <input type="text" id="payNominalInput" required placeholder="0" onkeyup="formatCurrencyInput(this)" class="w-full pl-11 pr-4 py-2.5 border border-slate-300 rounded-lg text-base font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition">
-                    </div>
-                </div>
-
-                <!-- Keterangan Pembayaran -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-                        Keterangan Pembayaran
-                    </label>
-                    <textarea id="payKeteranganInput" rows="2" placeholder="Contoh: Transfer via Bank BCA an. Budi, atau Bayar Cash di kantor..." class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"></textarea>
-                </div>
-
-                <!-- Foto Kwitansi Pembayaran -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-                        Foto Kwitansi / Bukti Pembayaran <span class="text-xs text-slate-400 font-normal">(Disarankan)</span>
-                    </label>
-                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center bg-slate-50 hover:bg-slate-100 transition">
-                        <input type="file" id="payKwitansiFile" accept="image/*" onchange="previewKwitansiInput(this)" class="hidden">
-                        <div id="kwitansiUploadPrompt" onclick="document.getElementById('payKwitansiFile').click()" class="cursor-pointer">
-                            <i class="fa-solid fa-camera text-2xl text-slate-400 mb-1"></i>
-                            <p class="text-xs font-medium text-slate-600">Klik untuk upload foto kwitansi atau nota transfer</p>
-                            <span class="text-[11px] text-slate-400">JPG, PNG, atau WEBP</span>
-                        </div>
-                        <div id="kwitansiPreviewBox" class="hidden relative">
-                            <img id="kwitansiPreviewImg" src="" alt="Preview Kwitansi" class="max-h-40 mx-auto rounded-lg shadow-sm">
-                            <button type="button" onclick="clearKwitansiPreview()" class="mt-2 text-xs text-red-600 hover:text-red-700 font-medium">
-                                <i class="fa-solid fa-trash"></i> Hapus Foto Kwitansi
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-3 flex justify-end gap-2">
-                    <button type="button" onclick="closePaymentModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">
-                        Batal
-                    </button>
-                    <button type="submit" id="btnSubmitPayment" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-check"></i> Simpan Pembayaran
-                    </button>
-                </div>
-
             </form>
+
+            <div class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Daftar Proyek Terdaftar:</span>
+                <div id="projectListContainer" class="space-y-1.5"></div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                <button onclick="closeProjectModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg">Tutup</button>
+            </div>
         </div>
     </div>
 
 
-    <!-- ======================================================== -->
-    <!-- MODAL 4: LIGHTBOX (POPUP PERBESAR GAMBAR KTP / KK / KWITANSI) -->
-    <!-- ======================================================== -->
-    <div id="lightboxModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-xs flex flex-col justify-between items-center p-4">
-        <!-- Topbar Lightbox -->
+    <!-- Modal Lightbox (Zoom Dokumen) -->
+    <div id="lightboxModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-xs flex flex-col justify-between items-center p-4">
         <div class="w-full max-w-4xl flex justify-between items-center text-white py-2">
-            <h4 id="lightboxTitle" class="text-sm font-semibold truncate">Preview Gambar</h4>
+            <h4 id="lightboxTitle" class="text-sm font-semibold truncate">Preview Dokumen</h4>
             <div class="flex items-center gap-3">
-                <a id="lightboxDownload" href="#" download="dokumen.jpg" class="text-white hover:text-emerald-400 text-sm px-3 py-1 bg-white/10 rounded-lg transition flex items-center gap-1">
-                    <i class="fa-solid fa-download"></i> Unduh
+                <a id="lightboxDownload" href="#" download="dokumen.jpg" class="text-white hover:text-emerald-400 text-xs px-3 py-1.5 bg-white/10 rounded-lg transition flex items-center gap-1">
+                    <i class="fa-solid fa-download"></i> Unduh File
                 </a>
                 <button onclick="closeLightbox()" class="text-white hover:text-red-400 text-xl w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 transition">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
         </div>
-
-        <!-- Image Content -->
         <div class="flex-1 flex items-center justify-center max-w-5xl max-h-[82vh] overflow-hidden my-auto">
             <img id="lightboxImage" src="" alt="Full Preview" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl transition duration-200">
         </div>
-
-        <p class="text-xs text-white/60 mb-2">Tekan tombol Tutup (X) atau klik di luar untuk menutup.</p>
+        <p class="text-xs text-white/60 mb-2">Klik tombol Tutup (X) atau klik di luar untuk menutup.</p>
     </div>
 
 
-    <!-- ======================================================== -->
-    <!-- MODAL 5: BACKUP & RESTORE DATA -->
-    <!-- ======================================================== -->
+    <!-- Modal Backup / Restore Database -->
     <div id="backupModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 modal-content-animated">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-database text-emerald-600"></i> Backup & Restore Data
+                    <i class="fa-solid fa-database text-emerald-600"></i> Backup & Restore Database
                 </h3>
                 <button onclick="closeBackupModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 flex items-center justify-center">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-
             <p class="text-xs text-slate-500 mb-5 leading-relaxed">
-                Semua data Anda (nama customer, kavling, harga, dokumen KTP/KK, dan kwitansi) tersimpan di browser ini. Lakukan pencadangan (Backup) secara berkala agar data tetap aman saat ganti komputer atau browser.
+                Semua data Anda (Proyek, Site Plan Kavling, Customer, Dokumen AJB/KK/KTP, Transaksi Barter Material, dan Hutang Lahan Petani) tersimpan aman di browser ini. Unduh file cadangan untuk arsip.
             </p>
-
             <div class="space-y-3">
                 <button onclick="handleExportBackup()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-download"></i> Unduh File Cadangan (Backup Data)
+                    <i class="fa-solid fa-download"></i> Unduh File Cadangan (Backup Lengkap)
                 </button>
-
                 <div class="relative">
                     <label class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold cursor-pointer transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-upload"></i> Pulihkan dari File (Restore Data)
+                        <i class="fa-solid fa-upload"></i> Pulihkan dari File (Restore Database)
                         <input type="file" id="restoreFileInput" accept=".json" onchange="handleImportBackup(this)" class="hidden">
                     </label>
                 </div>
             </div>
-
             <div class="mt-5 pt-4 border-t border-slate-100 flex justify-end">
-                <button onclick="closeBackupModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition">
-                    Tutup
-                </button>
+                <button onclick="closeBackupModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold">Tutup</button>
             </div>
         </div>
     </div>
 
 
-    <!-- ======================================================== -->
-    <!-- PRINTABLE AREA (UNTUK CETAK KWITANSI & REKAP LAPORAN) -->
-    <!-- ======================================================== -->
-    <div id="printableArea" class="hidden">
-        <!-- Akan diisi secara dinamis saat tombol print ditekan -->
-    </div>
+    <!-- Printable Area untuk Cetak Kwitansi & Rekap -->
+    <div id="printableArea" class="hidden"></div>
 
-
-    <!-- Load Scripts -->
+    <!-- Scripts -->
     <script src="db.js"></script>
     <script src="app.js"></script>
 </body>

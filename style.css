@@ -1,51 +1,76 @@
-/* style.css - Custom Styling & Print Layout untuk Adam Property */
+/* style.css - Corporate Real Estate Theme (ADAM PROPERTY DEVELOPER) */
 
-/* Glassmorphism & Card Shadows */
-.card-shadow {
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
-}
-
+/* Modern Scrollbars */
 .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
-
 .custom-scrollbar::-webkit-scrollbar-track {
     background: #f1f5f9;
 }
-
 .custom-scrollbar::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 4px;
 }
-
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
 
-/* Document Card Hover Effects */
+/* Card Shadows & Elevation */
+.card-shadow {
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+}
+
+.corporate-header {
+    background: linear-gradient(135deg, #091220 0%, #0f1f38 50%, #064e3b 100%);
+}
+
+/* Document & Interactive Cards */
 .doc-card {
-    transition: all 0.2s ease-in-out;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .doc-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 20px -8px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 10px 20px -5px rgba(5, 150, 105, 0.15);
 }
 
-/* Image Zoom Cursor */
+/* Kavling Interactive Cards */
+.kavling-card {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    user-select: none;
+}
+.kavling-card:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.12);
+}
+
+.kavling-card-terbuka {
+    border-color: #10b981;
+    background: linear-gradient(to bottom, #ffffff, #f0fdf4);
+}
+.kavling-card-booking {
+    border-color: #f59e0b;
+    background: linear-gradient(to bottom, #ffffff, #fffbeb);
+}
+.kavling-card-terjual {
+    border-color: #ef4444;
+    background: linear-gradient(to bottom, #ffffff, #fef2f2);
+}
+
+/* Image Zoom */
 .clickable-image {
     cursor: zoom-in;
     transition: transform 0.2s;
 }
 .clickable-image:hover {
-    opacity: 0.95;
     filter: brightness(1.05);
 }
 
-/* Modal Animation */
+/* Modal Animations */
 .modal-backdrop {
-    backdrop-filter: blur(4px);
-    background-color: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(6px);
+    background-color: rgba(9, 18, 32, 0.72);
     animation: fadeIn 0.2s ease-out;
 }
 
@@ -61,7 +86,7 @@
 @keyframes scaleIn {
     from {
         opacity: 0;
-        transform: scale(0.96) translateY(8px);
+        transform: scale(0.97) translateY(6px);
     }
     to {
         opacity: 1;
@@ -69,25 +94,46 @@
     }
 }
 
-/* Print Styling */
+/* Corporate Navigation Active Tab */
+.corp-tab-active {
+    background-color: #059669 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px -2px rgba(5, 150, 105, 0.4) !important;
+}
+
+.corp-tab-inactive {
+    color: #cbd5e1 !important;
+    background-color: transparent !important;
+}
+.corp-tab-inactive:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Badge Barter Material */
+.badge-barter {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+/* Print Layout */
 @media print {
     body * {
         visibility: hidden;
     }
-
     #printableArea, #printableArea * {
         visibility: visible;
     }
-
     #printableArea {
         position: absolute;
         left: 0;
         top: 0;
         width: 100%;
         background: #fff;
-        padding: 20px;
+        padding: 24px;
     }
-
     .no-print {
         display: none !important;
     }
