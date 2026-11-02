@@ -53,7 +53,9 @@ export default function CashbookView() {
 
   // Filtering
   const filteredCash = cashbook.filter(c => {
-    const matchCat = filterCategory === 'all' || c.kategori === filterCategory;
+    const matchCat = filterCategory === 'all' || 
+      c.kategori === filterCategory || 
+      (filterCategory === 'jual_kavling' && (c.kategori === 'jual_kavling' || c.kategori === 'jual_kavling_barter'));
     const matchTipe = filterTipe === 'all' || c.tipe === filterTipe;
     const matchProj = filterProject === 'all' || !c.projectId || c.projectId === filterProject;
     const matchSearch = `${c.sumber} ${c.keterangan} ${c.metode}`.toLowerCase().includes(searchQuery.toLowerCase());
@@ -199,7 +201,8 @@ export default function CashbookView() {
               className="w-full text-xs border border-slate-300 rounded-lg sm:rounded-xl px-2 py-1.5 bg-slate-50 focus:bg-white"
             >
               <option value="all">Semua Kategori</option>
-              <option value="jual_kavling">💰 Penjualan Kavling</option>
+              <option value="jual_kavling">💰 Penjualan Kavling (Semua)</option>
+              <option value="jual_kavling_barter">🔄 Barter Material / Aset</option>
               <option value="investor">🤝 Modal Investor</option>
               <option value="lahan_petani">🌾 Bayar Lahan Petani</option>
               <option value="operasional">🛠️ Operasional</option>
@@ -341,8 +344,12 @@ export default function CashbookView() {
                     <td className="py-3 px-4 font-mono text-slate-600">{item.tanggal}</td>
                     <td className="py-3 px-4 font-bold text-slate-900">{item.sumber}</td>
                     <td className="py-3 px-4">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-slate-100 text-slate-700 block w-max mb-1">
-                        {item.kategori.replace('_', ' ')}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider block w-max mb-1 ${
+                        item.kategori === 'jual_kavling_barter'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                          : 'bg-slate-100 text-slate-700'
+                      }`}>
+                        {item.kategori === 'jual_kavling_barter' ? '🔄 Barter Material' : item.kategori.replace('_', ' ')}
                       </span>
                       <span className="text-slate-600">{item.keterangan}</span>
                     </td>
