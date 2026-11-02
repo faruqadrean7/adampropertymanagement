@@ -543,3 +543,39 @@ export async function supabaseUpdatePayment(id: string, updates: Partial<Payment
     return false;
   }
 }
+
+export async function supabaseInsertCashbookItem(item: CashbookItem): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('cashbook').upsert({
+      id: item.id,
+      tanggal: item.tanggal,
+      tipe: item.tipe,
+      kategori: item.kategori,
+      sumber: item.sumber,
+      keterangan: item.keterangan,
+      nominal: item.nominal,
+      metode: item.metode,
+      project_id: item.projectId || null,
+      ref_type: item.refType || null,
+      ref_id: item.refId || null
+    }, { onConflict: 'id' });
+    if (error) console.warn('Supabase insert cashbook error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error inserting cashbook item:', e);
+    return false;
+  }
+}
+
+export async function supabaseDeleteCashbookItem(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('cashbook').delete().eq('id', id);
+    if (error) console.warn('Supabase delete cashbook error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error deleting cashbook item:', e);
+    return false;
+  }
+}

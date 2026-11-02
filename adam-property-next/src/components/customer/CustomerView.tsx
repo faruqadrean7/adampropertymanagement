@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useProperty } from '@/context/PropertyContext';
+import { sortKavlingsNaturally } from '@/lib/kavlingHelper';
 import ExportButtons from '@/components/common/ExportButtons';
 import { 
   Users, 
@@ -46,6 +47,7 @@ export default function CustomerView() {
     payments, 
     kavlings, 
     addCustomer, 
+    deleteCustomer,
     addCustomerPayment,
     updateCustomerDocuments,
     updatePaymentReceipt,
@@ -729,6 +731,20 @@ export default function CustomerView() {
                         <Receipt className="w-3.5 h-3.5" />
                         <span>Detail</span>
                       </button>
+                      {canFullAccess && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (window.confirm(`Yakin ingin menghapus customer "${cust.nama}"? Semua unit kavling yang terkait (${cust.kavlingKode || '-'}) akan otomatis dikembalikan ke status Terbuka.`)) {
+                              await deleteCustomer(cust.id);
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                          title="Hapus Customer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -1350,7 +1366,7 @@ export default function CustomerView() {
                 {/* Interactive Unit Cards Grid */}
                 <div className="border border-slate-200 rounded-xl p-2 bg-white max-h-52 overflow-y-auto custom-scrollbar">
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5">
-                    {kavlings
+                    {sortKavlingsNaturally(kavlings)
                       .filter(k => {
                         const matchBlok = addCustBlokFilter === 'all' || k.blok.toUpperCase().includes(addCustBlokFilter);
                         const matchSearch = `${k.blok} ${k.nomor} ${k.dimensi} ${k.customerNama || ''}`.toLowerCase().includes(addCustSearch.toLowerCase());
@@ -2136,10 +2152,25 @@ export default function CustomerView() {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
+            <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
+              {canFullAccess && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm(`Hapus permanen data customer "${selectedCustDetail.nama}"? Semua unit kavling terkait akan kembali menjadi status Terbuka.`)) {
+                      await deleteCustomer(selectedCustDetail.id);
+                      setSelectedCustDetail(null);
+                    }
+                  }}
+                  className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer border border-rose-200"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Hapus Customer</span>
+                </button>
+              )}
               <button
                 onClick={() => setSelectedCustDetail(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer"
               >
                 Tutup
               </button>
@@ -2372,8 +2403,8 @@ export default function CustomerView() {
       {/* MODAL 4: KELOLA & SAMBUNGKAN UNIT KAVLING (MULTI-SELECT) */}
       {/* ======================================================== */}
       {linkKavlingModalCust && (() => {
-        // Filtered lots for the picker
-        const pickerLots = kavlings.filter(k => {
+        // Filtered lots for the picker (sorted strictly naturally A1..A13, B1..B14, C1..C18)
+        const pickerLots = sortKavlingsNaturally(kavlings).filter(k => {
           const matchBlok = pickerFilterBlok === 'all' || k.blok.toUpperCase().includes(pickerFilterBlok);
           const matchSearch = `${k.blok} ${k.nomor} ${k.dimensi} ${k.customerNama || ''}`.toLowerCase().includes(pickerSearch.toLowerCase());
           const isSelected = selectedKavlingIds.includes(k.id);

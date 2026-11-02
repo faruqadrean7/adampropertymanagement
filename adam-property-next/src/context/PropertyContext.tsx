@@ -49,7 +49,9 @@ import {
   supabaseUpdateCustomer,
   supabaseDeleteCustomer,
   supabaseInsertPayment,
-  supabaseUpdatePayment
+  supabaseUpdatePayment,
+  supabaseInsertCashbookItem,
+  supabaseDeleteCashbookItem
 } from '@/lib/supabaseService';
 
 export interface AddProjectData {
@@ -145,6 +147,7 @@ interface PropertyContextType {
     }
   ) => void;
   updateCustomer: (id: string, updates: Partial<Customer>) => Promise<boolean>;
+  deleteCustomer: (id: string) => Promise<boolean>;
   assignCustomerToKavling: (customerId: string, kavlingId: string, customPrice?: number) => Promise<boolean>;
   assignCustomerToMultipleKavlings: (customerId: string, kavlingIds: string[], customTotalPrice?: number) => Promise<boolean>;
   unlinkCustomerFromSpecificKavling: (customerId: string, kavlingId: string) => Promise<boolean>;
@@ -176,6 +179,7 @@ interface PropertyContextType {
   addLandPayment: (data: Omit<LandPayment, 'id'>) => void;
   updateLandPaymentReceipt: (paymentId: string, kwitansiImage: string | null) => void;
   addCashbookItem: (data: Omit<CashbookItem, 'id'>) => void;
+  deleteCashbookItem: (id: string) => Promise<boolean>;
   topUpPettyCash: (nominal: number, sumberDana: 'kas_besar' | 'investor', keterangan: string, penerima?: string) => void;
   addPettyExpense: (data: {
     kategori: PettyCashItem['kategori'];
@@ -317,7 +321,15 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         setCustomers(prev => {
           const supaIds = new Set(supaCust.map(c => c.id));
           const recentLocal = prev.filter(c => !supaIds.has(c.id) && Date.now() - (parseInt(c.id.replace('cust-', '')) || 0) < 120000);
-          const merged = [...recentLocal, ...supaCust];
+          const populatedSupa = supaCust.map(c => {
+            const ownedLots = (supaKavlings || []).filter(k => k.customerId === c.id || k.id === c.kavlingId);
+            const ownedIds = ownedLots.map(k => k.id);
+            return {
+              ...c,
+              kavlingIds: ownedIds.length > 0 ? ownedIds : (c.kavlingId ? [c.kavlingId] : [])
+            };
+          });
+          const merged = [...recentLocal, ...populatedSupa];
           saveStorage('customers', merged);
           return merged;
         });
@@ -587,6 +599,28 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       saveStorage('kavlings', updated);
       return updated;
     });
+
+    // Clean up customer reference if any customer owned this kavling
+    setCustomers(prev => {
+      let changed = false;
+      const updated = prev.map(c => {
+        const hasSingle = c.kavlingId === id;
+        const hasMulti = c.kavlingIds?.includes(id);
+        if (hasSingle || hasMulti) {
+          changed = true;
+          const newKavlingIds = (c.kavlingIds || []).filter(kId => kId !== id);
+          return {
+            ...c,
+            kavlingId: hasSingle ? (newKavlingIds[0] || null) : c.kavlingId,
+            kavlingIds: newKavlingIds
+          };
+        }
+        return c;
+      });
+      if (changed) saveStorage('customers', updated);
+      return updated;
+    });
+
     if (isSupabaseConfigured()) {
       supabaseDeleteKavling(id)
         .then(() => refreshCloudData())
@@ -735,6 +769,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     }
 
     let newPay: Payment | null = null;
+    let newCash: CashbookItem | null = null;
     // 3. If DP exists, create payment & cashbook entry
     if (finalDp > 0) {
       const payId = `pay-${Date.now()}`;
@@ -757,7 +792,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       });
 
       // Auto-sync to Cashbook
-      const cashItem: CashbookItem = {
+      newCash = {
         id: `cash-${Date.now()}`,
         tanggal: new Date().toISOString().split('T')[0],
         tipe: 'masuk',
@@ -771,7 +806,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         refId: payId
       };
       setCashbook(prev => {
-        const updated = [...prev, cashItem];
+        const updated = [...prev, newCash!];
         saveStorage('cashbook', updated);
         return updated;
       });
@@ -790,6 +825,9 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         }
         if (newPay) {
           await supabaseInsertPayment(newPay);
+        }
+        if (newCash) {
+          await supabaseInsertCashbookItem(newCash);
         }
         await refreshCloudData();
       } catch (e) {
@@ -815,6 +853,57 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         console.warn('Error updating customer:', e);
       }
     }
+    return true;
+  };
+
+  const deleteCustomer = async (id: string): Promise<boolean> => {
+    const cust = customers.find(c => c.id === id);
+    if (!cust) return false;
+
+    // 1. Unlink any kavlings owned by this customer
+    setKavlings(prev => {
+      const updated = prev.map(k => (k.customerId === id || k.id === cust.kavlingId) ? {
+        ...k,
+        customerId: null,
+        customerNama: null,
+        status: 'terbuka' as const
+      } : k);
+      saveStorage('kavlings', updated);
+      return updated;
+    });
+
+    // 2. Remove customer from local state
+    setCustomers(prev => {
+      const updated = prev.filter(c => c.id !== id);
+      saveStorage('customers', updated);
+      return updated;
+    });
+
+    // 3. Remove customer payments from local state
+    setPayments(prev => {
+      const updated = prev.filter(p => p.customerId !== id);
+      saveStorage('payments', updated);
+      return updated;
+    });
+
+    // 4. Cloud Supabase Sync
+    if (isSupabaseConfigured()) {
+      try {
+        const ownedLots = kavlings.filter(k => k.customerId === id || k.id === cust.kavlingId);
+        for (const lot of ownedLots) {
+          await supabaseUpdateKavling(lot.id, {
+            customerId: null,
+            customerNama: null,
+            status: 'terbuka'
+          });
+        }
+        await supabaseDeleteCustomer(id);
+        await refreshCloudData();
+      } catch (e) {
+        console.warn('Error deleting customer from Supabase:', e);
+      }
+    }
+
     return true;
   };
 
@@ -1070,10 +1159,17 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
           const newSisa = Math.max(0, c.totalHarga - newMasuk);
           const isLunas = newSisa <= 0;
           
-          if (isLunas && c.kavlingId) {
-            setKavlings(lots => lots.map(k => (k.id === c.kavlingId ? { ...k, status: 'terjual' } : k)));
+          const allOwnedLots = Array.from(new Set([
+            ...(c.kavlingIds || []),
+            ...(c.kavlingId ? [c.kavlingId] : [])
+          ]));
+
+          if (isLunas && allOwnedLots.length > 0) {
+            setKavlings(lots => lots.map(k => (allOwnedLots.includes(k.id) ? { ...k, status: 'terjual' } : k)));
             if (isSupabaseConfigured()) {
-              supabaseUpdateKavling(c.kavlingId, { status: 'terjual' }).catch(console.warn);
+              for (const lotId of allOwnedLots) {
+                supabaseUpdateKavling(lotId, { status: 'terjual' }).catch(console.warn);
+              }
             }
           }
 
@@ -1122,6 +1218,10 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       saveStorage('cashbook', updated);
       return updated;
     });
+
+    if (isSupabaseConfigured()) {
+      supabaseInsertCashbookItem(cashItem).catch(console.warn);
+    }
   };
 
   const updateCustomerDocuments = (
@@ -1333,7 +1433,30 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   // 5. Cashbook Direct
   const addCashbookItem = (data: Omit<CashbookItem, 'id'>) => {
     const newItem: CashbookItem = { ...data, id: `cash-${Date.now()}` };
-    setCashbook(prev => [newItem, ...prev]);
+    setCashbook(prev => {
+      const updated = [newItem, ...prev];
+      saveStorage('cashbook', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseInsertCashbookItem(newItem).catch(console.warn);
+    }
+  };
+
+  const deleteCashbookItem = async (id: string): Promise<boolean> => {
+    setCashbook(prev => {
+      const updated = prev.filter(c => c.id !== id);
+      saveStorage('cashbook', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseDeleteCashbookItem(id);
+      } catch (e) {
+        console.warn('Error deleting cashbook item:', e);
+      }
+    }
+    return true;
   };
 
   // 6. Petty Cash
@@ -1556,6 +1679,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         updateKavlingStatus,
         addCustomer,
         updateCustomer,
+        deleteCustomer,
         assignCustomerToKavling,
         assignCustomerToMultipleKavlings,
         unlinkCustomerFromSpecificKavling,
@@ -1570,6 +1694,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         addLandPayment,
         updateLandPaymentReceipt,
         addCashbookItem,
+        deleteCashbookItem,
         topUpPettyCash,
         addPettyExpense,
         addInventoryItem,

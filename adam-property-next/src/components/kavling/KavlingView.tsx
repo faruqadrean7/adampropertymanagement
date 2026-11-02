@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { useProperty } from '@/context/PropertyContext';
+import { sortKavlingsNaturally, groupKavlingsByBlok, KavlingBlockGroup } from '@/lib/kavlingHelper';
 import ExportButtons from '@/components/common/ExportButtons';
 import { 
   Building2, 
@@ -68,6 +69,7 @@ export default function KavlingView() {
   } = useProperty();
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'terbuka' | 'booking' | 'terjual'>('all');
+  const [selectedBlokTab, setSelectedBlokTab] = useState<'all' | 'A' | 'B' | 'C'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
   
@@ -174,18 +176,29 @@ export default function KavlingView() {
 
   // Filtered Kavling list
   const activeProject = projects.find(p => p.id === selectedProjectId);
+  const projectLots = kavlings.filter(k => selectedProjectId === 'all' || k.projectId === selectedProjectId);
+  const blokACount = projectLots.filter(k => k.blok.toUpperCase().includes('A') || k.nomor.toUpperCase().startsWith('A')).length;
+  const blokBCount = projectLots.filter(k => k.blok.toUpperCase().includes('B') || k.nomor.toUpperCase().startsWith('B')).length;
+  const blokCCount = projectLots.filter(k => k.blok.toUpperCase().includes('C') || k.nomor.toUpperCase().startsWith('C')).length;
+
   const filteredKavlings = kavlings.filter(k => {
     const matchProject = selectedProjectId === 'all' || k.projectId === selectedProjectId;
     const matchStatus = statusFilter === 'all' || k.status === statusFilter;
+    const matchBlok = selectedBlokTab === 'all' || 
+      k.blok.toUpperCase().includes(selectedBlokTab) || 
+      k.nomor.toUpperCase().startsWith(selectedBlokTab);
     const matchSearch = searchQuery === '' || 
       `${k.blok} ${k.nomor} ${k.customerNama || ''} ${k.tipe}`.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchProject && matchStatus && matchSearch;
+    return matchProject && matchStatus && matchBlok && matchSearch;
   });
 
-  const totalLots = kavlings.filter(k => selectedProjectId === 'all' || k.projectId === selectedProjectId).length;
-  const openLots = kavlings.filter(k => (selectedProjectId === 'all' || k.projectId === selectedProjectId) && k.status === 'terbuka').length;
-  const bookingLots = kavlings.filter(k => (selectedProjectId === 'all' || k.projectId === selectedProjectId) && k.status === 'booking').length;
-  const soldLots = kavlings.filter(k => (selectedProjectId === 'all' || k.projectId === selectedProjectId) && k.status === 'terjual').length;
+  const sortedFilteredKavlings = sortKavlingsNaturally(filteredKavlings);
+  const blockGroups = groupKavlingsByBlok(sortedFilteredKavlings);
+
+  const totalLots = projectLots.length;
+  const openLots = projectLots.filter(k => k.status === 'terbuka').length;
+  const bookingLots = projectLots.filter(k => k.status === 'booking').length;
+  const soldLots = projectLots.filter(k => k.status === 'terjual').length;
 
   const getExportData = () => ({
     filename: `Laporan-Siteplan-Kavling-${new Date().toISOString().split('T')[0]}`,
@@ -193,7 +206,7 @@ export default function KavlingView() {
     subtitle: activeProject?.nama || 'Semua Cluster Lahan',
     category: 'DATA MASTER KAVLING',
     headers: ['Nomor Unit', 'Blok', 'Tipe', 'Luas (m²)', 'Dimensi', 'Harga (Rp)', 'Status Unit', 'Nama Konsumen / Pembeli', 'Keterangan'],
-    rows: filteredKavlings.map(k => [
+    rows: sortedFilteredKavlings.map(k => [
       k.nomor,
       k.blok,
       k.tipe,
@@ -692,116 +705,214 @@ export default function KavlingView() {
         </div>
       </div>
 
-      {/* Kavling Interactive Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredKavlings.map((kav) => {
-          const isTerbuka = kav.status === 'terbuka';
-          const isBooking = kav.status === 'booking';
-          const isTerjual = kav.status === 'terjual';
+      {/* Blok Selector Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5 mr-1">
+            <Layers className="w-4 h-4 text-emerald-600" />
+            <span>Pilih Blok:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelectedBlokTab('all')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              selectedBlokTab === 'all'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            Semua Blok ({totalLots})
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedBlokTab('A')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              selectedBlokTab === 'A'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-blue-50/70 text-blue-700 hover:bg-blue-100 border border-blue-200'
+            }`}
+          >
+            Blok A ({blokACount} Unit: A1 - A13)
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedBlokTab('B')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              selectedBlokTab === 'B'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+            }`}
+          >
+            Blok B ({blokBCount} Unit: B1 - B14)
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedBlokTab('C')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              selectedBlokTab === 'C'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'bg-purple-50/70 text-purple-700 hover:bg-purple-100 border border-purple-200'
+            }`}
+          >
+            Blok C ({blokCCount} Unit: C1 - C18)
+          </button>
+        </div>
 
-          return (
-            <div
-              key={kav.id}
-              onClick={() => setSelectedKavling(kav)}
-              className={`p-4 rounded-2xl border-2 transition-all cursor-pointer shadow-xs hover:shadow-md hover:-translate-y-0.5 bg-white ${
-                isTerbuka
-                  ? 'border-emerald-300 hover:border-emerald-500'
-                  : isBooking
-                  ? 'border-amber-300 hover:border-amber-500'
-                  : 'border-rose-300 hover:border-rose-500'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                    {kav.blok}
-                  </span>
-                  <h4 className="text-xl font-black text-slate-900 tracking-tight font-mono">
-                    {kav.nomor}
-                  </h4>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                      isTerbuka
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : isBooking
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-rose-100 text-rose-800'
-                    }`}
-                  >
-                    {kav.status}
-                  </span>
-                  {canFullAccess && (
-                    <div className="flex items-center gap-0.5 bg-slate-100/90 rounded-md p-0.5 shadow-2xs border border-slate-200">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenEditKavling(kav);
-                        }}
-                        title="Edit Unit Kavling Ini"
-                        className="p-1 text-slate-500 hover:text-blue-600 hover:bg-white rounded transition cursor-pointer"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteKavlingTarget(kav);
-                        }}
-                        title="Hapus Unit Kavling Ini"
-                        className="p-1 text-slate-500 hover:text-rose-600 hover:bg-white rounded transition cursor-pointer"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+        <div className="text-[11px] font-medium text-slate-400">
+          Urutan Unit: <span className="text-slate-700 font-bold">Runtut Alami (A1-A13, B1-B14, C1-C18)</span>
+        </div>
+      </div>
 
-              <div className="space-y-1 text-xs text-slate-600 mb-3">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Luas:</span>
-                  <span className="font-semibold">{kav.luas} m² ({kav.dimensi})</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Tipe:</span>
-                  <span className="font-semibold">{kav.tipe}</span>
-                </div>
-                {kav.customerNama ? (
-                  <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 text-[10px]">Pembeli:</span>
-                    <span className="font-bold text-slate-900 truncate max-w-[140px] flex items-center gap-1">
-                      <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="truncate">{kav.customerNama}</span>
-                    </span>
-                  </div>
-                ) : (
-                  <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400 text-[10px]">Pembeli:</span>
-                    <span className="text-emerald-700 font-semibold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                      Tersedia
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
-                <span className="text-sm font-black text-emerald-700 font-mono">
-                  Rp {kav.harga.toLocaleString('id-ID')}
+      {/* Grouped Block Sections with Header & Numerical Unit Cards */}
+      <div className="space-y-6">
+        {blockGroups.map((group) => (
+          <div key={group.blokKey} className="space-y-3">
+            {/* Block Header Banner */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shadow-xs ${
+                  group.blokKey === 'A' ? 'bg-blue-600' : group.blokKey === 'B' ? 'bg-emerald-600' : 'bg-purple-600'
+                }`}>
+                  {group.blokKey}
                 </span>
-                <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                  <Maximize2 className="w-3 h-3" /> Detail
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                    {group.blokTitle}
+                    <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                      {group.totalUnits} Unit {group.items.length > 0 ? `(${group.items[0]?.nomor} - ${group.items[group.items.length - 1]?.nomor})` : ''}
+                    </span>
+                  </h3>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-bold">
+                  🟢 {group.openUnits} Terbuka
+                </span>
+                <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-bold">
+                  🟡 {group.bookingUnits} Booking
+                </span>
+                <span className="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg font-bold">
+                  🔴 {group.soldUnits} Terjual
+                </span>
+                <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg font-mono font-bold">
+                  Nilai: Rp {group.totalValue.toLocaleString('id-ID')}
                 </span>
               </div>
             </div>
-          );
-        })}
+
+            {/* Kavling Interactive Cards Grid (Strict Natural Order) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {group.items.map((kav) => {
+                const isTerbuka = kav.status === 'terbuka';
+                const isBooking = kav.status === 'booking';
+                const isTerjual = kav.status === 'terjual';
+
+                return (
+                  <div
+                    key={kav.id}
+                    onClick={() => setSelectedKavling(kav)}
+                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer shadow-xs hover:shadow-md hover:-translate-y-0.5 bg-white ${
+                      isTerbuka
+                        ? 'border-emerald-300 hover:border-emerald-500'
+                        : isBooking
+                        ? 'border-amber-300 hover:border-amber-500'
+                        : 'border-rose-300 hover:border-rose-500'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                          {kav.blok}
+                        </span>
+                        <h4 className="text-xl font-black text-slate-900 tracking-tight font-mono">
+                          {kav.nomor}
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                            isTerbuka
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : isBooking
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-rose-100 text-rose-800'
+                          }`}
+                        >
+                          {kav.status}
+                        </span>
+                        {canFullAccess && (
+                          <div className="flex items-center gap-0.5 bg-slate-100/90 rounded-md p-0.5 shadow-2xs border border-slate-200">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditKavling(kav);
+                              }}
+                              title="Edit Unit Kavling Ini"
+                              className="p-1 text-slate-500 hover:text-blue-600 hover:bg-white rounded transition cursor-pointer"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteKavlingTarget(kav);
+                              }}
+                              title="Hapus Unit Kavling Ini"
+                              className="p-1 text-slate-500 hover:text-rose-600 hover:bg-white rounded transition cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 text-xs text-slate-600 mb-3">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Luas:</span>
+                        <span className="font-semibold">{kav.luas} m² ({kav.dimensi})</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Tipe:</span>
+                        <span className="font-semibold">{kav.tipe}</span>
+                      </div>
+                      {kav.customerNama ? (
+                        <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                          <span className="text-slate-400 text-[10px]">Pembeli:</span>
+                          <span className="font-bold text-slate-900 truncate max-w-[140px] flex items-center gap-1">
+                            <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span className="truncate">{kav.customerNama}</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                          <span className="text-slate-400 text-[10px]">Pembeli:</span>
+                          <span className="text-emerald-700 font-semibold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                            Tersedia
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
+                      <span className="text-sm font-black text-emerald-700 font-mono">
+                        Rp {kav.harga.toLocaleString('id-ID')}
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                        <Maximize2 className="w-3 h-3" /> Detail
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {filteredKavlings.length === 0 && (
+      {blockGroups.length === 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
           <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-800 mb-1">Tidak Ada Kavling Ditemukan</h3>
