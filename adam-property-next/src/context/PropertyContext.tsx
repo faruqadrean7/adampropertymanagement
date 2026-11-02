@@ -115,6 +115,7 @@ interface PropertyContextType {
     pekerjaan?: string;
     alamat: string;
     kavlingId?: string | null;
+    kavlingIds?: string[];
     totalHarga?: number;
     uangMuka?: number;
     metodeBayar?: 'tunai' | 'transfer' | 'barter';
@@ -653,6 +654,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     pekerjaan?: string;
     alamat: string;
     kavlingId?: string | null;
+    kavlingIds?: string[];
     totalHarga?: number;
     uangMuka?: number;
     metodeBayar?: 'tunai' | 'transfer' | 'barter';
@@ -668,9 +670,16 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     notarisPpat?: string;
   }): Promise<boolean> => {
     const custId = `cust-${Date.now()}`;
-    const targetKav = data.kavlingId ? kavlings.find(k => k.id === data.kavlingId) : undefined;
-    const kavKode = targetKav ? `${targetKav.blok} - ${targetKav.nomor}` : (data.kavlingId || '-');
-    const finalTotal = data.totalHarga !== undefined ? data.totalHarga : (targetKav?.harga || 0);
+    const targetKavIds: string[] = data.kavlingIds && data.kavlingIds.length > 0
+      ? data.kavlingIds
+      : (data.kavlingId ? [data.kavlingId] : []);
+    const targetLots = kavlings.filter(k => targetKavIds.includes(k.id));
+    const primaryKav = targetLots[0];
+    const kavKode = targetLots.length > 0
+      ? targetLots.map(k => k.nomor).join(', ')
+      : (data.kavlingId || '-');
+    const brochureSum = targetLots.reduce((sum, k) => sum + k.harga, 0);
+    const finalTotal = data.totalHarga !== undefined && data.totalHarga > 0 ? data.totalHarga : brochureSum;
     const finalDp = data.uangMuka || 0;
     const isLunas = finalDp >= finalTotal && finalTotal > 0;
     const sisa = Math.max(0, finalTotal - finalDp);
@@ -685,14 +694,14 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       tempatTanggalLahir: data.tempatTanggalLahir,
       pekerjaan: data.pekerjaan,
       alamat: data.alamat,
-      kavlingId: targetKav?.id || null,
+      kavlingId: primaryKav?.id || null,
       kavlingKode: kavKode,
-      kavlingIds: targetKav ? [targetKav.id] : [],
-      projectId: targetKav?.projectId,
+      kavlingIds: targetKavIds,
+      projectId: primaryKav?.projectId || 'proj-bm1',
       totalHarga: finalTotal,
       totalMasuk: finalDp,
       sisaPiutang: sisa,
-      statusBayar: isLunas ? 'lunas' : 'belum_lunas',
+      statusBayar: (isLunas ? 'lunas' : 'belum_lunas') as Customer['statusBayar'],
       tanggalBeli: new Date().toISOString().split('T')[0],
       ktpImage: data.ktpImage,
       kkImage: data.kkImage,
@@ -712,11 +721,11 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       return updated;
     });
 
-    // 2. Update kavling status if kavling was selected
-    if (targetKav) {
+    // 2. Update kavling status if kavlings were selected
+    if (targetLots.length > 0) {
       setKavlings(prev => {
         const updated = prev.map(k =>
-          k.id === targetKav.id
+          targetKavIds.includes(k.id)
             ? { ...k, status: (isLunas ? 'terjual' : 'booking') as Kavling['status'], customerId: custId, customerNama: data.nama }
             : k
         );
@@ -757,7 +766,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         keterangan: `${newPay.tujuan} (${kavKode})`,
         nominal: finalDp,
         metode: bayarMethod === 'tunai' ? 'Tunai Kasir' : bayarMethod === 'transfer' ? 'Transfer Bank' : 'Barter Material',
-        projectId: targetKav?.projectId,
+        projectId: primaryKav?.projectId || 'proj-bm1',
         refType: 'customer_payment',
         refId: payId
       };
@@ -772,8 +781,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     if (isSupabaseConfigured()) {
       try {
         await supabaseInsertCustomer(newCustomer);
-        if (targetKav) {
-          await supabaseUpdateKavling(targetKav.id, {
+        for (const lot of targetLots) {
+          await supabaseUpdateKavling(lot.id, {
             customerId: custId,
             customerNama: data.nama,
             status: isLunas ? 'terjual' : 'booking'

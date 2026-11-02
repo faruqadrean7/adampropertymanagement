@@ -122,11 +122,34 @@ export default function CustomerView() {
 
   // Form Add Customer - Transaksi Kavling
   const [selectedKavlingId, setSelectedKavlingId] = useState('');
+  const [addCustLotIds, setAddCustLotIds] = useState<string[]>([]);
+  const [addCustBlokFilter, setAddCustBlokFilter] = useState<'all' | 'A' | 'B' | 'C'>('all');
+  const [addCustSearch, setAddCustSearch] = useState('');
+  const [addCustOnlyOpen, setAddCustOnlyOpen] = useState(false);
   const [totalHarga, setTotalHarga] = useState(0);
   const [uangMuka, setUangMuka] = useState(0);
   const [metodeBayar, setMetodeBayar] = useState<'tunai' | 'transfer' | 'barter'>('transfer');
   const [rincianBarter, setRincianBarter] = useState('');
   const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
+
+  const toggleAddCustLot = (lotId: string) => {
+    setAddCustLotIds(prev => {
+      const next = prev.includes(lotId) ? prev.filter(id => id !== lotId) : [...prev, lotId];
+      const selectedLots = kavlings.filter(k => next.includes(k.id));
+      const sumBrochure = selectedLots.reduce((sum, k) => sum + k.harga, 0);
+      setTotalHarga(sumBrochure);
+      setUangMuka(Math.round(sumBrochure * 0.3));
+      setSelectedKavlingId(next[0] || '');
+      return next;
+    });
+  };
+
+  const clearAddCustLots = () => {
+    setAddCustLotIds([]);
+    setSelectedKavlingId('');
+    setTotalHarga(0);
+    setUangMuka(0);
+  };
 
   // Form Payment
   const [payNominal, setPayNominal] = useState<number>(10000000);
@@ -294,7 +317,8 @@ export default function CustomerView() {
         tempatTanggalLahir: tempatTanggalLahir.trim() || undefined,
         pekerjaan: pekerjaan.trim() || undefined,
         alamat: alamat.trim() || 'Cluster Baitul Makmur, Jatikerto',
-        kavlingId: selectedKavlingId || null,
+        kavlingIds: addCustLotIds,
+        kavlingId: addCustLotIds[0] || null,
         totalHarga: Number(totalHarga) || 0,
         uangMuka: Number(uangMuka) || 0,
         metodeBayar,
@@ -321,9 +345,7 @@ export default function CustomerView() {
       setTempatTanggalLahir('');
       setPekerjaan('');
       setAlamat('');
-      setSelectedKavlingId('');
-      setTotalHarga(0);
-      setUangMuka(0);
+      clearAddCustLots();
       setKtpImage(null);
       setKkImage(null);
       setAjbImage(null);
@@ -1212,33 +1234,181 @@ export default function CustomerView() {
                   <span>4. PILIHAN KAVLING & SKEMA PEMBAYARAN</span>
                 </div>
 
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Pilih Unit Kavling yang Dibeli (Opsional)
+                {/* Header Section 4 */}
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4 text-emerald-600" />
+                    <span>Pilih Unit Kavling yang Dibeli (Bisa Lebih dari 1 Unit)</span>
                   </label>
-                  <select
-                    value={selectedKavlingId}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setSelectedKavlingId(val);
-                      const kav = kavlings.find(k => k.id === val);
-                      if (kav) {
-                        setTotalHarga(kav.harga);
-                        setUangMuka(Math.round(kav.harga * 0.3));
-                      } else {
-                        setTotalHarga(0);
-                        setUangMuka(0);
-                      }
-                    }}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="">-- Belum Pilih Kavling (Bisa Dihubungkan Nanti) --</option>
-                    {availableLots.map(k => (
-                      <option key={k.id} value={k.id}>
-                        {k.blok} - {k.nomor} ({k.luas} m² - Rp {k.harga.toLocaleString('id-ID')})
-                      </option>
-                    ))}
-                  </select>
+                  {addCustLotIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearAddCustLots}
+                      className="text-[11px] text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
+                    >
+                      Batal Pilih ({addCustLotIds.length} Unit)
+                    </button>
+                  )}
+                </div>
+
+                {/* Selected Lots Summary Banner */}
+                {addCustLotIds.length > 0 ? (
+                  <div className="p-3 bg-emerald-50/90 border border-emerald-300 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>{addCustLotIds.length} Unit Kavling Terpilih:</span>
+                      </span>
+                      <span className="font-mono text-emerald-800 font-bold text-[11px]">
+                        Total Brosur: Rp {kavlings.filter(k => addCustLotIds.includes(k.id)).reduce((s, k) => s + k.harga, 0).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {kavlings.filter(k => addCustLotIds.includes(k.id)).map(k => (
+                        <span
+                          key={k.id}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-emerald-300 rounded-lg text-xs font-mono font-bold text-emerald-900 shadow-2xs"
+                        >
+                          <span>{k.blok} - {k.nomor} ({k.luas} m²)</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleAddCustLot(k.id)}
+                            className="text-slate-400 hover:text-rose-600 font-bold ml-0.5 cursor-pointer"
+                            title="Hapus unit ini"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2.5 bg-blue-50/60 border border-blue-200/80 rounded-xl flex items-center justify-between text-xs text-blue-900">
+                    <span>💡 <b>Belum ada kavling dipilih.</b> Klik kartu unit di bawah atau lewati jika data pembeli belum ada unitnya.</span>
+                  </div>
+                )}
+
+                {/* Filter Tabs & Search Bar */}
+                <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                    {/* Blok Pills */}
+                    <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 text-xs font-semibold shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setAddCustBlokFilter('all')}
+                        className={`px-2.5 py-1 rounded-lg transition cursor-pointer text-[11px] ${
+                          addCustBlokFilter === 'all'
+                            ? 'bg-slate-900 text-white font-bold'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Semua ({kavlings.length})
+                      </button>
+                      {(['A', 'B', 'C'] as const).map(blok => (
+                        <button
+                          key={blok}
+                          type="button"
+                          onClick={() => setAddCustBlokFilter(blok)}
+                          className={`px-2.5 py-1 rounded-lg transition cursor-pointer text-[11px] ${
+                            addCustBlokFilter === blok
+                              ? 'bg-emerald-600 text-white font-bold'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Blok {blok} ({kavlings.filter(k => k.blok.toUpperCase().includes(blok)).length})
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Quick Search Box */}
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={addCustSearch}
+                        onChange={(e) => setAddCustSearch(e.target.value)}
+                        placeholder="Ketik cari nomor unit (misal: A1, B6, C10)..."
+                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-emerald-500 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={addCustOnlyOpen}
+                        onChange={(e) => setAddCustOnlyOpen(e.target.checked)}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5"
+                      />
+                      <span>Hanya unit siap jual (terbuka)</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400">Klik unit untuk memilih / batal pilih</span>
+                  </div>
+                </div>
+
+                {/* Interactive Unit Cards Grid */}
+                <div className="border border-slate-200 rounded-xl p-2 bg-white max-h-52 overflow-y-auto custom-scrollbar">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5">
+                    {kavlings
+                      .filter(k => {
+                        const matchBlok = addCustBlokFilter === 'all' || k.blok.toUpperCase().includes(addCustBlokFilter);
+                        const matchSearch = `${k.blok} ${k.nomor} ${k.dimensi} ${k.customerNama || ''}`.toLowerCase().includes(addCustSearch.toLowerCase());
+                        const isSelected = addCustLotIds.includes(k.id);
+                        const matchStatus = !addCustOnlyOpen || k.status === 'terbuka' || isSelected;
+                        return matchBlok && matchSearch && matchStatus;
+                      })
+                      .map(lot => {
+                        const isSelected = addCustLotIds.includes(lot.id);
+                        const isSold = lot.status === 'terjual';
+                        const isBooked = lot.status === 'booking';
+
+                        return (
+                          <div
+                            key={lot.id}
+                            onClick={() => toggleAddCustLot(lot.id)}
+                            className={`p-2 rounded-lg border-2 transition-all cursor-pointer select-none text-[11px] flex flex-col justify-between ${
+                              isSelected
+                                ? 'border-emerald-600 bg-emerald-50 shadow-xs ring-2 ring-emerald-500/20'
+                                : isSold
+                                ? 'border-slate-200 bg-slate-100 opacity-60 hover:opacity-100'
+                                : isBooked
+                                ? 'border-amber-200 bg-amber-50/50 hover:border-amber-300'
+                                : 'border-slate-200 bg-white hover:border-emerald-400 hover:shadow-2xs'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="font-mono font-black text-xs text-slate-900">
+                                {lot.blok} - {lot.nomor}
+                              </span>
+                              {isSelected ? (
+                                <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[9px] font-bold">
+                                  ✓
+                                </span>
+                              ) : (
+                                <span
+                                  className={`text-[8px] font-bold px-1 rounded uppercase ${
+                                    lot.status === 'terbuka'
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : lot.status === 'booking'
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-rose-100 text-rose-800'
+                                  }`}
+                                >
+                                  {lot.status}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-1 flex items-baseline justify-between text-[10px]">
+                              <span className="text-slate-500">{lot.luas} m²</span>
+                              <span className="font-mono font-bold text-slate-700">
+                                Rp {(lot.harga / 1000000).toLocaleString('id-ID')} Jt
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
