@@ -62,6 +62,8 @@ export default function KavlingView() {
     customers,
     payments,
     assignCustomerToKavling,
+    assignCustomerToMultipleKavlings,
+    unlinkCustomerFromSpecificKavling,
     unlinkCustomerFromKavling
   } = useProperty();
 
@@ -75,10 +77,12 @@ export default function KavlingView() {
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [selectedKavling, setSelectedKavling] = useState<Kavling | null>(null);
 
-  // Modal Hubungkan Customer ke Kavling
+  // Modal Hubungkan Customer ke Kavling (Dukungan Multi-Kavling)
   const [assignKavlingTarget, setAssignKavlingTarget] = useState<Kavling | null>(null);
   const [assignCustId, setAssignCustId] = useState<string>('');
   const [assignPrice, setAssignPrice] = useState<number>(0);
+  const [assignMode, setAssignMode] = useState<'add' | 'replace'>('add');
+  const [assignCustSearch, setAssignCustSearch] = useState('');
 
   // Edit & Delete states for Kavling
   const [showEditKavlingModal, setShowEditKavlingModal] = useState(false);
@@ -949,6 +953,41 @@ export default function KavlingView() {
                       </div>
                     </div>
 
+                    {/* Multi-Kavling Badge: Jika pembeli memiliki lebih dari 1 kavling */}
+                    {(() => {
+                      const buyerAllLots = kavlings.filter(k => k.customerId === buyer.id || (buyer.kavlingId === k.id));
+                      if (buyerAllLots.length <= 1) return null;
+
+                      return (
+                        <div className="p-2.5 bg-blue-100/60 rounded-xl border border-blue-200 text-xs space-y-1.5">
+                          <span className="font-bold text-blue-900 block text-[11px]">
+                            📦 Konsumen ini memiliki total {buyerAllLots.length} unit kavling:
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {buyerAllLots.map(lot => {
+                              const isCurrent = lot.id === selectedKavling.id;
+                              return (
+                                <button
+                                  key={lot.id}
+                                  type="button"
+                                  onClick={() => {
+                                    if (!isCurrent) setSelectedKavling(lot);
+                                  }}
+                                  className={`px-2 py-1 rounded text-xs font-mono font-bold transition ${
+                                    isCurrent
+                                      ? 'bg-blue-600 text-white shadow-xs cursor-default'
+                                      : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-300 cursor-pointer'
+                                  }`}
+                                >
+                                  {lot.nomor} ({lot.luas} m²) {isCurrent ? '• Unit Ini' : '→ Buka'}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {!isReadOnly && (
                       <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between gap-2">
                         <button
@@ -1138,9 +1177,16 @@ export default function KavlingView() {
       {/* ======================================================== */}
       {assignKavlingTarget && (() => {
         const selectedCust = customers.find(c => c.id === assignCustId);
+        const existingLots = selectedCust ? kavlings.filter(k => (k.customerId === selectedCust.id || selectedCust.kavlingId === k.id) && k.id !== assignKavlingTarget.id) : [];
+        const isMultiLot = selectedCust && existingLots.length > 0;
+
         const totalMasuk = selectedCust ? selectedCust.totalMasuk : 0;
         const newSisa = Math.max(0, assignPrice - totalMasuk);
         const isLunas = totalMasuk >= assignPrice && assignPrice > 0;
+
+        const filteredCustomers = customers.filter(c =>
+          `${c.nama} ${c.nik} ${c.telepon}`.toLowerCase().includes(assignCustSearch.toLowerCase())
+        );
 
         return (
           <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -1166,22 +1212,54 @@ export default function KavlingView() {
                 </button>
               </div>
 
-              {/* Select Customer */}
+              {/* Select Customer dengan Search Rapi */}
               <div className="space-y-1.5 text-xs">
-                <label className="font-bold text-slate-700 block">
-                  Pilih Konsumen / Pembeli:
-                </label>
+                <div className="flex justify-between items-center">
+                  <label className="font-bold text-slate-700">
+                    Pilih Konsumen / Pembeli:
+                  </label>
+                  <span className="text-[10px] text-slate-400">Total {customers.length} Konsumen</span>
+                </div>
+                
+                {customers.length > 5 && (
+                  <div className="relative mb-1">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={assignCustSearch}
+                      onChange={(e) => setAssignCustSearch(e.target.value)}
+                      placeholder="Cari nama / NIK konsumen..."
+                      className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"
+                    />
+                  </div>
+                )}
+
                 <select
                   value={assignCustId}
-                  onChange={(e) => setAssignCustId(e.target.value)}
+                  onChange={(e) => {
+                    const newId = e.target.value;
+                    setAssignCustId(newId);
+                    const cust = customers.find(c => c.id === newId);
+                    if (cust) {
+                      const custExisting = kavlings.filter(k => (k.customerId === cust.id || cust.kavlingId === k.id) && k.id !== assignKavlingTarget.id);
+                      if (custExisting.length > 0 && assignMode === 'add') {
+                        setAssignPrice(cust.totalHarga + assignKavlingTarget.harga);
+                      } else {
+                        setAssignPrice(assignKavlingTarget.harga);
+                      }
+                    }
+                  }}
                   className="w-full border-2 border-emerald-200 focus:border-emerald-500 rounded-xl px-3 py-2.5 bg-white text-slate-800 font-semibold text-xs focus:outline-none"
                 >
                   <option value="">-- Pilih Customer Terdaftar --</option>
-                  {customers.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.nama} (NIK: {c.nik}) - Kavling saat ini: {c.kavlingKode || 'Belum ada'} - Uang Masuk: Rp {c.totalMasuk.toLocaleString('id-ID')}
-                    </option>
-                  ))}
+                  {filteredCustomers.map(c => {
+                    const lots = kavlings.filter(k => k.customerId === c.id || c.kavlingId === k.id);
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {c.nama} (NIK: {c.nik}) &bull; {lots.length > 0 ? `Memiliki: ${lots.map(l => l.nomor).join(', ')}` : 'Belum ada unit'}
+                      </option>
+                    );
+                  })}
                 </select>
                 {customers.length === 0 && (
                   <p className="text-amber-700 text-[11px]">
@@ -1190,13 +1268,66 @@ export default function KavlingView() {
                 )}
               </div>
 
+              {/* Opsi Multi-Kavling Jika Customer Sudah Memiliki Unit Lain */}
+              {isMultiLot && (
+                <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-200 text-xs space-y-2">
+                  <div className="font-bold text-blue-900 flex items-center gap-1.5 text-[11px]">
+                    <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span><b>{selectedCust?.nama}</b> sudah memiliki unit: <b>{existingLots.map(l => l.nomor).join(', ')}</b></span>
+                  </div>
+                  <div className="space-y-1.5 text-[11px] text-slate-700 bg-white p-2.5 rounded-lg border border-blue-100">
+                    <label className="flex items-start gap-2 cursor-pointer font-medium">
+                      <input
+                        type="radio"
+                        name="assignMode"
+                        checked={assignMode === 'add'}
+                        onChange={() => {
+                          setAssignMode('add');
+                          setAssignPrice((selectedCust?.totalHarga || 0) + assignKavlingTarget.harga);
+                        }}
+                        className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div>
+                        <span className="font-bold text-blue-900 block">
+                          Tambahkan Sebagai Unit Tambahan (Multi-Kavling)
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          {selectedCust?.nama} akan memiliki {existingLots.length + 1} unit kavling: <b>{[...existingLots.map(l => l.nomor), assignKavlingTarget.nomor].join(', ')}</b>
+                        </span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-2 cursor-pointer font-medium pt-1 border-t border-slate-100">
+                      <input
+                        type="radio"
+                        name="assignMode"
+                        checked={assignMode === 'replace'}
+                        onChange={() => {
+                          setAssignMode('replace');
+                          setAssignPrice(assignKavlingTarget.harga);
+                        }}
+                        className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div>
+                        <span className="font-bold text-slate-900 block">
+                          Pindahkan Unit (Ganti ke kavling ini saja)
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          Unit lama akan dilepaskan dan kembali berstatus Terbuka.
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               {/* Kesepakatan Harga Kontrak */}
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between items-center">
                   <label className="font-bold text-slate-700">
-                    Harga Kesepakatan Kontrak Penjualan (Rp):
+                    Harga Kesepakatan Kontrak (Rp):
                   </label>
-                  <span className="text-[10px] text-slate-400">Bisa diisi harga setelah diskon</span>
+                  <span className="text-[10px] text-slate-400">Total nilai transaksi kontrak</span>
                 </div>
                 <input
                   type="number"
@@ -1210,21 +1341,27 @@ export default function KavlingView() {
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   <button
                     type="button"
-                    onClick={() => setAssignPrice(assignKavlingTarget.harga)}
+                    onClick={() => {
+                      if (isMultiLot && assignMode === 'add') {
+                        setAssignPrice((selectedCust?.totalHarga || 0) + assignKavlingTarget.harga);
+                      } else {
+                        setAssignPrice(assignKavlingTarget.harga);
+                      }
+                    }}
                     className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-semibold transition cursor-pointer"
                   >
-                    Brosur: Rp {assignKavlingTarget.harga.toLocaleString('id-ID')}
+                    Brosur Standar: Rp {(isMultiLot && assignMode === 'add' ? ((selectedCust?.totalHarga || 0) + assignKavlingTarget.harga) : assignKavlingTarget.harga).toLocaleString('id-ID')}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setAssignPrice(Math.max(0, assignKavlingTarget.harga - 5000000))}
+                    onClick={() => setAssignPrice(Math.max(0, assignPrice - 5000000))}
                     className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded text-[10px] font-semibold transition cursor-pointer"
                   >
                     Diskon Promo 5 Jt
                   </button>
                   <button
                     type="button"
-                    onClick={() => setAssignPrice(Math.max(0, assignKavlingTarget.harga - 10000000))}
+                    onClick={() => setAssignPrice(Math.max(0, assignPrice - 10000000))}
                     className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded text-[10px] font-semibold transition cursor-pointer"
                   >
                     Diskon 10 Jt
@@ -1244,7 +1381,13 @@ export default function KavlingView() {
                       <span className="font-bold text-white">{selectedCust.nama}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-300">Nilai Kontrak:</span>
+                      <span className="text-slate-300">Total Unit:</span>
+                      <span className="font-bold text-blue-300">
+                        {isMultiLot && assignMode === 'add' ? `${existingLots.length + 1} Unit (${[...existingLots.map(l => l.nomor), assignKavlingTarget.nomor].join(', ')})` : `1 Unit (${assignKavlingTarget.nomor})`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-300">Nilai Kontrak Total:</span>
                       <span className="font-mono font-bold text-white">Rp {assignPrice.toLocaleString('id-ID')}</span>
                     </div>
                     <div className="flex justify-between">
@@ -1252,7 +1395,7 @@ export default function KavlingView() {
                       <span className="font-mono font-bold text-emerald-400">Rp {totalMasuk.toLocaleString('id-ID')}</span>
                     </div>
                     <div className="flex justify-between pt-1 border-t border-slate-800">
-                      <span className="text-slate-300 font-bold">Sisa Piutang:</span>
+                      <span className="text-slate-300 font-bold">Sisa Piutang Berjalan:</span>
                       <span className="font-mono font-bold text-amber-300">
                         Rp {newSisa.toLocaleString('id-ID')}
                       </span>
@@ -1289,7 +1432,14 @@ export default function KavlingView() {
                       alert('Nilai kontrak kesepakatan harus lebih dari Rp 0!');
                       return;
                     }
-                    await assignCustomerToKavling(assignCustId, assignKavlingTarget.id, assignPrice);
+
+                    if (isMultiLot && assignMode === 'add') {
+                      const allTargetIds = Array.from(new Set([...existingLots.map(l => l.id), assignKavlingTarget.id]));
+                      await assignCustomerToMultipleKavlings(assignCustId, allTargetIds, assignPrice);
+                    } else {
+                      await assignCustomerToMultipleKavlings(assignCustId, [assignKavlingTarget.id], assignPrice);
+                    }
+
                     setAssignKavlingTarget(null);
                     if (selectedKavling && selectedKavling.id === assignKavlingTarget.id) {
                       const cust = customers.find(c => c.id === assignCustId);

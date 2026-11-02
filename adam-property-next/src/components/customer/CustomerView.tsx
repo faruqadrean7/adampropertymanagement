@@ -31,9 +31,12 @@ import {
   ShieldCheck,
   Link2,
   Pencil,
-  Check
+  Check,
+  CheckSquare,
+  Square,
+  AlertTriangle
 } from 'lucide-react';
-import { Customer, Payment } from '@/types';
+import { Customer, Payment, Kavling } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
 export default function CustomerView() {
@@ -47,6 +50,8 @@ export default function CustomerView() {
     updateCustomerDocuments,
     updatePaymentReceipt,
     assignCustomerToKavling,
+    assignCustomerToMultipleKavlings,
+    unlinkCustomerFromSpecificKavling,
     unlinkCustomerFromKavling
   } = useProperty();
 
@@ -59,10 +64,39 @@ export default function CustomerView() {
   const [selectedCustDetail, setSelectedCustDetail] = useState<Customer | null>(null);
   const [previewImage, setPreviewImage] = useState<{ title: string; src: string } | null>(null);
 
-  // Modal Link Customer to Kavling
+  // Modal Link Customer to Multiple Kavlings
   const [linkKavlingModalCust, setLinkKavlingModalCust] = useState<Customer | null>(null);
-  const [targetKavlingId, setTargetKavlingId] = useState<string>('');
+  const [selectedKavlingIds, setSelectedKavlingIds] = useState<string[]>([]);
   const [dealPrice, setDealPrice] = useState<number>(0);
+  const [pickerFilterBlok, setPickerFilterBlok] = useState<'all' | 'A' | 'B' | 'C'>('all');
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [pickerOnlyOpen, setPickerOnlyOpen] = useState(false);
+
+  // Helper buka modal kelola unit kavling customer
+  const openLinkModal = (cust: Customer) => {
+    setLinkKavlingModalCust(cust);
+    const owned = kavlings.filter(k => k.customerId === cust.id || (cust.kavlingId === k.id));
+    const currentIds = owned.map(k => k.id);
+    setSelectedKavlingIds(currentIds);
+    const currentBrochureTotal = owned.reduce((sum, k) => sum + k.harga, 0);
+    setDealPrice(cust.totalHarga > 0 ? cust.totalHarga : currentBrochureTotal);
+    setPickerFilterBlok('all');
+    setPickerSearch('');
+    setPickerOnlyOpen(false);
+  };
+
+  // Helper toggle centang unit kavling
+  const toggleSelectKavling = (lotId: string) => {
+    setSelectedKavlingIds(prev => {
+      const isSelected = prev.includes(lotId);
+      const nextIds = isSelected ? prev.filter(id => id !== lotId) : [...prev, lotId];
+      const newBrochureSum = kavlings
+        .filter(k => nextIds.includes(k.id))
+        .reduce((sum, k) => sum + k.harga, 0);
+      setDealPrice(newBrochureSum);
+      return nextIds;
+    });
+  };
 
   // Form Add Customer - Data Diri
   const [nama, setNama] = useState('');
@@ -510,48 +544,70 @@ export default function CustomerView() {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      {cust.kavlingId ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-slate-800 font-mono block">
-                            {cust.kavlingKode}
-                          </span>
-                          {!isReadOnly && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setLinkKavlingModalCust(cust);
-                                setTargetKavlingId(cust.kavlingId || '');
-                                setDealPrice(cust.totalHarga || (kavlings.find(k => k.id === cust.kavlingId)?.harga || 120000000));
-                              }}
-                              title="Ubah / Ganti Sambungan Unit Kavling"
-                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition cursor-pointer"
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div>
-                          {!isReadOnly ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setLinkKavlingModalCust(cust);
-                                const firstAvailable = kavlings.find(k => !k.customerId) || kavlings[0];
-                                setTargetKavlingId(firstAvailable?.id || '');
-                                setDealPrice(firstAvailable?.harga || 120000000);
-                              }}
-                              className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-bold inline-flex items-center gap-1 transition cursor-pointer shadow-2xs"
-                              title="Hubungkan customer ini ke unit kavling Baitul Makmur"
-                            >
-                              <Link2 className="w-3 h-3 text-blue-600" />
-                              <span>+ Hubungkan</span>
-                            </button>
-                          ) : (
-                            <span className="text-slate-400 font-mono text-[11px]">-</span>
-                          )}
-                        </div>
-                      )}
+                      {(() => {
+                        const ownedLots = kavlings.filter(k => k.customerId === cust.id || (cust.kavlingId === k.id));
+                        const hasLots = ownedLots.length > 0 || (cust.kavlingKode && cust.kavlingKode !== '-');
+
+                        if (hasLots) {
+                          const totalLuas = ownedLots.reduce((sum, l) => sum + l.luas, 0);
+
+                          return (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {ownedLots.length > 0 ? (
+                                  ownedLots.map(lot => (
+                                    <span 
+                                      key={lot.id} 
+                                      className="font-bold text-slate-800 font-mono text-[11px] px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200"
+                                      title={`${lot.blok} - ${lot.nomor} (${lot.luas} m²)`}
+                                    >
+                                      {lot.nomor}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="font-bold text-slate-800 font-mono text-xs">
+                                    {cust.kavlingKode}
+                                  </span>
+                                )}
+
+                                {!isReadOnly && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openLinkModal(cust)}
+                                    title="Kelola / Tambah / Ubah Unit Kavling"
+                                    className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition cursor-pointer"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                              {ownedLots.length > 1 && (
+                                <span className="text-[10px] text-blue-700 font-semibold block">
+                                  {ownedLots.length} Unit &bull; {totalLuas} m²
+                                </span>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div>
+                            {!isReadOnly ? (
+                              <button
+                                type="button"
+                                onClick={() => openLinkModal(cust)}
+                                className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-bold inline-flex items-center gap-1 transition cursor-pointer shadow-2xs"
+                                title="Hubungkan customer ini ke unit kavling Baitul Makmur"
+                              >
+                                <Link2 className="w-3 h-3 text-blue-600" />
+                                <span>+ Hubungkan</span>
+                              </button>
+                            ) : (
+                              <span className="text-slate-400 font-mono text-[11px]">-</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {hasBarter && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 mt-1 border border-amber-300">
                           <Package className="w-3 h-3" /> Barter Material
@@ -1271,18 +1327,25 @@ export default function CustomerView() {
 
               {/* Unit Kavling Terkait */}
               {(() => {
-                const linkedKavling = kavlings.find(k => k.id === selectedCustDetail.kavlingId || (selectedCustDetail.kavlingKode && k.nomor === selectedCustDetail.kavlingKode));
+                const ownedLots = kavlings.filter(k => k.customerId === selectedCustDetail.id || (selectedCustDetail.kavlingId === k.id));
+                const totalLuas = ownedLots.reduce((sum, l) => sum + l.luas, 0);
+                const totalBrosur = ownedLots.reduce((sum, l) => sum + l.harga, 0);
+
                 return (
-                  <div className="p-3.5 bg-blue-50/50 rounded-xl border border-blue-200/80 space-y-2">
-                    <div className="flex justify-between items-center pb-1.5 border-b border-blue-200/60">
+                  <div className="p-3.5 bg-blue-50/50 rounded-xl border border-blue-200/80 space-y-2.5">
+                    <div className="flex justify-between items-center pb-1.5 border-b border-blue-200/60 flex-wrap gap-2">
                       <h4 className="font-bold text-slate-800 flex items-center gap-1.5">
                         <Building2 className="w-4 h-4 text-blue-600" />
-                        <span>Unit Kavling Terkait</span>
+                        <span>Unit Kavling Terkait ({ownedLots.length} Unit)</span>
                       </h4>
-                      {selectedCustDetail.kavlingId ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
-                          Terhubung: {selectedCustDetail.kavlingKode}
-                        </span>
+                      {ownedLots.length > 0 ? (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {ownedLots.map(l => (
+                            <span key={l.id} className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200 font-mono">
+                              {l.nomor}
+                            </span>
+                          ))}
+                        </div>
                       ) : (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
                           Belum Terhubung
@@ -1290,53 +1353,68 @@ export default function CustomerView() {
                       )}
                     </div>
 
-                    {selectedCustDetail.kavlingId ? (
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    {ownedLots.length > 0 ? (
+                      <div className="space-y-2.5">
+                        {/* List Unit Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {ownedLots.map(lot => (
+                            <div key={lot.id} className="p-2.5 bg-white rounded-xl border border-blue-200 text-xs flex justify-between items-center">
+                              <div>
+                                <span className="font-mono font-bold text-sm text-slate-900 block">
+                                  {lot.blok} - {lot.nomor}
+                                </span>
+                                <span className="text-[10px] text-slate-500 block">
+                                  {lot.luas} m² ({lot.dimensi}) &bull; Brosur: Rp {lot.harga.toLocaleString('id-ID')}
+                                </span>
+                              </div>
+                              {!isReadOnly && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (confirm(`Lepaskan unit ${lot.nomor} dari ${selectedCustDetail.nama}?`)) {
+                                      await unlinkCustomerFromSpecificKavling(selectedCustDetail.id, lot.id);
+                                    }
+                                  }}
+                                  className="text-[10px] px-2 py-1 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 font-semibold transition cursor-pointer"
+                                  title="Lepas unit ini dari customer"
+                                >
+                                  Lepas
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Summary Bar */}
+                        <div className="p-2 bg-white rounded-lg border border-slate-200 grid grid-cols-3 gap-2 text-center text-[11px]">
                           <div>
-                            <span className="text-slate-500 block">Unit Kavling:</span>
-                            <span className="font-bold text-slate-900 font-mono text-xs">
-                              {selectedCustDetail.kavlingKode}
-                            </span>
+                            <span className="text-slate-500 block text-[10px]">Total Luas:</span>
+                            <span className="font-bold text-slate-800">{totalLuas} m²</span>
                           </div>
                           <div>
-                            <span className="text-slate-500 block">Spesifikasi Luas:</span>
-                            <span className="font-semibold text-slate-800">
-                              {linkedKavling ? `${linkedKavling.luas} m² (${linkedKavling.dimensi})` : '-'}
-                            </span>
+                            <span className="text-slate-500 block text-[10px]">Total Brosur:</span>
+                            <span className="font-mono text-slate-700">Rp {totalBrosur.toLocaleString('id-ID')}</span>
                           </div>
                           <div>
-                            <span className="text-slate-500 block">Harga Brosur Standar:</span>
-                            <span className="font-mono text-slate-700">
-                              {linkedKavling ? `Rp ${linkedKavling.harga.toLocaleString('id-ID')}` : '-'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 block">Harga Kontrak Kesepakatan:</span>
-                            <span className="font-mono font-bold text-blue-700">
-                              Rp {selectedCustDetail.totalHarga.toLocaleString('id-ID')}
-                            </span>
+                            <span className="text-slate-500 block text-[10px]">Kesepakatan Kontrak:</span>
+                            <span className="font-mono font-bold text-blue-700">Rp {selectedCustDetail.totalHarga.toLocaleString('id-ID')}</span>
                           </div>
                         </div>
 
                         {!isReadOnly && (
-                          <div className="pt-2 border-t border-blue-200/60 flex items-center gap-2">
+                          <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between gap-2">
                             <button
                               type="button"
-                              onClick={() => {
-                                setLinkKavlingModalCust(selectedCustDetail);
-                                setTargetKavlingId(selectedCustDetail.kavlingId || '');
-                                setDealPrice(selectedCustDetail.totalHarga || (linkedKavling?.harga || 120000000));
-                              }}
+                              onClick={() => openLinkModal(selectedCustDetail)}
                               className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold inline-flex items-center gap-1 transition shadow-2xs cursor-pointer"
                             >
                               <Pencil className="w-3 h-3" />
-                              <span>Ubah Unit / Nego Harga</span>
+                              <span>+ Tambah / Kelola Unit Kavling</span>
                             </button>
                             <button
                               type="button"
                               onClick={async () => {
-                                if (confirm(`Putuskan hubungan kavling ${selectedCustDetail.kavlingKode} dari ${selectedCustDetail.nama}? Kavling akan kembali Terbuka.`)) {
+                                if (confirm(`Putuskan seluruh hubungan kavling dari ${selectedCustDetail.nama}? Semua kavling akan kembali Terbuka.`)) {
                                   await unlinkCustomerFromKavling(selectedCustDetail.id);
                                   setSelectedCustDetail(prev => prev ? {
                                     ...prev,
@@ -1351,7 +1429,7 @@ export default function CustomerView() {
                               className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold inline-flex items-center gap-1 transition cursor-pointer"
                             >
                               <Trash2 className="w-3 h-3" />
-                              <span>Putuskan Sambungan</span>
+                              <span>Putuskan Semua Kavling</span>
                             </button>
                           </div>
                         )}
@@ -1364,12 +1442,7 @@ export default function CustomerView() {
                         {!isReadOnly && (
                           <button
                             type="button"
-                            onClick={() => {
-                              setLinkKavlingModalCust(selectedCustDetail);
-                              const firstAvailable = kavlings.find(k => !k.customerId) || kavlings[0];
-                              setTargetKavlingId(firstAvailable?.id || '');
-                              setDealPrice(firstAvailable?.harga || 120000000);
-                            }}
+                            onClick={() => openLinkModal(selectedCustDetail)}
                             className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold inline-flex items-center gap-1 transition cursor-pointer shrink-0 shadow-2xs"
                           >
                             <Link2 className="w-3.5 h-3.5" />
@@ -2084,257 +2157,383 @@ export default function CustomerView() {
       )}
 
       {/* ======================================================== */}
-      {/* MODAL 4: HUBUNGKAN CUSTOMER KE KAVLING */}
+      {/* MODAL 4: KELOLA & SAMBUNGKAN UNIT KAVLING (MULTI-SELECT) */}
       {/* ======================================================== */}
-      {linkKavlingModalCust && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar">
-            <div className="flex justify-between items-start pb-3 border-b border-slate-100">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 block">
-                  Sambungkan Unit Kavling
-                </span>
-                <h3 className="text-base sm:text-lg font-black text-slate-900">
-                  {linkKavlingModalCust.nama}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  NIK: <span className="font-mono">{linkKavlingModalCust.nik}</span> &bull; Telp: <span className="font-mono">{linkKavlingModalCust.telepon}</span>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setLinkKavlingModalCust(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {linkKavlingModalCust && (() => {
+        // Filtered lots for the picker
+        const pickerLots = kavlings.filter(k => {
+          const matchBlok = pickerFilterBlok === 'all' || k.blok.toUpperCase().includes(pickerFilterBlok);
+          const matchSearch = `${k.blok} ${k.nomor} ${k.dimensi} ${k.customerNama || ''}`.toLowerCase().includes(pickerSearch.toLowerCase());
+          const isSelected = selectedKavlingIds.includes(k.id);
+          const matchStatus = !pickerOnlyOpen || k.status === 'terbuka' || isSelected;
+          return matchBlok && matchSearch && matchStatus;
+        });
 
-            {/* Dropdown Kavling */}
-            <div className="space-y-1.5 text-xs">
-              <label className="font-bold text-slate-700 block">
-                Pilih Unit Kavling (Cluster Baitul Makmur Jatikerto):
-              </label>
-              <select
-                value={targetKavlingId}
-                onChange={(e) => {
-                  const newId = e.target.value;
-                  setTargetKavlingId(newId);
-                  const chosen = kavlings.find(k => k.id === newId);
-                  if (chosen) {
-                    setDealPrice(chosen.harga);
-                  }
-                }}
-                className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-xl px-3 py-2.5 bg-white text-slate-800 font-medium text-xs focus:outline-none"
-              >
-                <option value="">-- Pilih Unit Kavling --</option>
-                {['A', 'B', 'C'].map(blokName => {
-                  const blokLots = kavlings.filter(k => k.blok.toUpperCase().includes(blokName));
-                  if (blokLots.length === 0) return null;
-                  return (
-                    <optgroup key={blokName} label={`Blok ${blokName}`}>
-                      {blokLots.map(lot => {
-                        const isOwnedByCurrent = lot.customerId === linkKavlingModalCust.id;
-                        const isOwnedByOther = lot.customerId && lot.customerId !== linkKavlingModalCust.id;
-                        return (
-                          <option key={lot.id} value={lot.id}>
-                            {lot.nomor} - {lot.luas} m² ({lot.dimensi}) - Rp {lot.harga.toLocaleString('id-ID')} {isOwnedByCurrent ? '(Sedang Terhubung)' : isOwnedByOther ? `(Dimiliki: ${lot.customerNama})` : `[${lot.status.toUpperCase()}]`}
-                          </option>
-                        );
-                      })}
-                    </optgroup>
-                  );
-                })}
-              </select>
-            </div>
+        const selectedLotsList = kavlings.filter(k => selectedKavlingIds.includes(k.id));
+        const totalSelectedLuas = selectedLotsList.reduce((sum, k) => sum + k.luas, 0);
+        const totalSelectedBrochure = selectedLotsList.reduce((sum, k) => sum + k.harga, 0);
+        const totalMasukCust = linkKavlingModalCust.totalMasuk;
+        const newSisa = Math.max(0, dealPrice - totalMasukCust);
+        const isLunas = totalMasukCust >= dealPrice && dealPrice > 0;
 
-            {/* Selected Kavling Specs Card */}
-            {(() => {
-              const chosen = kavlings.find(k => k.id === targetKavlingId);
-              if (!chosen) return null;
-              const isOtherOwner = chosen.customerId && chosen.customerId !== linkKavlingModalCust.id;
-
-              return (
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
-                  <div className="flex justify-between items-center pb-1.5 border-b border-slate-200/60">
-                    <span className="font-bold text-slate-800 font-mono text-sm">
-                      {chosen.blok} - {chosen.nomor}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                      chosen.status === 'terbuka' ? 'bg-emerald-100 text-emerald-800' :
-                      chosen.status === 'booking' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
-                    }`}>
-                      {chosen.status}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div>
-                      <span className="text-slate-500 block">Luas Tanah:</span>
-                      <span className="font-semibold text-slate-800">{chosen.luas} m²</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block">Dimensi:</span>
-                      <span className="font-semibold text-slate-800">{chosen.dimensi}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block">Peruntukan:</span>
-                      <span className="font-semibold text-slate-800">{chosen.tipe}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block">Harga Brosur Standar:</span>
-                      <span className="font-bold text-emerald-700 font-mono">Rp {chosen.harga.toLocaleString('id-ID')}</span>
-                    </div>
-                  </div>
-                  {isOtherOwner && (
-                    <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-800 font-semibold">
-                      ⚠️ Peringatan: Kavling ini saat ini tercatat atas nama <b>{chosen.customerNama}</b>. Menghubungkannya akan memindahkan kavling ke <b>{linkKavlingModalCust.nama}</b>.
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Input Nilai Kesepakatan Kontrak (Deal Price) */}
-            <div className="space-y-1.5 text-xs">
-              <div className="flex justify-between items-center">
-                <label className="font-bold text-slate-700">
-                  Harga Kesepakatan Kontrak (Rp):
-                </label>
-                <span className="text-[10px] text-slate-400">Dapat disesuaikan jika ada diskon</span>
-              </div>
-              <input
-                type="number"
-                min="0"
-                step="500000"
-                value={dealPrice || ''}
-                onChange={(e) => setDealPrice(Number(e.target.value) || 0)}
-                className="w-full border-2 border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-sm font-mono font-bold text-slate-900 focus:outline-none"
-                placeholder="120000000"
-              />
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {(() => {
-                  const chosen = kavlings.find(k => k.id === targetKavlingId);
-                  const baseHarga = chosen?.harga || 120000000;
-                  return (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setDealPrice(baseHarga)}
-                        className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-semibold transition cursor-pointer"
-                      >
-                        Sesuai Brosur: Rp {baseHarga.toLocaleString('id-ID')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDealPrice(Math.max(0, baseHarga - 5000000))}
-                        className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded text-[10px] font-semibold transition cursor-pointer"
-                      >
-                        Diskon Promo 5 Jt
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDealPrice(Math.max(0, baseHarga - 10000000))}
-                        className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded text-[10px] font-semibold transition cursor-pointer"
-                      >
-                        Diskon 10 Jt
-                      </button>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* Live Calculation Preview */}
-            <div className="p-3.5 bg-slate-900 text-white rounded-xl space-y-2 text-xs">
-              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                Simulasi Keuangan &amp; Status Otomatis
-              </div>
-              <div className="space-y-1 text-[11px]">
-                <div className="flex justify-between">
-                  <span className="text-slate-300">Nilai Kontrak Baru:</span>
-                  <span className="font-mono font-bold text-white">Rp {dealPrice.toLocaleString('id-ID')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-300">Uang Masuk Sebelumnya:</span>
-                  <span className="font-mono font-bold text-emerald-400">Rp {linkKavlingModalCust.totalMasuk.toLocaleString('id-ID')}</span>
-                </div>
-                <div className="flex justify-between pt-1 border-t border-slate-800">
-                  <span className="text-slate-300 font-bold">Sisa Piutang Berjalan:</span>
-                  <span className="font-mono font-bold text-amber-300">
-                    Rp {Math.max(0, dealPrice - linkKavlingModalCust.totalMasuk).toLocaleString('id-ID')}
+        return (
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+            <div className="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[94vh] overflow-y-auto custom-scrollbar">
+              
+              {/* Header Modal */}
+              <div className="flex justify-between items-start pb-3 border-b border-slate-100">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 block">
+                    Kelola Pembelian Unit Kavling (Dukungan Multi-Kavling)
                   </span>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900">
+                    {linkKavlingModalCust.nama}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    NIK: <span className="font-mono">{linkKavlingModalCust.nik}</span> &bull; WhatsApp: <span className="font-mono">{linkKavlingModalCust.telepon}</span>
+                  </p>
                 </div>
-                <div className="flex justify-between pt-1 border-t border-slate-800">
-                  <span className="text-slate-300 font-bold">Status Otomatis:</span>
-                  <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${
-                    linkKavlingModalCust.totalMasuk >= dealPrice && dealPrice > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                  }`}>
-                    {linkKavlingModalCust.totalMasuk >= dealPrice && dealPrice > 0 ? 'LUNAS (Unit Kavling: Terjual)' : 'BELUM LUNAS (Unit Kavling: Booking)'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              {linkKavlingModalCust.kavlingId ? (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (confirm(`Putuskan hubungan kavling dari ${linkKavlingModalCust.nama}? Kavling akan dikembalikan ke status Terbuka.`)) {
-                      await unlinkCustomerFromKavling(linkKavlingModalCust.id);
-                      setLinkKavlingModalCust(null);
-                    }
-                  }}
-                  className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition cursor-pointer"
-                >
-                  Putuskan Sambungan
-                </button>
-              ) : <div />}
-
-              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setLinkKavlingModalCust(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
                 >
-                  Batal
+                  <X className="w-5 h-5" />
                 </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!targetKavlingId) {
-                      alert('Silakan pilih salah satu unit kavling terlebih dahulu!');
-                      return;
-                    }
-                    if (dealPrice <= 0) {
-                      alert('Nilai kontrak kesepakatan harus lebih dari Rp 0!');
-                      return;
-                    }
-                    await assignCustomerToKavling(linkKavlingModalCust.id, targetKavlingId, dealPrice);
-                    setLinkKavlingModalCust(null);
-                    if (selectedCustDetail?.id === linkKavlingModalCust.id) {
-                      const updatedTarget = kavlings.find(k => k.id === targetKavlingId);
-                      setSelectedCustDetail(prev => prev ? {
-                        ...prev,
-                        kavlingId: targetKavlingId,
-                        kavlingKode: updatedTarget ? `${updatedTarget.blok} - ${updatedTarget.nomor}` : prev.kavlingKode,
-                        totalHarga: dealPrice,
-                        sisaPiutang: Math.max(0, dealPrice - prev.totalMasuk),
-                        statusBayar: prev.totalMasuk >= dealPrice ? 'lunas' : 'belum_lunas'
-                      } : null);
-                    }
-                  }}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Simpan &amp; Hubungkan</span>
-                </button>
+              </div>
+
+              {/* Filter Tabs & Search Bar Rapi */}
+              <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                  {/* Tabs Blok */}
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setPickerFilterBlok('all')}
+                      className={`px-3 py-1.5 rounded-lg transition cursor-pointer text-xs ${
+                        pickerFilterBlok === 'all' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Semua Blok ({kavlings.length})
+                    </button>
+                    {['A', 'B', 'C'].map(blok => (
+                      <button
+                        key={blok}
+                        type="button"
+                        onClick={() => setPickerFilterBlok(blok as any)}
+                        className={`px-3 py-1.5 rounded-lg transition cursor-pointer text-xs ${
+                          pickerFilterBlok === blok ? 'bg-white text-blue-700 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Blok {blok} ({kavlings.filter(k => k.blok.toUpperCase().includes(blok)).length})
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Search Input */}
+                  <div className="relative flex-1 max-w-xs">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={pickerSearch}
+                      onChange={(e) => setPickerSearch(e.target.value)}
+                      placeholder="Cari kavling (A1, B3...)"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs px-1">
+                  <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 text-[11px] select-none">
+                    <input
+                      type="checkbox"
+                      checked={pickerOnlyOpen}
+                      onChange={(e) => setPickerOnlyOpen(e.target.checked)}
+                      className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                    />
+                    <span>Hanya tampilkan unit yang tersedia / terbuka</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    Menampilkan <b>{pickerLots.length}</b> unit
+                  </span>
+                </div>
+              </div>
+
+              {/* Grid Pilihan Kavling Interaktif */}
+              <div className="border border-slate-200 rounded-xl p-2.5 bg-slate-50/50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-60 sm:max-h-72 overflow-y-auto pr-1 custom-scrollbar">
+                  {pickerLots.map((lot) => {
+                    const isSelected = selectedKavlingIds.includes(lot.id);
+                    const isOwnedByCurrent = lot.customerId === linkKavlingModalCust.id;
+                    const isOwnedByOther = lot.customerId && lot.customerId !== linkKavlingModalCust.id;
+
+                    return (
+                      <div
+                        key={lot.id}
+                        onClick={() => toggleSelectKavling(lot.id)}
+                        className={`p-2.5 rounded-xl border-2 transition-all cursor-pointer select-none text-xs flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-blue-600 bg-blue-50/70 shadow-xs ring-2 ring-blue-500/20'
+                            : isOwnedByOther
+                            ? 'border-slate-200 bg-slate-100/70 opacity-75 hover:opacity-100'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-2xs'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-1.5 mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            {isSelected ? (
+                              <CheckSquare className="w-4 h-4 text-blue-600 shrink-0" />
+                            ) : (
+                              <Square className="w-4 h-4 text-slate-300 shrink-0" />
+                            )}
+                            <div>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase block leading-none">
+                                {lot.blok}
+                              </span>
+                              <span className="font-mono font-black text-sm text-slate-900">
+                                {lot.nomor}
+                              </span>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
+                              lot.status === 'terbuka'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : lot.status === 'booking'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}
+                          >
+                            {lot.status}
+                          </span>
+                        </div>
+
+                        <div className="space-y-0.5 text-[11px] text-slate-600 mb-1.5">
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Luas:</span>
+                            <span className="font-semibold">{lot.luas} m² ({lot.dimensi})</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Brosur:</span>
+                            <span className="font-mono font-bold text-emerald-700">Rp {lot.harga.toLocaleString('id-ID')}</span>
+                          </div>
+                        </div>
+
+                        {/* Ownership status footer */}
+                        {isOwnedByOther && (
+                          <div className="text-[10px] text-amber-800 bg-amber-50 p-1 rounded font-medium border border-amber-200 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                            <span className="truncate">Milik: {lot.customerNama}</span>
+                          </div>
+                        )}
+                        {isOwnedByCurrent && !isOwnedByOther && (
+                          <div className="text-[10px] text-blue-700 bg-blue-100/70 p-1 rounded font-bold text-center border border-blue-200">
+                            Unit Saat Ini ✓
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Selected Kavling Summary Banner */}
+              <div className={`p-3 rounded-xl border text-xs space-y-2 ${
+                selectedLotsList.length > 0 ? 'bg-blue-50/60 border-blue-200' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4 text-blue-600" />
+                    <span>Unit Kavling Terpilih: <b>{selectedLotsList.length} Unit</b></span>
+                  </span>
+                  {selectedLotsList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedKavlingIds([])}
+                      className="text-[10px] text-rose-600 hover:underline font-semibold cursor-pointer"
+                    >
+                      Batal Pilih Semua
+                    </button>
+                  )}
+                </div>
+
+                {selectedLotsList.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedLotsList.map(lot => (
+                        <span
+                          key={lot.id}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-blue-300 font-mono font-bold text-xs text-blue-900 shadow-2xs"
+                        >
+                          <span>{lot.nomor} ({lot.luas} m²)</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSelectKavling(lot.id);
+                            }}
+                            className="text-slate-400 hover:text-rose-600 ml-0.5 cursor-pointer"
+                          >
+                            &times;
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1 border-t border-blue-200/60">
+                      <span>Total Luas: <b>{totalSelectedLuas} m²</b></span>
+                      <span>Total Brosur Resmi: <b className="font-mono text-slate-900">Rp {totalSelectedBrochure.toLocaleString('id-ID')}</b></span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-slate-400 text-[11px] italic">
+                    Belum ada kavling yang dipilih. Klik pada salah satu atau beberapa kartu kavling di atas untuk memilih unit konsumen.
+                  </p>
+                )}
+              </div>
+
+              {/* Input Nilai Kesepakatan Kontrak (Deal Price) */}
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <label className="font-bold text-slate-700">
+                    Harga Kesepakatan Kontrak (Total Penjualan):
+                  </label>
+                  <span className="text-[10px] text-slate-400">Total nilai transaksi seluruh unit yang dibeli</span>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  step="500000"
+                  value={dealPrice || ''}
+                  onChange={(e) => setDealPrice(Number(e.target.value) || 0)}
+                  className="w-full border-2 border-slate-200 focus:border-blue-500 rounded-xl px-3 py-2 text-sm font-mono font-bold text-slate-900 focus:outline-none"
+                  placeholder="0"
+                />
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setDealPrice(totalSelectedBrochure)}
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-semibold transition cursor-pointer"
+                  >
+                    Sesuai Brosur: Rp {totalSelectedBrochure.toLocaleString('id-ID')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDealPrice(Math.max(0, totalSelectedBrochure - 5000000))}
+                    className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded text-[10px] font-semibold transition cursor-pointer"
+                  >
+                    Diskon Promo 5 Jt
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDealPrice(Math.max(0, totalSelectedBrochure - 10000000))}
+                    className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded text-[10px] font-semibold transition cursor-pointer"
+                  >
+                    Diskon 10 Jt
+                  </button>
+                  {selectedLotsList.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setDealPrice(Math.max(0, totalSelectedBrochure - 15000000))}
+                      className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded text-[10px] font-semibold transition cursor-pointer"
+                    >
+                      Diskon Borong ({selectedLotsList.length} Unit - 15 Jt)
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Live Calculation Preview */}
+              <div className="p-3.5 bg-slate-900 text-white rounded-xl space-y-2 text-xs">
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  Simulasi Keuangan &amp; Status Otomatis
+                </div>
+                <div className="space-y-1 text-[11px]">
+                  <div className="flex justify-between">
+                    <span className="text-slate-300">Total Kontrak ({selectedLotsList.length} Unit):</span>
+                    <span className="font-mono font-bold text-white">Rp {dealPrice.toLocaleString('id-ID')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-300">Total Uang Masuk Sebelumnya:</span>
+                    <span className="font-mono font-bold text-emerald-400">Rp {totalMasukCust.toLocaleString('id-ID')}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-slate-800">
+                    <span className="text-slate-300 font-bold">Sisa Piutang Berjalan:</span>
+                    <span className="font-mono font-bold text-amber-300">
+                      Rp {newSisa.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-slate-800">
+                    <span className="text-slate-300 font-bold">Status Otomatis:</span>
+                    <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${
+                      isLunas ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    }`}>
+                      {isLunas ? 'LUNAS (Semua Unit: Terjual)' : 'BELUM LUNAS (Semua Unit: Booking)'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions Footer */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
+                {linkKavlingModalCust.kavlingId ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (confirm(`Putuskan seluruh hubungan kavling dari ${linkKavlingModalCust.nama}? Semua kavling akan dikembalikan ke status Terbuka.`)) {
+                        await unlinkCustomerFromKavling(linkKavlingModalCust.id);
+                        setLinkKavlingModalCust(null);
+                      }
+                    }}
+                    className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition cursor-pointer"
+                  >
+                    Putuskan Semua Sambungan
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setLinkKavlingModalCust(null)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (selectedKavlingIds.length === 0) {
+                        alert('Silakan pilih minimal 1 unit kavling!');
+                        return;
+                      }
+                      if (dealPrice <= 0) {
+                        alert('Nilai kontrak kesepakatan harus lebih dari Rp 0!');
+                        return;
+                      }
+                      await assignCustomerToMultipleKavlings(linkKavlingModalCust.id, selectedKavlingIds, dealPrice);
+                      setLinkKavlingModalCust(null);
+                      if (selectedCustDetail?.id === linkKavlingModalCust.id) {
+                        const newKode = selectedLotsList.map(l => l.nomor).join(', ');
+                        setSelectedCustDetail(prev => prev ? {
+                          ...prev,
+                          kavlingId: selectedKavlingIds[0],
+                          kavlingKode: newKode,
+                          totalHarga: dealPrice,
+                          sisaPiutang: Math.max(0, dealPrice - prev.totalMasuk),
+                          statusBayar: prev.totalMasuk >= dealPrice ? 'lunas' : 'belum_lunas'
+                        } : null);
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Simpan &amp; Terapkan ({selectedLotsList.length} Unit)</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

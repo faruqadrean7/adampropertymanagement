@@ -47,6 +47,7 @@ export interface Customer {
   alamat: string;
   kavlingId: string | null;
   kavlingKode?: string;
+  kavlingIds?: string[];
   projectId?: string;
   totalHarga: number;
   totalMasuk: number;

@@ -143,6 +143,8 @@ interface PropertyContextType {
   ) => void;
   updateCustomer: (id: string, updates: Partial<Customer>) => Promise<boolean>;
   assignCustomerToKavling: (customerId: string, kavlingId: string, customPrice?: number) => Promise<boolean>;
+  assignCustomerToMultipleKavlings: (customerId: string, kavlingIds: string[], customTotalPrice?: number) => Promise<boolean>;
+  unlinkCustomerFromSpecificKavling: (customerId: string, kavlingId: string) => Promise<boolean>;
   unlinkCustomerFromKavling: (customerId: string) => Promise<boolean>;
   addCustomerPayment: (data: Omit<Payment, 'id'>) => void;
   updatePaymentReceipt: (paymentId: string, kwitansiImage: string | null) => void;
@@ -755,30 +757,48 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
-  const assignCustomerToKavling = async (
-    customerId: string, 
-    kavlingId: string, 
+  const assignCustomerToMultipleKavlings = async (
+    customerId: string,
+    kavlingIds: string[],
     customPrice?: number
   ): Promise<boolean> => {
     const cust = customers.find(c => c.id === customerId);
-    const kav = kavlings.find(k => k.id === kavlingId);
-    if (!cust || !kav) return false;
+    if (!cust) return false;
 
-    const finalPrice = (customPrice !== undefined && customPrice > 0) ? customPrice : kav.harga;
+    // Filter valid selected lots
+    const selectedLots = kavlings.filter(k => kavlingIds.includes(k.id));
+    
+    // Lots previously owned by this customer
+    const previouslyOwned = kavlings.filter(k => k.customerId === customerId || (cust.kavlingId === k.id));
+    // Lots that were unselected
+    const unlinkedLots = previouslyOwned.filter(k => !kavlingIds.includes(k.id));
+
+    // Calculate sum of brochure prices
+    const sumBrochurePrice = selectedLots.reduce((sum, k) => sum + k.harga, 0);
+    const finalPrice = (customPrice !== undefined && customPrice > 0)
+      ? customPrice
+      : (sumBrochurePrice > 0 ? sumBrochurePrice : cust.totalHarga);
+
     const newSisa = Math.max(0, finalPrice - cust.totalMasuk);
     const isLunas = cust.totalMasuk >= finalPrice && finalPrice > 0;
-    const kavKode = `${kav.blok} - ${kav.nomor}`;
-    const prevKavId = cust.kavlingId;
+    
+    // Combine lot codes: e.g. "A1, A2" or "-"
+    const kavKode = selectedLots.length > 0
+      ? selectedLots.map(k => `${k.nomor}`).join(', ')
+      : '-';
+    const primaryKavlingId = selectedLots.length > 0 ? selectedLots[0].id : null;
+    const projectId = selectedLots.length > 0 ? selectedLots[0].projectId : cust.projectId;
 
     // 1. Update customer state & storage
     const updatedCustomer: Customer = {
       ...cust,
-      kavlingId: kav.id,
+      kavlingId: primaryKavlingId,
       kavlingKode: kavKode,
+      kavlingIds: selectedLots.map(k => k.id),
       totalHarga: finalPrice,
       sisaPiutang: newSisa,
-      statusBayar: isLunas ? 'lunas' : 'belum_lunas',
-      projectId: kav.projectId
+      statusBayar: (isLunas ? 'lunas' : 'belum_lunas') as Customer['statusBayar'],
+      projectId: projectId
     };
 
     setCustomers(prev => {
@@ -790,7 +810,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     // 2. Update kavling state & storage
     setKavlings(prev => {
       const updated = prev.map(lot => {
-        if (lot.id === kav.id) {
+        // If this lot is one of the newly selected lots
+        if (kavlingIds.includes(lot.id)) {
           return {
             ...lot,
             customerId: cust.id,
@@ -798,7 +819,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
             status: (isLunas ? 'terjual' : 'booking') as Kavling['status']
           };
         }
-        if (prevKavId && lot.id === prevKavId && prevKavId !== kav.id) {
+        // If this lot was previously owned by this customer, but now unlinked
+        if ((lot.customerId === customerId || lot.id === cust.kavlingId) && !kavlingIds.includes(lot.id)) {
           return {
             ...lot,
             customerId: null,
@@ -837,54 +859,90 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     // 5. Cloud Supabase Sync
     if (isSupabaseConfigured()) {
       try {
-        await Promise.all([
+        const promises: Promise<any>[] = [];
+        promises.push(
           supabaseUpdateCustomer(customerId, {
-            kavlingId: kav.id,
+            kavlingId: primaryKavlingId,
             kavlingKode: kavKode,
             totalHarga: finalPrice,
             sisaPiutang: newSisa,
             statusBayar: isLunas ? 'lunas' : 'belum_lunas',
-            projectId: kav.projectId
-          }),
-          supabaseUpdateKavling(kav.id, {
-            customerId: cust.id,
-            customerNama: cust.nama,
-            status: isLunas ? 'terjual' : 'booking'
+            projectId: projectId
           })
-        ]);
+        );
 
-        if (prevKavId && prevKavId !== kav.id) {
-          await supabaseUpdateKavling(prevKavId, {
-            customerId: null,
-            customerNama: null,
-            status: 'terbuka'
-          });
+        for (const lot of selectedLots) {
+          promises.push(
+            supabaseUpdateKavling(lot.id, {
+              customerId: cust.id,
+              customerNama: cust.nama,
+              status: isLunas ? 'terjual' : 'booking'
+            })
+          );
+        }
+
+        for (const lot of unlinkedLots) {
+          promises.push(
+            supabaseUpdateKavling(lot.id, {
+              customerId: null,
+              customerNama: null,
+              status: 'terbuka'
+            })
+          );
         }
 
         const custPayments = payments.filter(p => p.customerId === customerId);
         for (const p of custPayments) {
-          await supabaseUpdatePayment(p.id, { kavlingKode: kavKode });
+          promises.push(supabaseUpdatePayment(p.id, { kavlingKode: kavKode }));
         }
 
+        await Promise.all(promises);
         await refreshCloudData();
       } catch (e) {
-        console.warn('Error syncing customer-kavling link to Supabase:', e);
+        console.warn('Error syncing multi-kavling to Supabase:', e);
       }
     }
 
     return true;
   };
 
+  const assignCustomerToKavling = async (
+    customerId: string, 
+    kavlingId: string, 
+    customPrice?: number
+  ): Promise<boolean> => {
+    return assignCustomerToMultipleKavlings(customerId, [kavlingId], customPrice);
+  };
+
+  const unlinkCustomerFromSpecificKavling = async (
+    customerId: string,
+    kavlingId: string
+  ): Promise<boolean> => {
+    const cust = customers.find(c => c.id === customerId);
+    if (!cust) return false;
+    const currentlyOwned = kavlings.filter(k => k.customerId === customerId || (cust.kavlingId === k.id));
+    const remainingIds = currentlyOwned.map(k => k.id).filter(id => id !== kavlingId);
+
+    if (remainingIds.length === 0) {
+      return unlinkCustomerFromKavling(customerId);
+    }
+
+    const removedLot = kavlings.find(k => k.id === kavlingId);
+    const newPrice = Math.max(0, cust.totalHarga - (removedLot ? removedLot.harga : 0));
+    return assignCustomerToMultipleKavlings(customerId, remainingIds, newPrice);
+  };
+
   const unlinkCustomerFromKavling = async (customerId: string): Promise<boolean> => {
     const cust = customers.find(c => c.id === customerId);
     if (!cust) return false;
-    const prevKavId = cust.kavlingId;
+    const previouslyOwned = kavlings.filter(k => k.customerId === customerId || (cust.kavlingId === k.id));
 
     setCustomers(prev => {
       const updated = prev.map(c => c.id === customerId ? {
         ...c,
         kavlingId: null,
         kavlingKode: '-',
+        kavlingIds: [],
         totalHarga: 0,
         sisaPiutang: 0,
         statusBayar: 'belum_lunas' as const
@@ -893,35 +951,39 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       return updated;
     });
 
-    if (prevKavId) {
-      setKavlings(prev => {
-        const updated = prev.map(k => k.id === prevKavId ? {
-          ...k,
-          customerId: null,
-          customerNama: null,
-          status: 'terbuka' as const
-        } : k);
-        saveStorage('kavlings', updated);
-        return updated;
-      });
-    }
+    setKavlings(prev => {
+      const updated = prev.map(k => (k.customerId === customerId || k.id === cust.kavlingId) ? {
+        ...k,
+        customerId: null,
+        customerNama: null,
+        status: 'terbuka' as const
+      } : k);
+      saveStorage('kavlings', updated);
+      return updated;
+    });
 
     if (isSupabaseConfigured()) {
       try {
-        await supabaseUpdateCustomer(customerId, {
-          kavlingId: null,
-          kavlingKode: '-',
-          totalHarga: 0,
-          sisaPiutang: 0,
-          statusBayar: 'belum_lunas'
-        });
-        if (prevKavId) {
-          await supabaseUpdateKavling(prevKavId, {
-            customerId: null,
-            customerNama: null,
-            status: 'terbuka'
-          });
+        const promises: Promise<any>[] = [];
+        promises.push(
+          supabaseUpdateCustomer(customerId, {
+            kavlingId: null,
+            kavlingKode: '-',
+            totalHarga: 0,
+            sisaPiutang: 0,
+            statusBayar: 'belum_lunas'
+          })
+        );
+        for (const lot of previouslyOwned) {
+          promises.push(
+            supabaseUpdateKavling(lot.id, {
+              customerId: null,
+              customerNama: null,
+              status: 'terbuka'
+            })
+          );
         }
+        await Promise.all(promises);
         await refreshCloudData();
       } catch (e) {
         console.warn('Error unlinking customer:', e);
@@ -1422,6 +1484,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         addCustomer,
         updateCustomer,
         assignCustomerToKavling,
+        assignCustomerToMultipleKavlings,
+        unlinkCustomerFromSpecificKavling,
         unlinkCustomerFromKavling,
         addCustomerPayment,
         updatePaymentReceipt,
