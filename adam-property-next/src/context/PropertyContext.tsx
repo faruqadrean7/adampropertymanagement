@@ -36,6 +36,7 @@ import {
   supabaseFetchCustomers,
   supabaseFetchLandDebts,
   supabaseFetchCashbook,
+  supabaseFetchPayments,
   supabaseInsertKavling,
   supabaseInsertBatchKavlings,
   supabaseUpdateKavling,
@@ -43,7 +44,10 @@ import {
   supabaseUpdateProject,
   supabaseDeleteProject,
   supabaseUpdateLandDebt,
-  supabaseDeleteLandDebt
+  supabaseDeleteLandDebt,
+  supabaseUpdateCustomer,
+  supabaseInsertPayment,
+  supabaseUpdatePayment
 } from '@/lib/supabaseService';
 
 export interface AddProjectData {
@@ -137,6 +141,9 @@ interface PropertyContextType {
       notarisPpat?: string;
     }
   ) => void;
+  updateCustomer: (id: string, updates: Partial<Customer>) => Promise<boolean>;
+  assignCustomerToKavling: (customerId: string, kavlingId: string, customPrice?: number) => Promise<boolean>;
+  unlinkCustomerFromKavling: (customerId: string) => Promise<boolean>;
   addCustomerPayment: (data: Omit<Payment, 'id'>) => void;
   updatePaymentReceipt: (paymentId: string, kwitansiImage: string | null) => void;
   addLandDebt: (data: {
@@ -283,12 +290,13 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     if (!isSupabaseConfigured()) return;
     setIsSyncingCloud(true);
     try {
-      const [supaProjects, supaKavlings, supaCust, supaLands, supaCash] = await Promise.all([
+      const [supaProjects, supaKavlings, supaCust, supaLands, supaCash, supaPayments] = await Promise.all([
         supabaseFetchProjects(),
         supabaseFetchKavlings(),
         supabaseFetchCustomers(),
         supabaseFetchLandDebts(),
-        supabaseFetchCashbook()
+        supabaseFetchCashbook(),
+        supabaseFetchPayments()
       ]);
 
       if (supaProjects !== null && supaProjects.length > 0) {
@@ -311,6 +319,10 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       if (supaCash !== null) {
         setCashbook(supaCash);
         saveStorage('cashbook', supaCash);
+      }
+      if (supaPayments !== null && supaPayments.length > 0) {
+        setPayments(supaPayments);
+        saveStorage('payments', supaPayments);
       }
       setLastSyncTime(new Date());
     } catch (err) {
@@ -343,6 +355,9 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         refreshCloudData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cashbook' }, () => {
+        refreshCloudData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
         refreshCloudData();
       })
       .subscribe();
@@ -722,14 +737,211 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateCustomer = async (id: string, updates: Partial<Customer>): Promise<boolean> => {
+    setCustomers(prev => {
+      const updated = prev.map(c => c.id === id ? { ...c, ...updates } : c);
+      saveStorage('customers', updated);
+      return updated;
+    });
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseUpdateCustomer(id, updates);
+        await refreshCloudData();
+      } catch (e) {
+        console.warn('Error updating customer:', e);
+      }
+    }
+    return true;
+  };
+
+  const assignCustomerToKavling = async (
+    customerId: string, 
+    kavlingId: string, 
+    customPrice?: number
+  ): Promise<boolean> => {
+    const cust = customers.find(c => c.id === customerId);
+    const kav = kavlings.find(k => k.id === kavlingId);
+    if (!cust || !kav) return false;
+
+    const finalPrice = (customPrice !== undefined && customPrice > 0) ? customPrice : kav.harga;
+    const newSisa = Math.max(0, finalPrice - cust.totalMasuk);
+    const isLunas = cust.totalMasuk >= finalPrice && finalPrice > 0;
+    const kavKode = `${kav.blok} - ${kav.nomor}`;
+    const prevKavId = cust.kavlingId;
+
+    // 1. Update customer state & storage
+    const updatedCustomer: Customer = {
+      ...cust,
+      kavlingId: kav.id,
+      kavlingKode: kavKode,
+      totalHarga: finalPrice,
+      sisaPiutang: newSisa,
+      statusBayar: isLunas ? 'lunas' : 'belum_lunas',
+      projectId: kav.projectId
+    };
+
+    setCustomers(prev => {
+      const updated = prev.map(c => c.id === customerId ? updatedCustomer : c);
+      saveStorage('customers', updated);
+      return updated;
+    });
+
+    // 2. Update kavling state & storage
+    setKavlings(prev => {
+      const updated = prev.map(lot => {
+        if (lot.id === kav.id) {
+          return {
+            ...lot,
+            customerId: cust.id,
+            customerNama: cust.nama,
+            status: (isLunas ? 'terjual' : 'booking') as Kavling['status']
+          };
+        }
+        if (prevKavId && lot.id === prevKavId && prevKavId !== kav.id) {
+          return {
+            ...lot,
+            customerId: null,
+            customerNama: null,
+            status: 'terbuka' as Kavling['status']
+          };
+        }
+        return lot;
+      });
+      saveStorage('kavlings', updated);
+      return updated;
+    });
+
+    // 3. Update customer's payments with the new kavlingKode
+    setPayments(prev => {
+      const updated = prev.map(p => p.customerId === customerId ? { ...p, kavlingKode: kavKode } : p);
+      saveStorage('payments', updated);
+      return updated;
+    });
+
+    // 4. Update Central Cashbook entries related to this customer
+    setCashbook(prev => {
+      const updated = prev.map(c => {
+        if (c.sumber.includes(cust.nama)) {
+          return {
+            ...c,
+            keterangan: c.keterangan.includes('(') ? `${c.keterangan.split('(')[0].trim()} (${kavKode})` : `${c.keterangan} (${kavKode})`
+          };
+        }
+        return c;
+      });
+      saveStorage('cashbook', updated);
+      return updated;
+    });
+
+    // 5. Cloud Supabase Sync
+    if (isSupabaseConfigured()) {
+      try {
+        await Promise.all([
+          supabaseUpdateCustomer(customerId, {
+            kavlingId: kav.id,
+            kavlingKode: kavKode,
+            totalHarga: finalPrice,
+            sisaPiutang: newSisa,
+            statusBayar: isLunas ? 'lunas' : 'belum_lunas',
+            projectId: kav.projectId
+          }),
+          supabaseUpdateKavling(kav.id, {
+            customerId: cust.id,
+            customerNama: cust.nama,
+            status: isLunas ? 'terjual' : 'booking'
+          })
+        ]);
+
+        if (prevKavId && prevKavId !== kav.id) {
+          await supabaseUpdateKavling(prevKavId, {
+            customerId: null,
+            customerNama: null,
+            status: 'terbuka'
+          });
+        }
+
+        const custPayments = payments.filter(p => p.customerId === customerId);
+        for (const p of custPayments) {
+          await supabaseUpdatePayment(p.id, { kavlingKode: kavKode });
+        }
+
+        await refreshCloudData();
+      } catch (e) {
+        console.warn('Error syncing customer-kavling link to Supabase:', e);
+      }
+    }
+
+    return true;
+  };
+
+  const unlinkCustomerFromKavling = async (customerId: string): Promise<boolean> => {
+    const cust = customers.find(c => c.id === customerId);
+    if (!cust) return false;
+    const prevKavId = cust.kavlingId;
+
+    setCustomers(prev => {
+      const updated = prev.map(c => c.id === customerId ? {
+        ...c,
+        kavlingId: null,
+        kavlingKode: '-',
+        totalHarga: 0,
+        sisaPiutang: 0,
+        statusBayar: 'belum_lunas' as const
+      } : c);
+      saveStorage('customers', updated);
+      return updated;
+    });
+
+    if (prevKavId) {
+      setKavlings(prev => {
+        const updated = prev.map(k => k.id === prevKavId ? {
+          ...k,
+          customerId: null,
+          customerNama: null,
+          status: 'terbuka' as const
+        } : k);
+        saveStorage('kavlings', updated);
+        return updated;
+      });
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseUpdateCustomer(customerId, {
+          kavlingId: null,
+          kavlingKode: '-',
+          totalHarga: 0,
+          sisaPiutang: 0,
+          statusBayar: 'belum_lunas'
+        });
+        if (prevKavId) {
+          await supabaseUpdateKavling(prevKavId, {
+            customerId: null,
+            customerNama: null,
+            status: 'terbuka'
+          });
+        }
+        await refreshCloudData();
+      } catch (e) {
+        console.warn('Error unlinking customer:', e);
+      }
+    }
+    return true;
+  };
+
   const addCustomerPayment = (data: Omit<Payment, 'id'>) => {
     const payId = `pay-${Date.now()}`;
     const newPay: Payment = { ...data, id: payId };
-    setPayments(prev => [...prev, newPay]);
+    setPayments(prev => {
+      const updated = [...prev, newPay];
+      saveStorage('payments', updated);
+      return updated;
+    });
 
     // Update customer balance
-    setCustomers(prev =>
-      prev.map(c => {
+    setCustomers(prev => {
+      const updated = prev.map(c => {
         if (c.id === data.customerId) {
           const newMasuk = c.totalMasuk + data.nominal;
           const newSisa = Math.max(0, c.totalHarga - newMasuk);
@@ -737,18 +949,35 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
           
           if (isLunas && c.kavlingId) {
             setKavlings(lots => lots.map(k => (k.id === c.kavlingId ? { ...k, status: 'terjual' } : k)));
+            if (isSupabaseConfigured()) {
+              supabaseUpdateKavling(c.kavlingId, { status: 'terjual' }).catch(console.warn);
+            }
+          }
+
+          if (isSupabaseConfigured()) {
+            supabaseUpdateCustomer(c.id, {
+              totalMasuk: newMasuk,
+              sisaPiutang: newSisa,
+              statusBayar: isLunas ? 'lunas' : 'belum_lunas'
+            }).catch(console.warn);
           }
 
           return {
             ...c,
             totalMasuk: newMasuk,
             sisaPiutang: newSisa,
-            statusBayar: isLunas ? 'lunas' : 'belum_lunas'
+            statusBayar: (isLunas ? 'lunas' : 'belum_lunas') as Customer['statusBayar']
           };
         }
         return c;
-      })
-    );
+      });
+      saveStorage('customers', updated);
+      return updated;
+    });
+
+    if (isSupabaseConfigured()) {
+      supabaseInsertPayment(newPay).catch(console.warn);
+    }
 
     // Auto-sync to Cashbook
     const targetCust = customers.find(c => c.id === data.customerId);
@@ -765,7 +994,11 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       refType: 'customer_payment',
       refId: payId
     };
-    setCashbook(prev => [...prev, cashItem]);
+    setCashbook(prev => {
+      const updated = [...prev, cashItem];
+      saveStorage('cashbook', updated);
+      return updated;
+    });
   };
 
   const updateCustomerDocuments = (
@@ -1187,6 +1420,9 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         addBatchKavling,
         updateKavlingStatus,
         addCustomer,
+        updateCustomer,
+        assignCustomerToKavling,
+        unlinkCustomerFromKavling,
         addCustomerPayment,
         updatePaymentReceipt,
         updateCustomerDocuments,

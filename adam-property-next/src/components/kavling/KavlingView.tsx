@@ -31,7 +31,12 @@ import {
   Pencil,
   AlertTriangle,
   FileSpreadsheet,
-  CloudUpload
+  CloudUpload,
+  UserCheck,
+  User,
+  Users,
+  Link2,
+  Check
 } from 'lucide-react';
 import { Project, Kavling } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -53,7 +58,11 @@ export default function KavlingView() {
     addBatchKavling,
     updateKavlingStatus,
     syncAllToSupabase,
-    refreshCloudData
+    refreshCloudData,
+    customers,
+    payments,
+    assignCustomerToKavling,
+    unlinkCustomerFromKavling
   } = useProperty();
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'terbuka' | 'booking' | 'terjual'>('all');
@@ -65,6 +74,11 @@ export default function KavlingView() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [selectedKavling, setSelectedKavling] = useState<Kavling | null>(null);
+
+  // Modal Hubungkan Customer ke Kavling
+  const [assignKavlingTarget, setAssignKavlingTarget] = useState<Kavling | null>(null);
+  const [assignCustId, setAssignCustId] = useState<string>('');
+  const [assignPrice, setAssignPrice] = useState<number>(0);
 
   // Edit & Delete states for Kavling
   const [showEditKavlingModal, setShowEditKavlingModal] = useState(false);
@@ -752,10 +766,20 @@ export default function KavlingView() {
                   <span className="text-slate-400">Tipe:</span>
                   <span className="font-semibold">{kav.tipe}</span>
                 </div>
-                {kav.customerNama && (
-                  <div className="flex justify-between text-slate-900 font-bold truncate pt-1 border-t border-slate-100">
-                    <span className="text-slate-500 font-normal">Customer:</span>
-                    <span className="truncate ml-1">{kav.customerNama}</span>
+                {kav.customerNama ? (
+                  <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-400 text-[10px]">Pembeli:</span>
+                    <span className="font-bold text-slate-900 truncate max-w-[140px] flex items-center gap-1">
+                      <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="truncate">{kav.customerNama}</span>
+                    </span>
+                  </div>
+                ) : (
+                  <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 text-[10px]">Pembeli:</span>
+                    <span className="text-emerald-700 font-semibold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                      Tersedia
+                    </span>
                   </div>
                 )}
               </div>
@@ -787,127 +811,506 @@ export default function KavlingView() {
         </div>
       )}
 
-      {/* Modal Detail Kavling */}
-      {selectedKavling && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto custom-scrollbar">
-            <div className="flex justify-between items-start border-b border-slate-100 pb-3">
-              <div>
-                <span className="text-xs font-bold text-slate-400 uppercase">{selectedKavling.blok}</span>
-                <h3 className="text-2xl font-black text-slate-900 font-mono">{selectedKavling.nomor}</h3>
-              </div>
-              <button 
-                onClick={() => setSelectedKavling(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
-              >
-                ✕
-              </button>
-            </div>
+      {/* ======================================================== */}
+      {/* MODAL DETAIL KAVLING & STATUS PEMBELI */}
+      {/* ======================================================== */}
+      {selectedKavling && (() => {
+        const buyer = customers.find(c => 
+          c.id === selectedKavling.customerId || 
+          (c.kavlingId && c.kavlingId === selectedKavling.id) ||
+          (selectedKavling.nomor && c.kavlingKode?.toLowerCase().includes(selectedKavling.nomor.toLowerCase())) || 
+          (selectedKavling.customerNama && c.nama.toLowerCase() === selectedKavling.customerNama.toLowerCase())
+        );
 
-            <div className="space-y-2 text-xs text-slate-700">
-              <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-500">Harga Standar:</span>
-                <span className="font-bold text-emerald-700 font-mono">Rp {selectedKavling.harga.toLocaleString('id-ID')}</span>
+        const unitPayments = payments.filter(p => 
+          (buyer && p.customerId === buyer.id) || 
+          (p.kavlingKode && (p.kavlingKode === selectedKavling.nomor || p.kavlingKode.includes(selectedKavling.nomor)))
+        );
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 space-y-4 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto custom-scrollbar">
+              <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{selectedKavling.blok}</span>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-2xl font-black text-slate-900 font-mono">{selectedKavling.nomor}</h3>
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                      selectedKavling.status === 'terbuka'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : selectedKavling.status === 'booking'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-rose-100 text-rose-800'
+                    }`}>
+                      {selectedKavling.status}
+                    </span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedKavling(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-500">Luas Tanah:</span>
-                <span className="font-semibold">{selectedKavling.luas} m² ({selectedKavling.dimensi})</span>
+
+              {/* Spesifikasi Teknis Kavling */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                  <div className="bg-white p-2 rounded-lg border border-slate-200">
+                    <span className="text-[10px] text-slate-500 block">Harga Brosur</span>
+                    <span className="font-bold font-mono text-emerald-700 text-xs">
+                      Rp {selectedKavling.harga.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="bg-white p-2 rounded-lg border border-slate-200">
+                    <span className="text-[10px] text-slate-500 block">Luas Tanah</span>
+                    <span className="font-bold text-slate-800 text-xs">{selectedKavling.luas} m²</span>
+                  </div>
+                  <div className="bg-white p-2 rounded-lg border border-slate-200">
+                    <span className="text-[10px] text-slate-500 block">Dimensi</span>
+                    <span className="font-bold text-slate-800 text-xs">{selectedKavling.dimensi}</span>
+                  </div>
+                  <div className="bg-white p-2 rounded-lg border border-slate-200">
+                    <span className="text-[10px] text-slate-500 block">Peruntukan</span>
+                    <span className="font-bold text-slate-800 text-xs">{selectedKavling.tipe}</span>
+                  </div>
+                </div>
+                {selectedKavling.keterangan && (
+                  <div className="mt-2 pt-2 border-t border-slate-200 text-[11px] text-slate-600">
+                    <span className="font-semibold text-slate-700">Catatan:</span> {selectedKavling.keterangan}
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-500">Tipe Peruntukan:</span>
-                <span className="font-semibold">{selectedKavling.tipe}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-500">Status Kavling:</span>
-                <span className="font-bold uppercase text-slate-900">{selectedKavling.status}</span>
-              </div>
-              {selectedKavling.customerNama && (
-                <div className="flex justify-between py-1 border-b border-slate-50">
-                  <span className="text-slate-500">Pemilik / Pembeli:</span>
-                  <span className="font-bold text-slate-900">{selectedKavling.customerNama}</span>
+
+              {/* Buyer & Payment Section */}
+              {buyer ? (
+                <div className="space-y-3">
+                  {/* Buyer Profile Card */}
+                  <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2 text-xs">
+                    <div className="flex justify-between items-center pb-2 border-b border-blue-200/60">
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-4 h-4 text-blue-600" />
+                        <div>
+                          <span className="text-[10px] font-bold text-blue-600 uppercase block">Data Konsumen Pembeli</span>
+                          <span className="text-sm font-bold text-slate-900">{buyer.nama}</span>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                        buyer.statusBayar === 'lunas' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}>
+                        {buyer.statusBayar === 'lunas' ? 'Lunas' : 'Belum Lunas'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <div>
+                        <span className="text-slate-500 block">NIK:</span>
+                        <span className="font-mono font-bold text-slate-800">{buyer.nik}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">WhatsApp / Telepon:</span>
+                        <a 
+                          href={`https://wa.me/${buyer.telepon.replace(/\D/g, '')}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="font-mono font-bold text-emerald-700 hover:underline"
+                        >
+                          {buyer.telepon}
+                        </a>
+                      </div>
+                      {buyer.alamat && (
+                        <div className="col-span-2">
+                          <span className="text-slate-500 block">Alamat:</span>
+                          <span className="text-slate-700">{buyer.alamat}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Financial Summary */}
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-blue-200/60 text-center">
+                      <div className="bg-white p-2 rounded-lg border border-blue-100">
+                        <span className="text-[9px] text-slate-500 block">Nilai Kontrak</span>
+                        <span className="font-bold font-mono text-slate-900 text-xs">
+                          Rp {buyer.totalHarga.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                        <span className="text-[9px] text-emerald-800 block">Total Masuk</span>
+                        <span className="font-bold font-mono text-emerald-700 text-xs">
+                          Rp {buyer.totalMasuk.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div className="bg-amber-50 p-2 rounded-lg border border-amber-200">
+                        <span className="text-[9px] text-amber-800 block">Sisa Piutang</span>
+                        <span className="font-bold font-mono text-amber-700 text-xs">
+                          Rp {buyer.sisaPiutang.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {!isReadOnly && (
+                      <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAssignKavlingTarget(selectedKavling);
+                            setAssignCustId(buyer.id);
+                            setAssignPrice(buyer.totalHarga || selectedKavling.harga);
+                          }}
+                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold inline-flex items-center gap-1 transition cursor-pointer"
+                        >
+                          <Pencil className="w-3 h-3" />
+                          <span>Ubah Harga / Ganti Pembeli</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (confirm(`Putuskan hubungan kavling ${selectedKavling.nomor} dari ${buyer.nama}? Status kavling akan dikembalikan ke Terbuka.`)) {
+                              await unlinkCustomerFromKavling(buyer.id);
+                              setSelectedKavling({ ...selectedKavling, customerId: null, customerNama: null, status: 'terbuka' });
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[10px] font-bold inline-flex items-center gap-1 transition cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Putuskan Sambungan</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Records for this unit */}
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <Receipt className="w-4 h-4 text-emerald-600" />
+                        <span>Rincian Pembayaran Masuk ({unitPayments.length}):</span>
+                      </span>
+                    </div>
+
+                    {unitPayments.length > 0 ? (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {unitPayments.map(p => (
+                          <div key={p.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+                            <div className="min-w-0 pr-2">
+                              <span className="font-bold text-slate-900 block truncate">{p.tujuan}</span>
+                              <span className="text-[10px] text-slate-500">
+                                {p.tanggal} &bull; <span className="uppercase font-semibold">{p.metodeBayar}</span>
+                                {p.keterangan ? ` &bull; ${p.keterangan}` : ''}
+                              </span>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-bold font-mono text-emerald-700 block">
+                                Rp {p.nominal.toLocaleString('id-ID')}
+                              </span>
+                              {p.kwitansiImage && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewDocImage({ title: `Bukti Bayar: ${p.tujuan} (${buyer.nama})`, src: p.kwitansiImage! })}
+                                  className="text-[10px] text-blue-600 hover:underline font-bold inline-flex items-center gap-0.5 mt-0.5"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span>Lihat Bukti</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-400 text-[11px] italic text-center">
+                        Belum ada catatan transaksi pembayaran untuk unit ini.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200 text-xs space-y-2.5">
+                  <div className="flex items-center gap-2 text-emerald-800">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                    <div>
+                      <span className="font-bold block">Unit Siap Ditawarkan (Tersedia)</span>
+                      <span className="text-[11px] text-slate-600">Unit kavling ini belum dihubungkan ke customer manapun.</span>
+                    </div>
+                  </div>
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAssignKavlingTarget(selectedKavling);
+                        setAssignCustId(customers[0]?.id || '');
+                        setAssignPrice(selectedKavling.harga);
+                      }}
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
+                    >
+                      <Link2 className="w-4 h-4" />
+                      <span>+ Hubungkan Customer Pembeli / Catat Penjualan</span>
+                    </button>
+                  )}
                 </div>
               )}
-              {selectedKavling.keterangan && (
-                <div className="py-1">
-                  <span className="text-slate-500 block mb-0.5">Catatan:</span>
-                  <p className="p-2 bg-slate-50 rounded-lg text-slate-700 text-[11px]">{selectedKavling.keterangan}</p>
-                </div>
-              )}
-            </div>
 
-            {/* Quick Status Change */}
-            <div className="pt-2 border-t border-slate-100">
-              <label className="text-[11px] font-bold text-slate-500 block mb-1.5">Ubah Status Kavling Langsung:</label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => {
-                    updateKavlingStatus(selectedKavling.id, 'terbuka');
-                    setSelectedKavling({ ...selectedKavling, status: 'terbuka' });
-                  }}
-                  className="py-1.5 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                >
-                  Terbuka
-                </button>
-                <button
-                  onClick={() => {
-                    updateKavlingStatus(selectedKavling.id, 'booking');
-                    setSelectedKavling({ ...selectedKavling, status: 'booking' });
-                  }}
-                  className="py-1.5 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
-                >
-                  Booking
-                </button>
-                <button
-                  onClick={() => {
-                    updateKavlingStatus(selectedKavling.id, 'terjual');
-                    setSelectedKavling({ ...selectedKavling, status: 'terjual' });
-                  }}
-                  className="py-1.5 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
-                >
-                  Terjual
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
-              {canFullAccess && (
-                <div className="flex items-center gap-2">
+              {/* Quick Status Change */}
+              <div className="pt-2 border-t border-slate-100">
+                <label className="text-[11px] font-bold text-slate-500 block mb-1.5">Ubah Status Kavling Cepat:</label>
+                <div className="grid grid-cols-3 gap-2">
                   <button
-                    type="button"
                     onClick={() => {
-                      const target = selectedKavling;
-                      setSelectedKavling(null);
-                      handleOpenEditKavling(target);
+                      updateKavlingStatus(selectedKavling.id, 'terbuka');
+                      setSelectedKavling({ ...selectedKavling, status: 'terbuka' });
                     }}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                    className={`py-1.5 rounded-lg text-[11px] font-bold transition border cursor-pointer ${
+                      selectedKavling.status === 'terbuka' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    }`}
                   >
-                    <Pencil className="w-3.5 h-3.5" />
-                    <span>Edit Unit</span>
+                    Terbuka
                   </button>
                   <button
-                    type="button"
                     onClick={() => {
-                      const target = selectedKavling;
-                      setSelectedKavling(null);
-                      setDeleteKavlingTarget(target);
+                      updateKavlingStatus(selectedKavling.id, 'booking');
+                      setSelectedKavling({ ...selectedKavling, status: 'booking' });
                     }}
-                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+                    className={`py-1.5 rounded-lg text-[11px] font-bold transition border cursor-pointer ${
+                      selectedKavling.status === 'booking' ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                    }`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Hapus</span>
+                    Booking
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateKavlingStatus(selectedKavling.id, 'terjual');
+                      setSelectedKavling({ ...selectedKavling, status: 'terjual' });
+                    }}
+                    className={`py-1.5 rounded-lg text-[11px] font-bold transition border cursor-pointer ${
+                      selectedKavling.status === 'terjual' ? 'bg-rose-600 text-white border-rose-600' : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                    }`}
+                  >
+                    Terjual
                   </button>
                 </div>
-              )}
-              <button
-                onClick={() => setSelectedKavling(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl ml-auto cursor-pointer"
-              >
-                Tutup
-              </button>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                {canFullAccess && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = selectedKavling;
+                        setSelectedKavling(null);
+                        handleOpenEditKavling(target);
+                      }}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Edit Unit</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = selectedKavling;
+                        setSelectedKavling(null);
+                        setDeleteKavlingTarget(target);
+                      }}
+                      className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Hapus</span>
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={() => setSelectedKavling(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl ml-auto cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+      {/* ======================================================== */}
+      {/* MODAL HUBUNGKAN KAVLING KE CUSTOMER PEMBELI */}
+      {/* ======================================================== */}
+      {assignKavlingTarget && (() => {
+        const selectedCust = customers.find(c => c.id === assignCustId);
+        const totalMasuk = selectedCust ? selectedCust.totalMasuk : 0;
+        const newSisa = Math.max(0, assignPrice - totalMasuk);
+        const isLunas = totalMasuk >= assignPrice && assignPrice > 0;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar">
+              <div className="flex justify-between items-start pb-3 border-b border-slate-100">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">
+                    Penjualan Unit Kavling
+                  </span>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 font-mono">
+                    {assignKavlingTarget.blok} - {assignKavlingTarget.nomor}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Luas: {assignKavlingTarget.luas} m² ({assignKavlingTarget.dimensi}) &bull; Brosur: Rp {assignKavlingTarget.harga.toLocaleString('id-ID')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAssignKavlingTarget(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Select Customer */}
+              <div className="space-y-1.5 text-xs">
+                <label className="font-bold text-slate-700 block">
+                  Pilih Konsumen / Pembeli:
+                </label>
+                <select
+                  value={assignCustId}
+                  onChange={(e) => setAssignCustId(e.target.value)}
+                  className="w-full border-2 border-emerald-200 focus:border-emerald-500 rounded-xl px-3 py-2.5 bg-white text-slate-800 font-semibold text-xs focus:outline-none"
+                >
+                  <option value="">-- Pilih Customer Terdaftar --</option>
+                  {customers.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.nama} (NIK: {c.nik}) - Kavling saat ini: {c.kavlingKode || 'Belum ada'} - Uang Masuk: Rp {c.totalMasuk.toLocaleString('id-ID')}
+                    </option>
+                  ))}
+                </select>
+                {customers.length === 0 && (
+                  <p className="text-amber-700 text-[11px]">
+                    Belum ada customer terdaftar. Silakan tambahkan customer di Menu Customer terlebih dahulu.
+                  </p>
+                )}
+              </div>
+
+              {/* Kesepakatan Harga Kontrak */}
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <label className="font-bold text-slate-700">
+                    Harga Kesepakatan Kontrak Penjualan (Rp):
+                  </label>
+                  <span className="text-[10px] text-slate-400">Bisa diisi harga setelah diskon</span>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  step="500000"
+                  value={assignPrice || ''}
+                  onChange={(e) => setAssignPrice(Number(e.target.value) || 0)}
+                  className="w-full border-2 border-slate-200 focus:border-emerald-500 rounded-xl px-3 py-2 text-sm font-mono font-bold text-slate-900 focus:outline-none"
+                  placeholder="120000000"
+                />
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setAssignPrice(assignKavlingTarget.harga)}
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-semibold transition cursor-pointer"
+                  >
+                    Brosur: Rp {assignKavlingTarget.harga.toLocaleString('id-ID')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAssignPrice(Math.max(0, assignKavlingTarget.harga - 5000000))}
+                    className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded text-[10px] font-semibold transition cursor-pointer"
+                  >
+                    Diskon Promo 5 Jt
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAssignPrice(Math.max(0, assignKavlingTarget.harga - 10000000))}
+                    className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded text-[10px] font-semibold transition cursor-pointer"
+                  >
+                    Diskon 10 Jt
+                  </button>
+                </div>
+              </div>
+
+              {/* Simulation Preview */}
+              {selectedCust && (
+                <div className="p-3.5 bg-slate-900 text-white rounded-xl space-y-2 text-xs">
+                  <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    Simulasi Saldo &amp; Status Otomatis
+                  </div>
+                  <div className="space-y-1 text-[11px]">
+                    <div className="flex justify-between">
+                      <span className="text-slate-300">Pembeli:</span>
+                      <span className="font-bold text-white">{selectedCust.nama}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-300">Nilai Kontrak:</span>
+                      <span className="font-mono font-bold text-white">Rp {assignPrice.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-300">Uang Masuk Sebelumnya:</span>
+                      <span className="font-mono font-bold text-emerald-400">Rp {totalMasuk.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-slate-800">
+                      <span className="text-slate-300 font-bold">Sisa Piutang:</span>
+                      <span className="font-mono font-bold text-amber-300">
+                        Rp {newSisa.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-slate-800">
+                      <span className="text-slate-300 font-bold">Status Setelah Disimpan:</span>
+                      <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${
+                        isLunas ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      }`}>
+                        {isLunas ? 'LUNAS (Kavling: Terjual)' : 'BELUM LUNAS (Kavling: Booking)'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setAssignKavlingTarget(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!assignCustId) {
+                      alert('Pilih customer pembeli terlebih dahulu!');
+                      return;
+                    }
+                    if (assignPrice <= 0) {
+                      alert('Nilai kontrak kesepakatan harus lebih dari Rp 0!');
+                      return;
+                    }
+                    await assignCustomerToKavling(assignCustId, assignKavlingTarget.id, assignPrice);
+                    setAssignKavlingTarget(null);
+                    if (selectedKavling && selectedKavling.id === assignKavlingTarget.id) {
+                      const cust = customers.find(c => c.id === assignCustId);
+                      setSelectedKavling({
+                        ...selectedKavling,
+                        customerId: assignCustId,
+                        customerNama: cust?.nama || null,
+                        status: isLunas ? 'terjual' : 'booking'
+                      });
+                    }
+                  }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Simpan &amp; Hubungkan</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal Add Single Kavling */}
       {showAddModal && (

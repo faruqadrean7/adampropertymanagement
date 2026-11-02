@@ -235,6 +235,25 @@ export async function supabaseFetchCashbook(): Promise<CashbookItem[] | null> {
   }));
 }
 
+export async function supabaseFetchPayments(): Promise<Payment[] | null> {
+  if (!isSupabaseConfigured()) return null;
+  const { data, error } = await supabase.from('payments').select('*').order('tanggal', { ascending: true });
+  if (error || !data) return null;
+  return data.map(p => ({
+    id: p.id,
+    customerId: p.customer_id,
+    customerNama: p.customer_nama,
+    kavlingKode: p.kavling_kode,
+    tanggal: p.tanggal,
+    nominal: Number(p.nominal),
+    metodeBayar: p.metode_bayar,
+    tujuan: p.tujuan,
+    keterangan: p.keterangan,
+    rincianBarter: p.rincian_barter,
+    kwitansiImage: p.kwitansi_image
+  }));
+}
+
 // ==============================================================================
 // UPDATE & DELETE HELPERS
 // ==============================================================================
@@ -382,6 +401,90 @@ export async function supabaseDeleteLandDebt(id: string): Promise<boolean> {
     return !error;
   } catch (e) {
     console.warn('Error deleting land debt:', e);
+    return false;
+  }
+}
+
+export async function supabaseUpdateCustomer(id: string, updates: Partial<Customer>): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const payload: any = {};
+    if (updates.nama !== undefined) payload.nama = updates.nama;
+    if (updates.nik !== undefined) payload.nik = updates.nik;
+    if (updates.noKk !== undefined) payload.no_kk = updates.noKk;
+    if (updates.telepon !== undefined) payload.telepon = updates.telepon;
+    if (updates.tempatTanggalLahir !== undefined) payload.tempat_tanggal_lahir = updates.tempatTanggalLahir;
+    if (updates.pekerjaan !== undefined) payload.pekerjaan = updates.pekerjaan;
+    if (updates.alamat !== undefined) payload.alamat = updates.alamat;
+    if (updates.kavlingId !== undefined) payload.kavling_id = updates.kavlingId;
+    if (updates.kavlingKode !== undefined) payload.kavling_kode = updates.kavlingKode;
+    if (updates.projectId !== undefined) payload.project_id = updates.projectId;
+    if (updates.totalHarga !== undefined) payload.total_harga = updates.totalHarga;
+    if (updates.totalMasuk !== undefined) payload.total_masuk = updates.totalMasuk;
+    if (updates.sisaPiutang !== undefined) payload.sisa_piutang = updates.sisaPiutang;
+    if (updates.statusBayar !== undefined) payload.status_bayar = updates.statusBayar;
+    if (updates.tanggalBeli !== undefined) payload.tanggal_beli = updates.tanggalBeli;
+    if (updates.ktpImage !== undefined) payload.ktp_image = updates.ktpImage;
+    if (updates.kkImage !== undefined) payload.kk_image = updates.kkImage;
+    if (updates.ajbImage !== undefined) payload.ajb_image = updates.ajbImage;
+    if (updates.shmSplitImage !== undefined) payload.shm_split_image = updates.shmSplitImage;
+    if (updates.noAjb !== undefined) payload.no_ajb = updates.noAjb;
+    if (updates.noShmSplit !== undefined) payload.no_shm_split = updates.noShmSplit;
+    if (updates.tanggalAjb !== undefined) payload.tanggal_ajb = updates.tanggalAjb;
+    if (updates.tanggalShmSplit !== undefined) payload.tanggal_shm_split = updates.tanggalShmSplit;
+    if (updates.notarisPpat !== undefined) payload.notaris_ppat = updates.notarisPpat;
+
+    const { error } = await supabase.from('customers').update(payload).eq('id', id);
+    if (error) console.warn('Supabase update customer error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error updating customer:', e);
+    return false;
+  }
+}
+
+export async function supabaseInsertPayment(pay: Payment): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('payments').upsert({
+      id: pay.id,
+      customer_id: pay.customerId,
+      customer_nama: pay.customerNama,
+      kavling_kode: pay.kavlingKode,
+      tanggal: pay.tanggal,
+      nominal: pay.nominal,
+      metode_bayar: pay.metodeBayar,
+      tujuan: pay.tujuan,
+      keterangan: pay.keterangan || null,
+      rincian_barter: pay.rincianBarter || null,
+      kwitansi_image: pay.kwitansiImage || null
+    }, { onConflict: 'id' });
+    if (error) console.warn('Supabase insert payment error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error inserting payment:', e);
+    return false;
+  }
+}
+
+export async function supabaseUpdatePayment(id: string, updates: Partial<Payment>): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const payload: any = {};
+    if (updates.kavlingKode !== undefined) payload.kavling_kode = updates.kavlingKode;
+    if (updates.customerNama !== undefined) payload.customer_nama = updates.customerNama;
+    if (updates.nominal !== undefined) payload.nominal = updates.nominal;
+    if (updates.tanggal !== undefined) payload.tanggal = updates.tanggal;
+    if (updates.tujuan !== undefined) payload.tujuan = updates.tujuan;
+    if (updates.metodeBayar !== undefined) payload.metode_bayar = updates.metodeBayar;
+    if (updates.keterangan !== undefined) payload.keterangan = updates.keterangan;
+    if (updates.kwitansiImage !== undefined) payload.kwitansi_image = updates.kwitansiImage;
+
+    const { error } = await supabase.from('payments').update(payload).eq('id', id);
+    if (error) console.warn('Supabase update payment error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error updating payment:', e);
     return false;
   }
 }
