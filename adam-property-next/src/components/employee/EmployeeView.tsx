@@ -14,7 +14,8 @@ import {
   Coins, 
   Printer, 
   CheckCircle2, 
-  Clock 
+  Clock,
+  Trash2 
 } from 'lucide-react';
 import { Employee, SalaryPayment } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -26,6 +27,7 @@ export default function EmployeeView() {
     salaryPayments, 
     pettyCashBalance, 
     addEmployee, 
+    deleteEmployee,
     payEmployeeSalary, 
     payAllActiveSalaries 
   } = useProperty();
@@ -121,6 +123,7 @@ export default function EmployeeView() {
       tanggalBergabung: new Date().toISOString().split('T')[0]
     });
     setShowAddModal(false);
+    alert(`Data karyawan ${nama} berhasil ditambahkan dan tersimpan permanen ke Cloud Database!`);
     // Reset
     setNama('');
     setNik('');
@@ -369,24 +372,39 @@ export default function EmployeeView() {
                         {isPaid ? 'Terbayar' : 'Belum Digaji'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-center space-x-1.5">
-                      {!isPaid ? (
-                        <button
-                          onClick={() => handleSinglePay(emp)}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs"
-                        >
-                          <Coins className="w-3.5 h-3.5" />
-                          <span>Gaji 1-Klik</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setSelectedSlip(paidSlip)}
-                          className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1"
-                        >
-                          <Receipt className="w-3.5 h-3.5" />
-                          <span>Lihat Slip</span>
-                        </button>
-                      )}
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        {!isPaid ? (
+                          <button
+                            onClick={() => handleSinglePay(emp)}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs"
+                          >
+                            <Coins className="w-3.5 h-3.5" />
+                            <span>Gaji 1-Klik</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setSelectedSlip(paidSlip)}
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1"
+                          >
+                            <Receipt className="w-3.5 h-3.5" />
+                            <span>Lihat Slip</span>
+                          </button>
+                        )}
+                        {canFullAccess && (
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Hapus data karyawan ${emp.nama}? Tindakan ini akan menghapus data permanen dari database.`)) {
+                                await deleteEmployee(emp.id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            title="Hapus Karyawan"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

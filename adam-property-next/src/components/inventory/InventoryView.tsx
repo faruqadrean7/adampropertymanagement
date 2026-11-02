@@ -103,6 +103,7 @@ export default function InventoryView() {
       keterangan
     });
     setShowAddModal(false);
+    alert(`Aset inventaris "${nama}" berhasil disimpan ke Cloud Database!`);
     // Reset
     setNama('');
     setNomorSeri('');

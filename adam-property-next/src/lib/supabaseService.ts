@@ -644,3 +644,227 @@ export async function supabaseDeletePettyCash(id: string): Promise<boolean> {
     return false;
   }
 }
+
+// ==============================================================================
+// INVENTORY ASSET SERVICES
+// ==============================================================================
+
+export async function supabaseFetchInventory(): Promise<InventoryItem[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.warn('Error fetching inventory from Supabase:', error);
+      return [];
+    }
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      kode: row.kode_barang || `INV-${row.id}`,
+      nama: row.nama_barang || '-',
+      kategori: (row.kategori || 'elektronik') as InventoryItem['kategori'],
+      kondisi: (row.kondisi || 'baik') as InventoryItem['kondisi'],
+      lokasi: row.lokasi || '-',
+      penanggungJawab: row.penanggung_jawab || '-',
+      tanggal: row.tanggal_beli || row.tanggal_perolehan || new Date().toISOString().split('T')[0],
+      sumberDana: row.sumber_perolehan || 'Kas Perusahaan',
+      nilaiPerolehan: Number(row.nilai_perolehan) || 0,
+      jumlah: Number(row.jumlah) || 1,
+      satuan: row.satuan || 'unit',
+      nomorSeri: row.nomor_seri || undefined,
+      keterangan: row.keterangan || undefined,
+      fotoBarang: row.foto || null,
+      fotoNota: null
+    }));
+  } catch (e) {
+    console.warn('Exception in supabaseFetchInventory:', e);
+    return [];
+  }
+}
+
+export async function supabaseInsertInventory(item: InventoryItem): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('inventory').upsert({
+      id: item.id,
+      kode_barang: item.kode,
+      nama_barang: item.nama,
+      kategori: item.kategori,
+      kondisi: item.kondisi,
+      lokasi: item.lokasi,
+      penanggung_jawab: item.penanggungJawab,
+      sumber_perolehan: item.sumberDana,
+      nilai_perolehan: item.nilaiPerolehan,
+      jumlah: item.jumlah,
+      satuan: item.satuan,
+      nomor_seri: item.nomorSeri || null,
+      keterangan: item.keterangan || null,
+      tanggal_beli: item.tanggal,
+      tanggal_perolehan: item.tanggal,
+      foto: item.fotoBarang || null
+    }, { onConflict: 'id' });
+    if (error) console.warn('Supabase insert inventory error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error inserting inventory item:', e);
+    return false;
+  }
+}
+
+export async function supabaseDeleteInventory(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('inventory').delete().eq('id', id);
+    if (error) console.warn('Supabase delete inventory error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error deleting inventory item:', e);
+    return false;
+  }
+}
+
+// ==============================================================================
+// EMPLOYEES & PAYROLL SERVICES
+// ==============================================================================
+
+export async function supabaseFetchEmployees(): Promise<Employee[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*')
+      .order('nama', { ascending: true });
+    if (error) {
+      console.warn('Error fetching employees from Supabase:', error);
+      return [];
+    }
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      nama: row.nama || '-',
+      nik: row.nik || '-',
+      jabatan: row.jabatan || '-',
+      departemen: (row.divisi || 'marketing') as Employee['departemen'],
+      tipe: 'tetap' as Employee['tipe'],
+      noHp: row.no_hp || '-',
+      email: row.email || undefined,
+      noRek: row.no_rek || undefined,
+      bank: row.bank || undefined,
+      gajiPokok: Number(row.gaji_pokok) || 0,
+      tunjanganJabatan: Number(row.tunjangan_jabatan) || 0,
+      tunjanganMakan: Number(row.tunjangan_makan) || 0,
+      komisiPenjualan: Number(row.komisi_penjualan) || 0,
+      potongan: Number(row.potongan) || 0,
+      status: (row.status || 'aktif') as Employee['status'],
+      tanggalBergabung: row.tanggal_bergabung || new Date().toISOString().split('T')[0],
+      keterangan: row.keterangan || undefined
+    }));
+  } catch (e) {
+    console.warn('Exception in supabaseFetchEmployees:', e);
+    return [];
+  }
+}
+
+export async function supabaseInsertEmployee(emp: Employee): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('employees').upsert({
+      id: emp.id,
+      nama: emp.nama,
+      nik: emp.nik,
+      jabatan: emp.jabatan,
+      divisi: emp.departemen,
+      no_hp: emp.noHp,
+      alamat: emp.keterangan || '-',
+      no_rek: emp.noRek || null,
+      bank: emp.bank || null,
+      gaji_pokok: emp.gajiPokok,
+      tunjangan_jabatan: emp.tunjanganJabatan,
+      tunjangan_makan: emp.tunjanganMakan,
+      komisi_penjualan: emp.komisiPenjualan,
+      potongan: emp.potongan,
+      status: emp.status,
+      tanggal_bergabung: emp.tanggalBergabung,
+      keterangan: emp.keterangan || null
+    }, { onConflict: 'id' });
+    if (error) console.warn('Supabase insert employee error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error inserting employee:', e);
+    return false;
+  }
+}
+
+export async function supabaseDeleteEmployee(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('employees').delete().eq('id', id);
+    if (error) console.warn('Supabase delete employee error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error deleting employee:', e);
+    return false;
+  }
+}
+
+export async function supabaseFetchSalaryPayments(): Promise<SalaryPayment[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const { data, error } = await supabase
+      .from('salary_payments')
+      .select('*')
+      .order('tanggal_bayar', { ascending: false });
+    if (error) {
+      console.warn('Error fetching salary payments from Supabase:', error);
+      return [];
+    }
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      employeeId: row.employee_id,
+      employeeNama: row.employee_nama,
+      jabatan: row.jabatan,
+      bulan: row.bulan,
+      tanggalBayar: row.tanggal_bayar,
+      gajiPokok: Number(row.gaji_pokok) || 0,
+      tunjanganJabatan: Number(row.tunjangan_jabatan) || 0,
+      tunjanganMakan: Number(row.tunjangan_makan) || 0,
+      komisi: Number(row.komisi) || 0,
+      potongan: Number(row.potongan) || 0,
+      thp: Number(row.thp) || 0,
+      catatan: row.catatan || undefined,
+      status: (row.status || 'terbayar') as SalaryPayment['status'],
+      pettyCashId: row.petty_cash_id || undefined
+    }));
+  } catch (e) {
+    console.warn('Exception in supabaseFetchSalaryPayments:', e);
+    return [];
+  }
+}
+
+export async function supabaseInsertSalaryPayment(item: SalaryPayment): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('salary_payments').upsert({
+      id: item.id,
+      employee_id: item.employeeId,
+      employee_nama: item.employeeNama,
+      jabatan: item.jabatan,
+      bulan: item.bulan,
+      tanggal_bayar: item.tanggalBayar,
+      gaji_pokok: item.gajiPokok,
+      tunjangan_jabatan: item.tunjanganJabatan,
+      tunjangan_makan: item.tunjanganMakan,
+      komisi: item.komisi,
+      potongan: item.potongan,
+      thp: item.thp,
+      status: item.status,
+      petty_cash_id: item.pettyCashId || null
+    }, { onConflict: 'id' });
+    if (error) console.warn('Supabase insert salary payment error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error inserting salary payment:', e);
+    return false;
+  }
+}

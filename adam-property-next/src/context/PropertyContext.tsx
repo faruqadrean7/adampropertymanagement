@@ -54,7 +54,15 @@ import {
   supabaseDeleteCashbookItem,
   supabaseFetchPettyCash,
   supabaseInsertPettyCash,
-  supabaseDeletePettyCash
+  supabaseDeletePettyCash,
+  supabaseFetchInventory,
+  supabaseInsertInventory,
+  supabaseDeleteInventory,
+  supabaseFetchEmployees,
+  supabaseInsertEmployee,
+  supabaseDeleteEmployee,
+  supabaseFetchSalaryPayments,
+  supabaseInsertSalaryPayment
 } from '@/lib/supabaseService';
 
 export interface AddProjectData {
@@ -194,6 +202,7 @@ interface PropertyContextType {
   addInventoryItem: (data: Omit<InventoryItem, 'id'>) => void;
   deleteInventoryItem: (id: string) => void;
   addEmployee: (data: Omit<Employee, 'id'>) => void;
+  deleteEmployee: (id: string) => Promise<boolean>;
   payEmployeeSalary: (employeeId: string, bulan: string, catatan?: string) => { success: boolean; message: string };
   payAllActiveSalaries: (bulan: string) => { count: number; total: number; message: string };
   syncAllToCashbook: () => void;
@@ -302,14 +311,28 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     if (!isSupabaseConfigured()) return;
     setIsSyncingCloud(true);
     try {
-      const [supaProjects, supaKavlings, supaCust, supaLands, supaCash, supaPayments, supaPetty] = await Promise.all([
+      const [
+        supaProjects,
+        supaKavlings,
+        supaCust,
+        supaLands,
+        supaCash,
+        supaPayments,
+        supaPetty,
+        supaInv,
+        supaEmp,
+        supaSal
+      ] = await Promise.all([
         supabaseFetchProjects(),
         supabaseFetchKavlings(),
         supabaseFetchCustomers(),
         supabaseFetchLandDebts(),
         supabaseFetchCashbook(),
         supabaseFetchPayments(),
-        supabaseFetchPettyCash()
+        supabaseFetchPettyCash(),
+        supabaseFetchInventory(),
+        supabaseFetchEmployees(),
+        supabaseFetchSalaryPayments()
       ]);
 
       if (supaProjects !== null && supaProjects.length > 0) {
@@ -359,6 +382,33 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
           return merged;
         });
       }
+      if (supaInv !== null && supaInv.length > 0) {
+        setInventory(prev => {
+          const supaIds = new Set(supaInv.map(i => i.id));
+          const recentLocal = prev.filter(i => !supaIds.has(i.id) && Date.now() - (parseInt(i.id.replace('inv-', '')) || 0) < 60000);
+          const merged = [...recentLocal, ...supaInv];
+          saveStorage('inventory', merged);
+          return merged;
+        });
+      }
+      if (supaEmp !== null) {
+        setEmployees(prev => {
+          const supaIds = new Set(supaEmp.map(e => e.id));
+          const recentLocal = prev.filter(e => !supaIds.has(e.id) && Date.now() - (parseInt(e.id.replace('emp-', '')) || 0) < 60000);
+          const merged = [...recentLocal, ...supaEmp];
+          saveStorage('employees', merged);
+          return merged;
+        });
+      }
+      if (supaSal !== null) {
+        setSalaryPayments(prev => {
+          const supaIds = new Set(supaSal.map(s => s.id));
+          const recentLocal = prev.filter(s => !supaIds.has(s.id) && Date.now() - (parseInt(s.id.replace('slip-', '')) || 0) < 60000);
+          const merged = [...recentLocal, ...supaSal];
+          saveStorage('salaryPayments', merged);
+          return merged;
+        });
+      }
       setLastSyncTime(new Date());
     } catch (err) {
       console.warn('Could not sync with Supabase tables:', err);
@@ -396,6 +446,15 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         refreshCloudData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'petty_cash' }, () => {
+        refreshCloudData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
+        refreshCloudData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, () => {
+        refreshCloudData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'salary_payments' }, () => {
         refreshCloudData();
       })
       .subscribe();
@@ -1564,17 +1623,50 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   // 7. Inventory Items
   const addInventoryItem = (data: Omit<InventoryItem, 'id'>) => {
     const newItem: InventoryItem = { ...data, id: `inv-${Date.now()}` };
-    setInventory(prev => [newItem, ...prev]);
+    setInventory(prev => {
+      const updated = [newItem, ...prev];
+      saveStorage('inventory', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseInsertInventory(newItem).catch(console.warn);
+    }
   };
 
   const deleteInventoryItem = (id: string) => {
-    setInventory(prev => prev.filter(i => i.id !== id));
+    setInventory(prev => {
+      const updated = prev.filter(i => i.id !== id);
+      saveStorage('inventory', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseDeleteInventory(id).catch(console.warn);
+    }
   };
 
   // 8. Employees & Payroll
   const addEmployee = (data: Omit<Employee, 'id'>) => {
     const newEmp: Employee = { ...data, id: `emp-${Date.now()}` };
-    setEmployees(prev => [...prev, newEmp]);
+    setEmployees(prev => {
+      const updated = [...prev, newEmp];
+      saveStorage('employees', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseInsertEmployee(newEmp).catch(console.warn);
+    }
+  };
+
+  const deleteEmployee = async (id: string): Promise<boolean> => {
+    setEmployees(prev => {
+      const updated = prev.filter(e => e.id !== id);
+      saveStorage('employees', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      return await supabaseDeleteEmployee(id);
+    }
+    return true;
   };
 
   const payEmployeeSalary = (employeeId: string, bulan: string, catatan?: string) => {
@@ -1607,7 +1699,14 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       metode: 'Tunai Kasir',
       refType: 'payroll'
     };
-    setPettyCash(prev => [pettyExp, ...prev]);
+    setPettyCash(prev => {
+      const updated = [pettyExp, ...prev];
+      saveStorage('pettyCash', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseInsertPettyCash(pettyExp).catch(console.warn);
+    }
 
     // 2. Record Salary Payment Slip
     const newSlip: SalaryPayment = {
@@ -1627,7 +1726,14 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       status: 'terbayar',
       pettyCashId: pettyId
     };
-    setSalaryPayments(prev => [newSlip, ...prev]);
+    setSalaryPayments(prev => {
+      const updated = [newSlip, ...prev];
+      saveStorage('salaryPayments', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseInsertSalaryPayment(newSlip).catch(console.warn);
+    }
 
     return {
       success: true,
@@ -1739,6 +1845,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         addInventoryItem,
         deleteInventoryItem,
         addEmployee,
+        deleteEmployee,
         payEmployeeSalary,
         payAllActiveSalaries,
         syncAllToCashbook,
