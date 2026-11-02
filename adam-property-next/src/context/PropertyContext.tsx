@@ -313,8 +313,13 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         saveStorage('kavlings', supaKavlings);
       }
       if (supaCust !== null) {
-        setCustomers(supaCust);
-        saveStorage('customers', supaCust);
+        setCustomers(prev => {
+          const supaIds = new Set(supaCust.map(c => c.id));
+          const recentLocal = prev.filter(c => !supaIds.has(c.id) && Date.now() - (parseInt(c.id.replace('cust-', '')) || 0) < 120000);
+          const merged = [...recentLocal, ...supaCust];
+          saveStorage('customers', merged);
+          return merged;
+        });
       }
       if (supaLands !== null) {
         setLandDebts(supaLands);
@@ -1124,15 +1129,27 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       notarisPpat?: string;
     }
   ) => {
-    setCustomers(prev =>
-      prev.map(c => (c.id === customerId ? { ...c, ...docs } : c))
-    );
+    setCustomers(prev => {
+      const updated = prev.map(c => (c.id === customerId ? { ...c, ...docs } : c));
+      saveStorage('customers', updated);
+      return updated;
+    });
+
+    if (isSupabaseConfigured()) {
+      supabaseUpdateCustomer(customerId, docs).catch(console.warn);
+    }
   };
 
   const updatePaymentReceipt = (paymentId: string, kwitansiImage: string | null) => {
-    setPayments(prev =>
-      prev.map(p => (p.id === paymentId ? { ...p, kwitansiImage } : p))
-    );
+    setPayments(prev => {
+      const updated = prev.map(p => (p.id === paymentId ? { ...p, kwitansiImage } : p));
+      saveStorage('payments', updated);
+      return updated;
+    });
+
+    if (isSupabaseConfigured()) {
+      supabaseUpdatePayment(paymentId, { kwitansiImage }).catch(console.warn);
+    }
   };
 
   // 4. Land Debts (with auto-deduction from Cashbook)

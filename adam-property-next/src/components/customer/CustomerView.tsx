@@ -136,19 +136,56 @@ export default function CustomerView() {
   const [payRincianBarter, setPayRincianBarter] = useState('');
   const [payKwitansiImage, setPayKwitansiImage] = useState<string | null>(null);
 
-  // Helper untuk membaca upload file gambar lokal
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string | null) => void) => {
+  // Helper untuk kompresi gambar otomatis ke resolusi optimal agar tidak membebani browser & Supabase
+  const compressImageFile = (file: File, maxWidth = 1200, quality = 0.72): Promise<string> => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/') || file.type.includes('svg')) {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string || '');
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = document.createElement('img');
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(e.target?.result as string || '');
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(e.target?.result as string || '');
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Helper untuk membaca upload file gambar lokal dengan kompresi
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string | null) => void) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      alert('Ukuran file maksimal 8 MB!');
-      return;
+    try {
+      const compressed = await compressImageFile(file);
+      setter(compressed);
+    } catch (err) {
+      console.warn('Compress file error:', err);
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setter(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   // Helper untuk update dokumen langsung dari modal Detail Customer
@@ -158,41 +195,33 @@ export default function CustomerView() {
     setSelectedCustDetail(prev => (prev ? { ...prev, ...updates } : null));
   };
 
-  const handleDetailFileUpload = (
+  const handleDetailFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: 'ktpImage' | 'kkImage' | 'ajbImage' | 'shmSplitImage',
     extra?: Partial<Customer>
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      alert('Ukuran file maksimal 8 MB!');
-      return;
+    try {
+      const compressed = await compressImageFile(file);
+      handleUpdateDetailDoc({ [field]: compressed, ...extra });
+    } catch (err) {
+      console.warn('Detail file compress error:', err);
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      handleUpdateDetailDoc({ [field]: dataUrl, ...extra });
-    };
-    reader.readAsDataURL(file);
   };
 
-  const handlePaymentReceiptUpload = (
+  const handlePaymentReceiptUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     paymentId: string
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      alert('Ukuran file maksimal 8 MB!');
-      return;
+    try {
+      const compressed = await compressImageFile(file);
+      updatePaymentReceipt(paymentId, compressed);
+    } catch (err) {
+      console.warn('Receipt compress error:', err);
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      updatePaymentReceipt(paymentId, dataUrl);
-    };
-    reader.readAsDataURL(file);
   };
 
   // Helper create dummy SVG preview jika pengguna ingin tes cepat
@@ -777,14 +806,13 @@ export default function CustomerView() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="font-bold text-slate-700 block mb-1">
-                      No. WhatsApp / HP Aktif *
+                      No. WhatsApp / HP Aktif
                     </label>
                     <input
                       type="tel"
-                      required
                       value={telepon}
                       onChange={(e) => setTelepon(e.target.value)}
-                      placeholder="08123456789"
+                      placeholder="08123456789 (opsional)"
                       className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 font-mono text-slate-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
