@@ -34,7 +34,13 @@ import {
   supabaseFetchKavlings,
   supabaseFetchCustomers,
   supabaseFetchLandDebts,
-  supabaseFetchCashbook
+  supabaseFetchCashbook,
+  supabaseUpdateKavling,
+  supabaseDeleteKavling,
+  supabaseUpdateProject,
+  supabaseDeleteProject,
+  supabaseUpdateLandDebt,
+  supabaseDeleteLandDebt
 } from '@/lib/supabaseService';
 
 export interface AddProjectData {
@@ -73,7 +79,11 @@ interface PropertyContextType {
 
   // Actions
   addProject: (data: AddProjectData) => Project;
+  updateProject: (id: string, data: { nama: string; lokasi: string; deskripsi?: string }) => void;
+  deleteProject: (id: string) => void;
   addKavling: (data: Omit<Kavling, 'id'>) => void;
+  updateKavling: (id: string, data: Partial<Omit<Kavling, 'id'>>) => void;
+  deleteKavling: (id: string) => void;
   addBatchKavling: (
     blok: string,
     prefix: string,
@@ -138,6 +148,8 @@ interface PropertyContextType {
     sertifikatImage?: string | null;
     perjanjianImage?: string | null;
   }) => void;
+  updateLandDebt: (id: string, data: Partial<Omit<LandDebt, 'id'>>) => void;
+  deleteLandDebt: (id: string) => void;
   updateLandDocuments: (
     landDebtId: string,
     docs: {
@@ -334,6 +346,26 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     return newProject;
   };
 
+  const updateProject = (id: string, data: { nama: string; lokasi: string; deskripsi?: string }) => {
+    setProjects(prev => prev.map(p => (p.id === id ? { ...p, ...data } : p)));
+    setLandDebts(prev => prev.map(l => (l.projectId === id ? { ...l, projectNama: data.nama } : l)));
+    if (isSupabaseConfigured()) {
+      supabaseUpdateProject(id, data).catch(console.warn);
+    }
+  };
+
+  const deleteProject = (id: string) => {
+    setProjects(prev => prev.filter(p => p.id !== id));
+    setKavlings(prev => prev.filter(k => k.projectId !== id));
+    setLandDebts(prev => prev.filter(l => l.projectId !== id));
+    if (selectedProjectId === id) {
+      setSelectedProjectId('all');
+    }
+    if (isSupabaseConfigured()) {
+      supabaseDeleteProject(id).catch(console.warn);
+    }
+  };
+
   // 2. Kavling
   const addKavling = (data: Omit<Kavling, 'id'>) => {
     const newKav: Kavling = {
@@ -341,6 +373,20 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       id: `kav-${Date.now()}`
     };
     setKavlings(prev => [...prev, newKav]);
+  };
+
+  const updateKavling = (id: string, data: Partial<Omit<Kavling, 'id'>>) => {
+    setKavlings(prev => prev.map(k => (k.id === id ? { ...k, ...data } : k)));
+    if (isSupabaseConfigured()) {
+      supabaseUpdateKavling(id, data).catch(console.warn);
+    }
+  };
+
+  const deleteKavling = (id: string) => {
+    setKavlings(prev => prev.filter(k => k.id !== id));
+    if (isSupabaseConfigured()) {
+      supabaseDeleteKavling(id).catch(console.warn);
+    }
   };
 
   const addBatchKavling = (
@@ -624,6 +670,36 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateLandDebt = (id: string, data: Partial<Omit<LandDebt, 'id'>>) => {
+    const proj = data.projectId ? projects.find(p => p.id === data.projectId) : undefined;
+    setLandDebts(prev => prev.map(l => {
+      if (l.id !== id) return l;
+      const updated = { 
+        ...l, 
+        ...data,
+        projectNama: proj ? proj.nama : (data.projectNama || l.projectNama)
+      };
+      const harga = updated.hargaKesepakatan !== undefined ? updated.hargaKesepakatan : l.hargaKesepakatan;
+      const dp = updated.dpDibayar !== undefined ? updated.dpDibayar : l.dpDibayar;
+      const cicilan = updated.totalCicilan !== undefined ? updated.totalCicilan : l.totalCicilan;
+      const sisa = Math.max(0, harga - (dp + cicilan));
+      updated.sisaHutang = sisa;
+      updated.status = sisa <= 0 ? 'lunas' : 'belum_lunas';
+      return updated;
+    }));
+    if (isSupabaseConfigured()) {
+      supabaseUpdateLandDebt(id, data).catch(console.warn);
+    }
+  };
+
+  const deleteLandDebt = (id: string) => {
+    setLandDebts(prev => prev.filter(l => l.id !== id));
+    setLandPayments(prev => prev.filter(lp => lp.landDebtId !== id));
+    if (isSupabaseConfigured()) {
+      supabaseDeleteLandDebt(id).catch(console.warn);
+    }
+  };
+
   const updateLandDocuments = (
     landDebtId: string,
     docs: {
@@ -875,7 +951,11 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         salaryPayments,
 
         addProject,
+        updateProject,
+        deleteProject,
         addKavling,
+        updateKavling,
+        deleteKavling,
         addBatchKavling,
         updateKavlingStatus,
         addCustomer,
@@ -883,6 +963,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         updatePaymentReceipt,
         updateCustomerDocuments,
         addLandDebt,
+        updateLandDebt,
+        deleteLandDebt,
         updateLandDocuments,
         addLandPayment,
         updateLandPaymentReceipt,

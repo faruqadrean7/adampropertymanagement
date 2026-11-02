@@ -234,3 +234,103 @@ export async function supabaseFetchCashbook(): Promise<CashbookItem[] | null> {
     refId: c.ref_id
   }));
 }
+
+// ==============================================================================
+// UPDATE & DELETE HELPERS
+// ==============================================================================
+
+export async function supabaseUpdateKavling(id: string, updates: Partial<Kavling>): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const payload: any = {};
+    if (updates.projectId !== undefined) payload.project_id = updates.projectId;
+    if (updates.blok !== undefined) payload.blok = updates.blok;
+    if (updates.nomor !== undefined) payload.nomor = updates.nomor;
+    if (updates.luas !== undefined) payload.luas = updates.luas;
+    if (updates.dimensi !== undefined) payload.dimensi = updates.dimensi;
+    if (updates.harga !== undefined) payload.harga = updates.harga;
+    if (updates.tipe !== undefined) payload.tipe = updates.tipe;
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.customerId !== undefined) payload.customer_id = updates.customerId;
+    if (updates.customerNama !== undefined) payload.customer_nama = updates.customerNama;
+    if (updates.keterangan !== undefined) payload.keterangan = updates.keterangan;
+    
+    const { error } = await supabase.from('kavlings').update(payload).eq('id', id);
+    return !error;
+  } catch (e) {
+    console.warn('Error updating kavling:', e);
+    return false;
+  }
+}
+
+export async function supabaseDeleteKavling(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('kavlings').delete().eq('id', id);
+    return !error;
+  } catch (e) {
+    console.warn('Error deleting kavling:', e);
+    return false;
+  }
+}
+
+export async function supabaseUpdateProject(id: string, updates: { nama?: string; lokasi?: string; deskripsi?: string }): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('projects').update(updates).eq('id', id);
+    return !error;
+  } catch (e) {
+    console.warn('Error updating project:', e);
+    return false;
+  }
+}
+
+export async function supabaseDeleteProject(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('projects').delete().eq('id', id);
+    return !error;
+  } catch (e) {
+    console.warn('Error deleting project:', e);
+    return false;
+  }
+}
+
+export async function supabaseUpdateLandDebt(id: string, updates: Partial<LandDebt>): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const payload: any = {};
+    if (updates.projectId !== undefined) payload.project_id = updates.projectId;
+    if (updates.projectNama !== undefined) payload.project_nama = updates.projectNama;
+    if (updates.namaPetani !== undefined) payload.nama_petani = updates.namaPetani;
+    if (updates.telepon !== undefined) payload.telepon = updates.telepon;
+    if (updates.luasTanah !== undefined) payload.luas_tanah = updates.luasTanah;
+    if (updates.alasHak !== undefined) payload.alas_hak = updates.alasHak;
+    if (updates.hargaKesepakatan !== undefined) payload.harga_kesepakatan = updates.hargaKesepakatan;
+    if (updates.dpDibayar !== undefined) payload.dp_dibayar = updates.dpDibayar;
+    if (updates.totalCicilan !== undefined) payload.total_cicilan = updates.totalCicilan;
+    if (updates.sisaHutang !== undefined) payload.sisa_hutang = updates.sisaHutang;
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.alamatLahan !== undefined) payload.alamat_lahan = updates.alamatLahan;
+    if (updates.keterangan !== undefined) payload.keterangan = updates.keterangan;
+    if (updates.sertifikatImage !== undefined) payload.sertifikat_image = updates.sertifikatImage;
+    if (updates.perjanjianImage !== undefined) payload.perjanjian_image = updates.perjanjianImage;
+    
+    const { error } = await supabase.from('land_debts').update(payload).eq('id', id);
+    return !error;
+  } catch (e) {
+    console.warn('Error updating land debt:', e);
+    return false;
+  }
+}
+
+export async function supabaseDeleteLandDebt(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('land_debts').delete().eq('id', id);
+    return !error;
+  } catch (e) {
+    console.warn('Error deleting land debt:', e);
+    return false;
+  }
+}

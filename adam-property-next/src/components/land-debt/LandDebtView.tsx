@@ -20,7 +20,10 @@ import {
   CheckCircle2,
   FileCheck,
   FileText,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Pencil,
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 import { LandDebt } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -32,6 +35,8 @@ export default function LandDebtView() {
     landDebts, 
     landPayments, 
     addLandDebt, 
+    updateLandDebt,
+    deleteLandDebt,
     updateLandDocuments,
     addLandPayment,
     updateLandPaymentReceipt
@@ -42,6 +47,24 @@ export default function LandDebtView() {
   const [selectedLandForPay, setSelectedLandForPay] = useState<LandDebt | null>(null);
   const [selectedLandDetail, setSelectedLandDetail] = useState<LandDebt | null>(null);
   const [previewImage, setPreviewImage] = useState<{ title: string; src: string } | null>(null);
+
+  // Edit Land Debt state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editLandId, setEditLandId] = useState('');
+  const [editProjectId, setEditProjectId] = useState('');
+  const [editNamaPetani, setEditNamaPetani] = useState('');
+  const [editTelepon, setEditTelepon] = useState('');
+  const [editLuasTanah, setEditLuasTanah] = useState('');
+  const [editAlasHak, setEditAlasHak] = useState('');
+  const [editHargaKesepakatan, setEditHargaKesepakatan] = useState(600000000);
+  const [editDpDibayar, setEditDpDibayar] = useState(250000000);
+  const [editAlamatLahan, setEditAlamatLahan] = useState('');
+  const [editKeterangan, setEditKeterangan] = useState('');
+  const [editSertifikatImage, setEditSertifikatImage] = useState<string | null>(null);
+  const [editPerjanjianImage, setEditPerjanjianImage] = useState<string | null>(null);
+
+  // Delete Land Debt state
+  const [deleteLandTarget, setDeleteLandTarget] = useState<LandDebt | null>(null);
 
   // Form Add Land Debt
   const [projectId, setProjectId] = useState(projects[0]?.id || 'proj-1');
@@ -60,6 +83,69 @@ export default function LandDebtView() {
     if (!selectedLandDetail) return;
     updateLandDocuments(selectedLandDetail.id, updates);
     setSelectedLandDetail(prev => (prev ? { ...prev, ...updates } : null));
+  };
+
+  const handleOpenEditLand = (land: LandDebt) => {
+    setEditLandId(land.id);
+    setEditProjectId(land.projectId);
+    setEditNamaPetani(land.namaPetani);
+    setEditTelepon(land.telepon);
+    setEditLuasTanah(land.luasTanah);
+    setEditAlasHak(land.alasHak);
+    setEditHargaKesepakatan(land.hargaKesepakatan);
+    setEditDpDibayar(land.dpDibayar);
+    setEditAlamatLahan(land.alamatLahan || '');
+    setEditKeterangan(land.keterangan || '');
+    setEditSertifikatImage(land.sertifikatImage || null);
+    setEditPerjanjianImage(land.perjanjianImage || null);
+    setShowEditModal(true);
+  };
+
+  const handleEditLandSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editLandId || !editNamaPetani.trim()) return;
+
+    updateLandDebt(editLandId, {
+      projectId: editProjectId,
+      namaPetani: editNamaPetani.trim(),
+      telepon: editTelepon.trim(),
+      luasTanah: editLuasTanah.trim(),
+      alasHak: editAlasHak.trim(),
+      hargaKesepakatan: Number(editHargaKesepakatan),
+      dpDibayar: Number(editDpDibayar),
+      alamatLahan: editAlamatLahan.trim() || undefined,
+      keterangan: editKeterangan.trim() || undefined,
+      sertifikatImage: editSertifikatImage,
+      perjanjianImage: editPerjanjianImage
+    });
+
+    if (selectedLandDetail && selectedLandDetail.id === editLandId) {
+      setSelectedLandDetail(prev => prev ? {
+        ...prev,
+        projectId: editProjectId,
+        namaPetani: editNamaPetani.trim(),
+        telepon: editTelepon.trim(),
+        luasTanah: editLuasTanah.trim(),
+        alasHak: editAlasHak.trim(),
+        hargaKesepakatan: Number(editHargaKesepakatan),
+        dpDibayar: Number(editDpDibayar),
+        alamatLahan: editAlamatLahan.trim() || undefined,
+        keterangan: editKeterangan.trim() || undefined,
+        sertifikatImage: editSertifikatImage,
+        perjanjianImage: editPerjanjianImage
+      } : null);
+    }
+
+    setShowEditModal(false);
+  };
+
+  const handleConfirmDeleteLand = () => {
+    if (!deleteLandTarget) return;
+    deleteLandDebt(deleteLandTarget.id);
+    if (selectedLandDetail && selectedLandDetail.id === deleteLandTarget.id) {
+      setSelectedLandDetail(null);
+    }
+    setDeleteLandTarget(null);
   };
 
   // Form Land Payment
@@ -404,26 +490,50 @@ export default function LandDebtView() {
                         {isLunas ? 'Lunas' : 'Belum Lunas'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-center space-x-1.5">
-                      {!isLunas && !isReadOnly && (
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                        {!isLunas && !isReadOnly && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedLandForPay(land);
+                              setPayKwitansiImage(null);
+                            }}
+                            className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs cursor-pointer"
+                          >
+                            <Coins className="w-3.5 h-3.5" />
+                            <span>Cicil</span>
+                          </button>
+                        )}
                         <button
-                          onClick={() => {
-                            setSelectedLandForPay(land);
-                            setPayKwitansiImage(null);
-                          }}
-                          className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs cursor-pointer"
+                          type="button"
+                          onClick={() => setSelectedLandDetail(land)}
+                          className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
                         >
-                          <Coins className="w-3.5 h-3.5" />
-                          <span>Cicil</span>
+                          <Receipt className="w-3.5 h-3.5" />
+                          <span>Riwayat</span>
                         </button>
-                      )}
-                      <button
-                        onClick={() => setSelectedLandDetail(land)}
-                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1"
-                      >
-                        <Receipt className="w-3.5 h-3.5" />
-                        <span>Riwayat</span>
-                      </button>
+                        {canFullAccess && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditLand(land)}
+                              title="Edit Data Lahan Petani"
+                              className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition inline-flex items-center cursor-pointer"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteLandTarget(land)}
+                              title="Hapus Catatan Lahan Petani"
+                              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold transition inline-flex items-center cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -915,10 +1025,38 @@ export default function LandDebtView() {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
+            <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
+              {canFullAccess && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const land = selectedLandDetail;
+                      setSelectedLandDetail(null);
+                      handleOpenEditLand(land);
+                    }}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>Edit Data Lahan</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const land = selectedLandDetail;
+                      setSelectedLandDetail(null);
+                      setDeleteLandTarget(land);
+                    }}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Hapus Lahan</span>
+                  </button>
+                </div>
+              )}
               <button
                 onClick={() => setSelectedLandDetail(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl ml-auto cursor-pointer"
               >
                 Tutup
               </button>
@@ -1189,7 +1327,7 @@ export default function LandDebtView() {
             </div>
             <button
               onClick={() => setPreviewImage(null)}
-              className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition"
+              className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition cursor-pointer"
             >
               ✕ Tutup [ESC]
             </button>
@@ -1205,6 +1343,400 @@ export default function LandDebtView() {
 
           <div className="text-white/60 text-xs text-center pb-2">
             Klik Tutup untuk kembali ke aplikasi
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Lahan Petani */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Edit Catatan Lahan Petani
+                  </h3>
+                  <p className="text-xs text-slate-500">Perbaiki rincian tanah mentah, harga kesepakatan, dan dokumen</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEditModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditLandSubmit} className="space-y-3.5 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Induk Lahan Proyek *</label>
+                <select
+                  value={editProjectId}
+                  onChange={(e) => setEditProjectId(e.target.value)}
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.nama} ({p.lokasi})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nama Petani / Pemilik *</label>
+                  <input
+                    type="text"
+                    value={editNamaPetani}
+                    onChange={(e) => setEditNamaPetani(e.target.value)}
+                    placeholder="Contoh: Bpk. Suwardi"
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nomor Telepon / WhatsApp</label>
+                  <input
+                    type="text"
+                    value={editTelepon}
+                    onChange={(e) => setEditTelepon(e.target.value)}
+                    placeholder="081234567890"
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Luas Tanah Mentah *</label>
+                  <input
+                    type="text"
+                    value={editLuasTanah}
+                    onChange={(e) => setEditLuasTanah(e.target.value)}
+                    placeholder="Contoh: 5.620 m²"
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Alas Hak Tanah *</label>
+                  <input
+                    type="text"
+                    value={editAlasHak}
+                    onChange={(e) => setEditAlasHak(e.target.value)}
+                    placeholder="SHM No. 42 / Letter C"
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Harga Kesepakatan (Rp) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000000"
+                    value={editHargaKesepakatan}
+                    onChange={(e) => setEditHargaKesepakatan(Number(e.target.value))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Rp {Number(editHargaKesepakatan).toLocaleString('id-ID')}
+                  </span>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">DP Awal Dibayar (Rp)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000000"
+                    value={editDpDibayar}
+                    onChange={(e) => setEditDpDibayar(Number(e.target.value))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-[10px] text-emerald-600 mt-0.5 block">
+                    Rp {Number(editDpDibayar).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Alamat / Lokasi Lahan</label>
+                <input
+                  type="text"
+                  value={editAlamatLahan}
+                  onChange={(e) => setEditAlamatLahan(e.target.value)}
+                  placeholder="Contoh: Jl. Punden Gg 3, RT 42 RW 03, Jatikerto"
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Catatan Notaris / PPJB</label>
+                <textarea
+                  rows={2}
+                  value={editKeterangan}
+                  onChange={(e) => setEditKeterangan(e.target.value)}
+                  placeholder="Keterangan tambahan perjanjian jual beli..."
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Upload & Update Berkas Dokumen Lahan */}
+              <div className="pt-2 border-t border-slate-100 space-y-3">
+                <span className="font-bold text-slate-800 block text-[11px]">
+                  Berkas Legalitas Lahan (SHM & Akta PPJB):
+                </span>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Sertifikat Induk */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-700 text-[11px]">Sertifikat Induk / Alas Hak</span>
+                      {editSertifikatImage && (
+                        <span className="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold">
+                          Terpasang
+                        </span>
+                      )}
+                    </div>
+                    {editSertifikatImage ? (
+                      <div className="space-y-1.5">
+                        <div className="relative h-20 w-full rounded-lg overflow-hidden border border-emerald-300 bg-white group">
+                          <img src={editSertifikatImage} alt="Sertifikat Induk" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage({ title: `Sertifikat: ${editNamaPetani}`, src: editSertifikatImage })}
+                              className="px-2 py-1 bg-white text-slate-900 rounded font-bold text-[10px]"
+                            >
+                              Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditSertifikatImage(null)}
+                              className="px-2 py-1 bg-rose-600 text-white rounded font-bold text-[10px]"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <label className="text-emerald-700 hover:underline font-bold cursor-pointer">
+                            <span>Ganti File</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleFileUpload(e, setEditSertifikatImage)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-lg p-2.5 flex flex-col items-center justify-center gap-1 text-center cursor-pointer bg-white">
+                          <UploadCloud className="w-4 h-4 text-slate-400" />
+                          <span className="font-semibold text-slate-600 text-[10px]">Upload Foto Sertifikat</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, setEditSertifikatImage)}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sample = generateSampleDoc(
+                              'SERTIFIKAT INDUK LAHAN',
+                              `${editAlasHak || 'SHM'} • ${editLuasTanah || 'Tanah'} • ${editNamaPetani || 'Petani'}`,
+                              '#065f46'
+                            );
+                            setEditSertifikatImage(sample);
+                          }}
+                          className="w-full py-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition"
+                        >
+                          + Sampel SHM
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Akta PPJB */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-700 text-[11px]">Akta Notaris PPJB</span>
+                      {editPerjanjianImage && (
+                        <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-bold">
+                          Terpasang
+                        </span>
+                      )}
+                    </div>
+                    {editPerjanjianImage ? (
+                      <div className="space-y-1.5">
+                        <div className="relative h-20 w-full rounded-lg overflow-hidden border border-blue-300 bg-white group">
+                          <img src={editPerjanjianImage} alt="Akta PPJB" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage({ title: `Akta PPJB: ${editNamaPetani}`, src: editPerjanjianImage })}
+                              className="px-2 py-1 bg-white text-slate-900 rounded font-bold text-[10px]"
+                            >
+                              Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditPerjanjianImage(null)}
+                              className="px-2 py-1 bg-rose-600 text-white rounded font-bold text-[10px]"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <label className="text-blue-700 hover:underline font-bold cursor-pointer">
+                            <span>Ganti File</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleFileUpload(e, setEditPerjanjianImage)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <label className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-lg p-2.5 flex flex-col items-center justify-center gap-1 text-center cursor-pointer bg-white">
+                          <UploadCloud className="w-4 h-4 text-slate-400" />
+                          <span className="font-semibold text-slate-600 text-[10px]">Upload Foto Akta PPJB</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, setEditPerjanjianImage)}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sample = generateSampleDoc(
+                              'AKTA NOTARIS & PPJB LAHAN',
+                              `PPJB Pembebasan • ${editNamaPetani || 'Petani'}`,
+                              '#1e40af'
+                            );
+                            setEditPerjanjianImage(sample);
+                          }}
+                          className="w-full py-1 text-[10px] font-semibold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition"
+                        >
+                          + Sampel PPJB
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs transition active:scale-95 flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Simpan Perubahan Lahan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Lahan Petani */}
+      {deleteLandTarget && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Hapus Catatan Lahan Petani?
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Tindakan ini akan menghapus data pembelian lahan mentah ini secara permanen.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Petani / Penjual:</span>
+                <span className="font-bold text-slate-900">{deleteLandTarget.namaPetani}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Proyek Kawasan:</span>
+                <span className="font-semibold text-slate-800">{deleteLandTarget.projectNama}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Luas & Alas Hak:</span>
+                <span className="font-semibold text-slate-700">{deleteLandTarget.luasTanah} ({deleteLandTarget.alasHak})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Nilai Kesepakatan:</span>
+                <span className="font-bold text-slate-900 font-mono">Rp {deleteLandTarget.hargaKesepakatan.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Sudah Terbayar:</span>
+                <span className="font-bold text-emerald-600 font-mono">Rp {(deleteLandTarget.dpDibayar + deleteLandTarget.totalCicilan).toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Sisa Hutang:</span>
+                <span className="font-bold text-rose-600 font-mono">Rp {deleteLandTarget.sisaHutang.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-900 space-y-1">
+              <span className="font-bold flex items-center gap-1 text-rose-800">
+                <AlertCircle className="w-4 h-4" /> Perhatian:
+              </span>
+              <p className="text-[11px] text-rose-700">
+                Menghapus catatan ini juga akan membersihkan riwayat slip pembayaran cicilan terkait lahan ini dari database.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeleteLandTarget(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteLand}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Ya, Hapus Data Lahan</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -26,9 +26,11 @@ import {
   Receipt,
   FileCheck,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Pencil,
+  AlertTriangle
 } from 'lucide-react';
-import { Kavling } from '@/types';
+import { Project, Kavling } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
 export default function KavlingView() {
@@ -39,7 +41,11 @@ export default function KavlingView() {
     setSelectedProjectId, 
     kavlings, 
     addProject,
+    updateProject,
+    deleteProject,
     addKavling, 
+    updateKavling,
+    deleteKavling,
     addBatchKavling,
     updateKavlingStatus 
   } = useProperty();
@@ -52,6 +58,28 @@ export default function KavlingView() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [selectedKavling, setSelectedKavling] = useState<Kavling | null>(null);
+
+  // Edit & Delete states for Kavling
+  const [showEditKavlingModal, setShowEditKavlingModal] = useState(false);
+  const [editKavId, setEditKavId] = useState('');
+  const [editProjectId, setEditProjectId] = useState('');
+  const [editBlok, setEditBlok] = useState('');
+  const [editNomor, setEditNomor] = useState('');
+  const [editLuas, setEditLuas] = useState(84);
+  const [editDimensi, setEditDimensi] = useState('');
+  const [editHarga, setEditHarga] = useState(120000000);
+  const [editTipe, setEditTipe] = useState('Hunian Standar');
+  const [editStatus, setEditStatus] = useState<'terbuka' | 'booking' | 'terjual'>('terbuka');
+  const [editKeterangan, setEditKeterangan] = useState('');
+  const [deleteKavlingTarget, setDeleteKavlingTarget] = useState<Kavling | null>(null);
+
+  // Edit & Delete states for Project (Lahan Induk)
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+  const [editProjId, setEditProjId] = useState('');
+  const [editProjNama, setEditProjNama] = useState('');
+  const [editProjLokasi, setEditProjLokasi] = useState('');
+  const [editProjDeskripsi, setEditProjDeskripsi] = useState('');
+  const [deleteProjectTarget, setDeleteProjectTarget] = useState<Project | null>(null);
 
   // Form states for Add Induk Kavling / Project & Finansial Lahan Mentah
   const [projNama, setProjNama] = useState('');
@@ -251,6 +279,87 @@ export default function KavlingView() {
     setShowBatchModal(false);
   };
 
+  // Handlers for Edit & Delete Kavling
+  const handleOpenEditKavling = (kav: Kavling) => {
+    setEditKavId(kav.id);
+    setEditProjectId(kav.projectId);
+    setEditBlok(kav.blok);
+    setEditNomor(kav.nomor);
+    setEditLuas(kav.luas);
+    setEditDimensi(kav.dimensi);
+    setEditHarga(kav.harga);
+    setEditTipe(kav.tipe);
+    setEditStatus(kav.status);
+    setEditKeterangan(kav.keterangan || '');
+    setShowEditKavlingModal(true);
+  };
+
+  const handleEditKavlingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editKavId) return;
+    updateKavling(editKavId, {
+      projectId: editProjectId,
+      blok: editBlok.trim(),
+      nomor: editNomor.trim(),
+      luas: Number(editLuas),
+      dimensi: editDimensi.trim(),
+      harga: Number(editHarga),
+      tipe: editTipe,
+      status: editStatus,
+      keterangan: editKeterangan.trim() || undefined
+    });
+    if (selectedKavling && selectedKavling.id === editKavId) {
+      setSelectedKavling({
+        ...selectedKavling,
+        projectId: editProjectId,
+        blok: editBlok.trim(),
+        nomor: editNomor.trim(),
+        luas: Number(editLuas),
+        dimensi: editDimensi.trim(),
+        harga: Number(editHarga),
+        tipe: editTipe,
+        status: editStatus,
+        keterangan: editKeterangan.trim() || undefined
+      });
+    }
+    setShowEditKavlingModal(false);
+  };
+
+  const handleConfirmDeleteKavling = () => {
+    if (!deleteKavlingTarget) return;
+    deleteKavling(deleteKavlingTarget.id);
+    if (selectedKavling && selectedKavling.id === deleteKavlingTarget.id) {
+      setSelectedKavling(null);
+    }
+    setDeleteKavlingTarget(null);
+  };
+
+  // Handlers for Edit & Delete Project (Lahan Induk)
+  const handleOpenEditProject = (proj: Project) => {
+    setEditProjId(proj.id);
+    setEditProjNama(proj.nama);
+    setEditProjLokasi(proj.lokasi);
+    setEditProjDeskripsi(proj.deskripsi || '');
+    setShowEditProjectModal(true);
+  };
+
+  const handleEditProjectSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editProjId || !editProjNama.trim()) return;
+    updateProject(editProjId, {
+      nama: editProjNama.trim(),
+      lokasi: editProjLokasi.trim(),
+      deskripsi: editProjDeskripsi.trim() || undefined
+    });
+    setShowEditProjectModal(false);
+  };
+
+  const handleConfirmDeleteProject = () => {
+    if (!deleteProjectTarget) return;
+    deleteProject(deleteProjectTarget.id);
+    setDeleteProjectTarget(null);
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 w-full min-w-0">
       {/* Management Read-Only Banner */}
@@ -301,6 +410,30 @@ export default function KavlingView() {
                 </option>
               )}
             </select>
+
+            {/* Quick Edit & Delete Induk Proyek / Lahan */}
+            {selectedProjectId !== 'all' && activeProject && canFullAccess && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleOpenEditProject(activeProject)}
+                  title="Edit Data Lahan / Induk Proyek Ini"
+                  className="px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Edit Lahan</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteProjectTarget(activeProject)}
+                  title="Hapus Lahan / Induk Proyek Ini"
+                  className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Hapus</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -469,17 +602,45 @@ export default function KavlingView() {
                     {kav.nomor}
                   </h4>
                 </div>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                    isTerbuka
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : isBooking
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-rose-100 text-rose-800'
-                  }`}
-                >
-                  {kav.status}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      isTerbuka
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : isBooking
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-rose-100 text-rose-800'
+                    }`}
+                  >
+                    {kav.status}
+                  </span>
+                  {canFullAccess && (
+                    <div className="flex items-center gap-0.5 bg-slate-100/90 rounded-md p-0.5 shadow-2xs border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditKavling(kav);
+                        }}
+                        title="Edit Unit Kavling Ini"
+                        className="p-1 text-slate-500 hover:text-blue-600 hover:bg-white rounded transition cursor-pointer"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteKavlingTarget(kav);
+                        }}
+                        title="Hapus Unit Kavling Ini"
+                        className="p-1 text-slate-500 hover:text-rose-600 hover:bg-white rounded transition cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-1 text-xs text-slate-600 mb-3">
@@ -608,10 +769,38 @@ export default function KavlingView() {
               </div>
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+              {canFullAccess && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = selectedKavling;
+                      setSelectedKavling(null);
+                      handleOpenEditKavling(target);
+                    }}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>Edit Unit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = selectedKavling;
+                      setSelectedKavling(null);
+                      setDeleteKavlingTarget(target);
+                    }}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Hapus</span>
+                  </button>
+                </div>
+              )}
               <button
                 onClick={() => setSelectedKavling(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl ml-auto cursor-pointer"
               >
                 Tutup
               </button>
@@ -1378,7 +1567,7 @@ export default function KavlingView() {
             </div>
             <button
               onClick={() => setPreviewDocImage(null)}
-              className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition"
+              className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition cursor-pointer"
             >
               ✕ Tutup [ESC]
             </button>
@@ -1394,6 +1583,376 @@ export default function KavlingView() {
 
           <div className="text-white/60 text-xs text-center pb-2">
             Klik Tutup untuk kembali ke aplikasi
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Kavling */}
+      {showEditKavlingModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Edit Unit Kavling
+                  </h3>
+                  <p className="text-xs text-slate-500">Perbarui informasi unit kavling yang dipilih</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEditKavlingModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditKavlingSubmit} className="space-y-3.5 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Induk Kavling / Proyek *</label>
+                <select
+                  value={editProjectId}
+                  onChange={(e) => setEditProjectId(e.target.value)}
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.nama} ({p.lokasi})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nama Blok *</label>
+                  <input
+                    type="text"
+                    value={editBlok}
+                    onChange={(e) => setEditBlok(e.target.value)}
+                    placeholder="Contoh: Blok A"
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nomor Kavling *</label>
+                  <input
+                    type="text"
+                    value={editNomor}
+                    onChange={(e) => setEditNomor(e.target.value)}
+                    placeholder="Contoh: A-01"
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Luas Tanah (m²) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editLuas}
+                    onChange={(e) => setEditLuas(Number(e.target.value))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Dimensi Lahan</label>
+                  <input
+                    type="text"
+                    value={editDimensi}
+                    onChange={(e) => setEditDimensi(e.target.value)}
+                    placeholder="Contoh: 6 x 14 meter"
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Harga Jual (Rp) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000000"
+                    value={editHarga}
+                    onChange={(e) => setEditHarga(Number(e.target.value))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Rp {Number(editHarga).toLocaleString('id-ID')}
+                  </span>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tipe Unit</label>
+                  <select
+                    value={editTipe}
+                    onChange={(e) => setEditTipe(e.target.value)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Hunian Standar">Hunian Standar</option>
+                    <option value="Komersial / Ruko">Komersial / Ruko</option>
+                    <option value="Sudut / Hook">Sudut / Hook</option>
+                    <option value="Villa / Khusus">Villa / Khusus</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Status Unit Kavling</label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value as any)}
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="terbuka">🟢 Terbuka (Siap Jual)</option>
+                  <option value="booking">🟡 Booking (Terbayar DP)</option>
+                  <option value="terjual">🔴 Terjual (Lunas)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Catatan / Posisi Kavling</label>
+                <textarea
+                  rows={2}
+                  value={editKeterangan}
+                  onChange={(e) => setEditKeterangan(e.target.value)}
+                  placeholder="Misal: Hadap timur, dekat taman utama..."
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowEditKavlingModal(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs transition active:scale-95 flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Simpan Perubahan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Kavling */}
+      {deleteKavlingTarget && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Hapus Unit Kavling?
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Tindakan ini akan menghapus unit kavling dari database site plan.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Unit Kavling:</span>
+                <span className="font-bold text-slate-900 font-mono">{deleteKavlingTarget.blok} - {deleteKavlingTarget.nomor}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Luas:</span>
+                <span className="font-semibold text-slate-700">{deleteKavlingTarget.luas} m² ({deleteKavlingTarget.dimensi})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Harga Standar:</span>
+                <span className="font-bold text-emerald-700 font-mono">Rp {deleteKavlingTarget.harga.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Status:</span>
+                <span className="font-bold uppercase text-slate-800">{deleteKavlingTarget.status}</span>
+              </div>
+              {deleteKavlingTarget.customerNama && (
+                <div className="flex justify-between pt-1 border-t border-slate-200 text-rose-700">
+                  <span className="font-semibold">Customer Pembeli:</span>
+                  <span className="font-bold">{deleteKavlingTarget.customerNama}</span>
+                </div>
+              )}
+            </div>
+
+            {deleteKavlingTarget.customerNama && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 space-y-1">
+                <span className="font-bold flex items-center gap-1 text-amber-800">
+                  <AlertCircle className="w-4 h-4" /> Perhatian:
+                </span>
+                <p className="text-[11px] text-amber-800">
+                  Unit kavling ini saat ini telah dipesan oleh konsumen. Jika dihapus, catatan unit pada data customer akan menjadi kosong.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeleteKavlingTarget(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteKavling}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Ya, Hapus Unit Ini</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Proyek / Lahan Induk */}
+      {showEditProjectModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Edit Kawasan Lahan Proyek
+                  </h3>
+                  <p className="text-xs text-slate-500">Ubah nama atau lokasi kawasan proyek induk</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEditProjectModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditProjectSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Kawasan / Proyek Lahan *</label>
+                <input
+                  type="text"
+                  value={editProjNama}
+                  onChange={(e) => setEditProjNama(e.target.value)}
+                  placeholder="Contoh: Baitul Makmur"
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Lokasi Kawasan Lahan *</label>
+                <input
+                  type="text"
+                  value={editProjLokasi}
+                  onChange={(e) => setEditProjLokasi(e.target.value)}
+                  placeholder="Contoh: Kromengan, Malang"
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Deskripsi / Spesifikasi Lahan</label>
+                <textarea
+                  rows={2}
+                  value={editProjDeskripsi}
+                  onChange={(e) => setEditProjDeskripsi(e.target.value)}
+                  placeholder="Contoh: Cluster tanah kavling matang siap bangun..."
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowEditProjectModal(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs transition active:scale-95 flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Simpan Perubahan Lahan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Proyek / Lahan Induk */}
+      {deleteProjectTarget && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Hapus Kawasan Lahan Proyek?
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Tindakan ini akan menghapus proyek induk dari seluruh sistem.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-900 space-y-1">
+              <span className="font-bold flex items-center gap-1 text-rose-800">
+                <AlertTriangle className="w-4 h-4" /> PERINGATAN KRUSIAL:
+              </span>
+              <p className="text-[11px] text-rose-700">
+                Menghapus proyek <b>{deleteProjectTarget.nama}</b> juga akan menghapus seluruh unit kavling dan catatan hutang tanah yang terdaftar pada proyek ini!
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeleteProjectTarget(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteProject}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Ya, Hapus Kawasan Ini</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
