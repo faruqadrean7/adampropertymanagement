@@ -242,7 +242,7 @@ export async function supabaseFetchCashbook(): Promise<CashbookItem[] | null> {
 export async function supabaseInsertKavling(kav: Kavling): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
   try {
-    const { error } = await supabase.from('kavlings').insert({
+    const { error } = await supabase.from('kavlings').upsert({
       id: kav.id,
       project_id: kav.projectId,
       blok: kav.blok,
@@ -255,7 +255,8 @@ export async function supabaseInsertKavling(kav: Kavling): Promise<boolean> {
       customer_id: kav.customerId || null,
       customer_nama: kav.customerNama || null,
       keterangan: kav.keterangan || null
-    });
+    }, { onConflict: 'id' });
+    if (error) console.warn('Supabase upsert kavling error:', error);
     return !error;
   } catch (e) {
     console.warn('Error inserting kavling:', e);
@@ -280,7 +281,8 @@ export async function supabaseInsertBatchKavlings(kavs: Kavling[]): Promise<bool
       customer_nama: kav.customerNama || null,
       keterangan: kav.keterangan || null
     }));
-    const { error } = await supabase.from('kavlings').insert(payload);
+    const { error } = await supabase.from('kavlings').upsert(payload, { onConflict: 'id' });
+    if (error) console.warn('Supabase upsert batch kavlings error:', error);
     return !error;
   } catch (e) {
     console.warn('Error inserting batch kavlings:', e);

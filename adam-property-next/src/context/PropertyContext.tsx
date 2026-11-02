@@ -177,6 +177,7 @@ interface PropertyContextType {
   payEmployeeSalary: (employeeId: string, bulan: string, catatan?: string) => { success: boolean; message: string };
   payAllActiveSalaries: (bulan: string) => { count: number; total: number; message: string };
   syncAllToCashbook: () => void;
+  syncAllToSupabase: () => Promise<{ success: boolean; message: string }>;
 
   // Computed Financials
   totalSalesValue: number;
@@ -1048,6 +1049,29 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     console.log('Central Cashbook auto-synchronized with sales and petty cash.');
   };
 
+  const syncAllToSupabase = async (): Promise<{ success: boolean; message: string }> => {
+    if (!isSupabaseConfigured()) {
+      return { success: false, message: 'Koneksi Supabase belum terkonfigurasi di sistem.' };
+    }
+    try {
+      if (kavlings.length > 0) {
+        const ok = await supabaseInsertBatchKavlings(kavlings);
+        if (!ok) {
+          return {
+            success: false,
+            message: 'Gagal mengunggah data ke Supabase Cloud. Jalankan script fix_rls_multi_device_sync.sql di Supabase SQL Editor.'
+          };
+        }
+      }
+      return {
+        success: true,
+        message: `Sukses! ${kavlings.length} unit kavling tersimpan di Cloud Supabase dan langsung sinkron ke semua perangkat (HP / Laptop).`
+      };
+    } catch (e: any) {
+      return { success: false, message: e.message || 'Terjadi kesalahan sinkronisasi' };
+    }
+  };
+
   return (
     <PropertyContext.Provider
       value={{
@@ -1095,6 +1119,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         payEmployeeSalary,
         payAllActiveSalaries,
         syncAllToCashbook,
+        syncAllToSupabase,
 
         totalSalesValue,
         totalCashIn,

@@ -30,7 +30,8 @@ import {
   AlertCircle,
   Pencil,
   AlertTriangle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  CloudUpload
 } from 'lucide-react';
 import { Project, Kavling } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -50,11 +51,13 @@ export default function KavlingView() {
     updateKavling,
     deleteKavling,
     addBatchKavling,
-    updateKavlingStatus 
+    updateKavlingStatus,
+    syncAllToSupabase
   } = useProperty();
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'terbuka' | 'booking' | 'terjual'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
   
   // Modals state
   const [showProjectModal, setShowProjectModal] = useState(false);
@@ -423,6 +426,13 @@ export default function KavlingView() {
     e.target.value = '';
   };
 
+  const handleCloudSync = async () => {
+    setIsSyncingCloud(true);
+    const res = await syncAllToSupabase();
+    setIsSyncingCloud(false);
+    alert(res.message);
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 w-full min-w-0">
       {/* Management Read-Only Banner */}
@@ -541,6 +551,17 @@ export default function KavlingView() {
                       className="hidden"
                     />
                   </label>
+                  <button
+                    type="button"
+                    onClick={handleCloudSync}
+                    disabled={isSyncingCloud}
+                    title="Upload dan sinkronkan semua kavling ke Cloud Database Supabase agar langsung muncul di semua perangkat"
+                    className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-300 rounded-lg sm:rounded-xl transition flex items-center gap-1 active:scale-95 shadow-2xs cursor-pointer shrink-0 disabled:opacity-50"
+                  >
+                    <CloudUpload className={`w-3.5 h-3.5 text-blue-600 ${isSyncingCloud ? 'animate-bounce' : ''}`} />
+                    <span className="hidden sm:inline">{isSyncingCloud ? 'Menyinkronkan...' : 'Sync Cloud (Semua HP/PC)'}</span>
+                    <span className="sm:hidden">Sync</span>
+                  </button>
                   <button
                     onClick={handleOpenAddModal}
                     className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] rounded-lg sm:rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
