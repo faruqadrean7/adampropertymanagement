@@ -193,6 +193,7 @@ export default function PettyCashView() {
     e.preventDefault();
     topUpPettyCash(Number(topupNominal), topupSumber, topupKet, topupPenerima);
     setShowTopupModal(false);
+    alert('Top up kas kecil berhasil disimpan dan tersinkronisasi ke server!');
   };
 
   const handleExpenseSubmit = (e: React.FormEvent) => {
@@ -206,6 +207,7 @@ export default function PettyCashView() {
     setShowExpenseModal(false);
     setExpPenerima('');
     setExpKeterangan('');
+    alert('Pengeluaran kas kecil berhasil dicatat dan tersimpan!');
   };
 
   const renderPettyCategoryBadge = (kategori: string) => {

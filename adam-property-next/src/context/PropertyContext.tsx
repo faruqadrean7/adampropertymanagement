@@ -51,7 +51,10 @@ import {
   supabaseInsertPayment,
   supabaseUpdatePayment,
   supabaseInsertCashbookItem,
-  supabaseDeleteCashbookItem
+  supabaseDeleteCashbookItem,
+  supabaseFetchPettyCash,
+  supabaseInsertPettyCash,
+  supabaseDeletePettyCash
 } from '@/lib/supabaseService';
 
 export interface AddProjectData {
@@ -299,13 +302,14 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     if (!isSupabaseConfigured()) return;
     setIsSyncingCloud(true);
     try {
-      const [supaProjects, supaKavlings, supaCust, supaLands, supaCash, supaPayments] = await Promise.all([
+      const [supaProjects, supaKavlings, supaCust, supaLands, supaCash, supaPayments, supaPetty] = await Promise.all([
         supabaseFetchProjects(),
         supabaseFetchKavlings(),
         supabaseFetchCustomers(),
         supabaseFetchLandDebts(),
         supabaseFetchCashbook(),
-        supabaseFetchPayments()
+        supabaseFetchPayments(),
+        supabaseFetchPettyCash()
       ]);
 
       if (supaProjects !== null && supaProjects.length > 0) {
@@ -346,6 +350,15 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         setPayments(supaPayments);
         saveStorage('payments', supaPayments);
       }
+      if (supaPetty !== null && supaPetty.length > 0) {
+        setPettyCash(prev => {
+          const supaIds = new Set(supaPetty.map(p => p.id));
+          const recentLocal = prev.filter(p => !supaIds.has(p.id) && Date.now() - (parseInt(p.id.replace('petty-', '')) || 0) < 120000);
+          const merged = [...recentLocal, ...supaPetty];
+          saveStorage('pettyCash', merged);
+          return merged;
+        });
+      }
       setLastSyncTime(new Date());
     } catch (err) {
       console.warn('Could not sync with Supabase tables:', err);
@@ -380,6 +393,9 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         refreshCloudData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+        refreshCloudData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'petty_cash' }, () => {
         refreshCloudData();
       })
       .subscribe();
@@ -1482,7 +1498,15 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       metode: 'Tunai Kasir',
       refType: sumberDana === 'kas_besar' ? 'kas_besar' : 'manual'
     };
-    setPettyCash(prev => [newPetty, ...prev]);
+    setPettyCash(prev => {
+      const updated = [newPetty, ...prev];
+      saveStorage('pettyCash', updated);
+      return updated;
+    });
+
+    if (isSupabaseConfigured()) {
+      supabaseInsertPettyCash(newPetty).catch(console.warn);
+    }
 
     // Mirror Outflow in Kas Besar if from kas_besar
     if (sumberDana === 'kas_besar') {
@@ -1498,7 +1522,14 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         refType: 'kas_besar',
         refId: pettyId
       };
-      setCashbook(prev => [cashOut, ...prev]);
+      setCashbook(prev => {
+        const updated = [cashOut, ...prev];
+        saveStorage('cashbook', updated);
+        return updated;
+      });
+      if (isSupabaseConfigured()) {
+        supabaseInsertCashbookItem(cashOut).catch(console.warn);
+      }
     }
   };
 
@@ -1517,9 +1548,17 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       penerima: data.penerima,
       keterangan: data.keterangan,
       nominal: data.nominal,
-      metode: data.metode || 'Tunai Kas Kecil'
+      metode: data.metode || 'Tunai Kas Kecil',
+      sumberDana: 'kas_besar'
     };
-    setPettyCash(prev => [newPetty, ...prev]);
+    setPettyCash(prev => {
+      const updated = [newPetty, ...prev];
+      saveStorage('pettyCash', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseInsertPettyCash(newPetty).catch(console.warn);
+    }
   };
 
   // 7. Inventory Items

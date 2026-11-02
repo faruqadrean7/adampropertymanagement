@@ -579,3 +579,68 @@ export async function supabaseDeleteCashbookItem(id: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function supabaseFetchPettyCash(): Promise<PettyCashItem[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const { data, error } = await supabase
+      .from('petty_cash')
+      .select('*')
+      .order('tanggal', { ascending: false });
+    if (error) {
+      console.warn('Error fetching petty_cash from Supabase:', error);
+      return [];
+    }
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      tanggal: row.tanggal,
+      tipe: row.tipe as PettyCashItem['tipe'],
+      kategori: row.kategori as PettyCashItem['kategori'],
+      sumberDana: row.sumber_dana || 'kas_besar',
+      penerima: row.penerima || row.sumber_tujuan || 'Kasir',
+      keterangan: row.keterangan || '-',
+      nominal: Number(row.nominal) || 0,
+      metode: row.metode || 'Kas Tunai',
+      buktiImage: row.bukti_nota || null
+    }));
+  } catch (e) {
+    console.warn('Exception in supabaseFetchPettyCash:', e);
+    return [];
+  }
+}
+
+export async function supabaseInsertPettyCash(item: PettyCashItem): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('petty_cash').upsert({
+      id: item.id,
+      tanggal: item.tanggal,
+      tipe: item.tipe,
+      kategori: item.kategori,
+      sumber_tujuan: item.penerima || 'Operasional Kantor / Lapangan',
+      penerima: item.penerima || 'Operasional Kantor / Lapangan',
+      sumber_dana: item.sumberDana || 'kas_besar',
+      keterangan: item.keterangan,
+      nominal: item.nominal,
+      metode: item.metode || 'Kas Tunai',
+      bukti_nota: item.buktiImage || null
+    }, { onConflict: 'id' });
+    if (error) console.warn('Supabase insert petty_cash error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error inserting petty cash item:', e);
+    return false;
+  }
+}
+
+export async function supabaseDeletePettyCash(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('petty_cash').delete().eq('id', id);
+    if (error) console.warn('Supabase delete petty_cash error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error deleting petty cash item:', e);
+    return false;
+  }
+}
