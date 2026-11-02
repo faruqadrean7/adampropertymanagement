@@ -52,7 +52,8 @@ export default function KavlingView() {
     deleteKavling,
     addBatchKavling,
     updateKavlingStatus,
-    syncAllToSupabase
+    syncAllToSupabase,
+    refreshCloudData
   } = useProperty();
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'terbuka' | 'booking' | 'terjual'>('all');
@@ -429,6 +430,7 @@ export default function KavlingView() {
   const handleCloudSync = async () => {
     setIsSyncingCloud(true);
     const res = await syncAllToSupabase();
+    await refreshCloudData();
     setIsSyncingCloud(false);
     alert(res.message);
   };

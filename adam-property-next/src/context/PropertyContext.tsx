@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   NavTab,
   Project,
@@ -28,6 +28,7 @@ import {
   INITIAL_EMPLOYEES,
   INITIAL_SALARY_PAYMENTS
 } from '@/lib/mockData';
+import { supabase } from '@/lib/supabaseClient';
 import { 
   isSupabaseConfigured,
   supabaseFetchProjects,
@@ -178,6 +179,9 @@ interface PropertyContextType {
   payAllActiveSalaries: (bulan: string) => { count: number; total: number; message: string };
   syncAllToCashbook: () => void;
   syncAllToSupabase: () => Promise<{ success: boolean; message: string }>;
+  refreshCloudData: () => Promise<void>;
+  isSyncingCloud: boolean;
+  lastSyncTime: Date | null;
 
   // Computed Financials
   totalSalesValue: number;
@@ -270,50 +274,106 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     if (cachedSal && cachedSal.length > 0) setSalaryPayments(cachedSal);
   }, []);
 
-  // 2. Synchronize with Supabase if configured
-  useEffect(() => {
-    let isMounted = true;
-    async function loadFromSupabase() {
-      if (!isSupabaseConfigured()) return;
-      try {
-        const [supaProjects, supaKavlings, supaCust, supaLands, supaCash] = await Promise.all([
-          supabaseFetchProjects(),
-          supabaseFetchKavlings(),
-          supabaseFetchCustomers(),
-          supabaseFetchLandDebts(),
-          supabaseFetchCashbook()
-        ]);
+  // Cloud Sync States
+  const [isSyncingCloud, setIsSyncingCloud] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
-        if (!isMounted) return;
+  // Synchronize from Supabase Cloud with conflict resolution
+  const refreshCloudData = useCallback(async () => {
+    if (!isSupabaseConfigured()) return;
+    setIsSyncingCloud(true);
+    try {
+      const [supaProjects, supaKavlings, supaCust, supaLands, supaCash] = await Promise.all([
+        supabaseFetchProjects(),
+        supabaseFetchKavlings(),
+        supabaseFetchCustomers(),
+        supabaseFetchLandDebts(),
+        supabaseFetchCashbook()
+      ]);
 
-        if (supaProjects && supaProjects.length > 0) {
-          setProjects(supaProjects);
-          saveStorage('projects', supaProjects);
-        }
-        if (supaKavlings && supaKavlings.length > 0) {
-          setKavlings(supaKavlings);
-          saveStorage('kavlings', supaKavlings);
-        }
-        if (supaCust && supaCust.length > 0) {
-          setCustomers(supaCust);
-          saveStorage('customers', supaCust);
-        }
-        if (supaLands && supaLands.length > 0) {
-          setLandDebts(supaLands);
-          saveStorage('landDebts', supaLands);
-        }
-        if (supaCash && supaCash.length > 0) {
-          setCashbook(supaCash);
-          saveStorage('cashbook', supaCash);
-        }
-      } catch (err) {
-        console.warn('Could not sync with Supabase tables:', err);
+      if (supaProjects !== null && supaProjects.length > 0) {
+        setProjects(supaProjects);
+        saveStorage('projects', supaProjects);
       }
+      // CRITICAL FIX: If supaKavlings is empty array [], accept it so deletions propagate across all devices
+      if (supaKavlings !== null) {
+        setKavlings(supaKavlings);
+        saveStorage('kavlings', supaKavlings);
+      }
+      if (supaCust !== null) {
+        setCustomers(supaCust);
+        saveStorage('customers', supaCust);
+      }
+      if (supaLands !== null) {
+        setLandDebts(supaLands);
+        saveStorage('landDebts', supaLands);
+      }
+      if (supaCash !== null) {
+        setCashbook(supaCash);
+        saveStorage('cashbook', supaCash);
+      }
+      setLastSyncTime(new Date());
+    } catch (err) {
+      console.warn('Could not sync with Supabase tables:', err);
+    } finally {
+      setIsSyncingCloud(false);
     }
-
-    loadFromSupabase();
-    return () => { isMounted = false; };
   }, []);
+
+  // 2. Realtime Multi-Device Synchronization & Lifecycle Listeners
+  useEffect(() => {
+    // Initial fetch from cloud
+    refreshCloudData();
+
+    if (!isSupabaseConfigured()) return;
+
+    // A. Supabase Realtime WebSocket listener (instant live push)
+    const channel = supabase
+      .channel('adam-realtime-global')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'kavlings' }, () => {
+        refreshCloudData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
+        refreshCloudData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, () => {
+        refreshCloudData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'land_debts' }, () => {
+        refreshCloudData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cashbook' }, () => {
+        refreshCloudData();
+      })
+      .subscribe();
+
+    // B. Foreground Resume Listener: Whenever user switches tabs or unlocks HP/mobile screen
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        refreshCloudData();
+      }
+    };
+    const handleFocus = () => {
+      refreshCloudData();
+    };
+
+    window.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
+    // C. Background Auto-Poll (every 10 seconds while viewing)
+    const pollTimer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        refreshCloudData();
+      }
+    }, 10000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(pollTimer);
+    };
+  }, [refreshCloudData]);
 
   // Financial Calculations
   const totalSalesValue = kavlings
@@ -433,14 +493,28 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteProject = (id: string) => {
-    setProjects(prev => prev.filter(p => p.id !== id));
-    setKavlings(prev => prev.filter(k => k.projectId !== id));
-    setLandDebts(prev => prev.filter(l => l.projectId !== id));
+    setProjects(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      saveStorage('projects', updated);
+      return updated;
+    });
+    setKavlings(prev => {
+      const updated = prev.filter(k => k.projectId !== id);
+      saveStorage('kavlings', updated);
+      return updated;
+    });
+    setLandDebts(prev => {
+      const updated = prev.filter(l => l.projectId !== id);
+      saveStorage('landDebts', updated);
+      return updated;
+    });
     if (selectedProjectId === id) {
       setSelectedProjectId('all');
     }
     if (isSupabaseConfigured()) {
-      supabaseDeleteProject(id).catch(console.warn);
+      supabaseDeleteProject(id)
+        .then(() => refreshCloudData())
+        .catch(console.warn);
     }
   };
 
@@ -489,7 +563,9 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       return updated;
     });
     if (isSupabaseConfigured()) {
-      supabaseDeleteKavling(id).catch(console.warn);
+      supabaseDeleteKavling(id)
+        .then(() => refreshCloudData())
+        .catch(console.warn);
     }
   };
 
@@ -811,10 +887,20 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteLandDebt = (id: string) => {
-    setLandDebts(prev => prev.filter(l => l.id !== id));
-    setLandPayments(prev => prev.filter(lp => lp.landDebtId !== id));
+    setLandDebts(prev => {
+      const updated = prev.filter(l => l.id !== id);
+      saveStorage('landDebts', updated);
+      return updated;
+    });
+    setLandPayments(prev => {
+      const updated = prev.filter(lp => lp.landDebtId !== id);
+      saveStorage('landPayments', updated);
+      return updated;
+    });
     if (isSupabaseConfigured()) {
-      supabaseDeleteLandDebt(id).catch(console.warn);
+      supabaseDeleteLandDebt(id)
+        .then(() => refreshCloudData())
+        .catch(console.warn);
     }
   };
 
@@ -1120,6 +1206,9 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         payAllActiveSalaries,
         syncAllToCashbook,
         syncAllToSupabase,
+        refreshCloudData,
+        isSyncingCloud,
+        lastSyncTime,
 
         totalSalesValue,
         totalCashIn,

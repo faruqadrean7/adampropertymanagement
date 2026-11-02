@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useProperty } from '@/context/PropertyContext';
 import { useAuth } from '@/context/AuthContext';
-import { Menu, Plus, Calendar, ChevronRight, LogOut, User, Eye, ShieldCheck, Receipt } from 'lucide-react';
+import { Menu, Plus, Calendar, ChevronRight, LogOut, User, Eye, ShieldCheck, Receipt, RefreshCw } from 'lucide-react';
 
 interface TopBarProps {
   onToggleSidebar: () => void;
@@ -11,7 +11,7 @@ interface TopBarProps {
 }
 
 export default function TopBar({ onToggleSidebar, onOpenPrimaryModal }: TopBarProps) {
-  const { activeTab } = useProperty();
+  const { activeTab, refreshCloudData, isSyncingCloud, lastSyncTime } = useProperty();
   const { user, permissions, isReadOnly, canManagePayments, canFullAccess, logout } = useAuth();
   const [currentDate, setCurrentDate] = useState<string>('');
 
@@ -89,8 +89,33 @@ export default function TopBar({ onToggleSidebar, onOpenPrimaryModal }: TopBarPr
         </div>
       </div>
 
-      {/* Right: Date Badge, User Info & Quick Action */}
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+      {/* Right: Date Badge, Cloud Sync, User Info & Quick Action */}
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        {/* Realtime Multi-Device Cloud Sync Button */}
+        <button
+          type="button"
+          onClick={() => refreshCloudData()}
+          disabled={isSyncingCloud}
+          title={
+            lastSyncTime
+              ? `Sinkron Cloud Aktif (Terakhir: ${lastSyncTime.toLocaleTimeString('id-ID')}). Klik untuk perbarui data dari perangkat lain.`
+              : 'Sinkronisasi Multi-Device (Laptop & HP). Klik untuk memperbarui data sekarang.'
+          }
+          className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer active:scale-95 shadow-2xs ${
+            isSyncingCloud
+              ? 'bg-blue-50 text-blue-700 border-blue-200'
+              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+          }`}
+        >
+          <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isSyncingCloud ? 'animate-spin text-blue-600' : 'text-emerald-600'}`} />
+          <span className="hidden md:inline text-[11px]">
+            {isSyncingCloud ? 'Menyinkronkan...' : 'Cloud Aktif'}
+          </span>
+          <span className="md:hidden text-[10px] font-bold">
+            {isSyncingCloud ? 'Sync...' : 'Sync'}
+          </span>
+        </button>
+
         <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">
           <Calendar className="w-3.5 h-3.5 text-emerald-600" />
           <span>{currentDate || 'Memuat...'}</span>
