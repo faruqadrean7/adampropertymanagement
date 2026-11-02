@@ -35,6 +35,8 @@ import {
   supabaseFetchCustomers,
   supabaseFetchLandDebts,
   supabaseFetchCashbook,
+  supabaseInsertKavling,
+  supabaseInsertBatchKavlings,
   supabaseUpdateKavling,
   supabaseDeleteKavling,
   supabaseUpdateProject,
@@ -82,6 +84,7 @@ interface PropertyContextType {
   updateProject: (id: string, data: { nama: string; lokasi: string; deskripsi?: string }) => void;
   deleteProject: (id: string) => void;
   addKavling: (data: Omit<Kavling, 'id'>) => void;
+  addMultipleKavlings: (newKavs: Kavling[]) => void;
   updateKavling: (id: string, data: Partial<Omit<Kavling, 'id'>>) => void;
   deleteKavling: (id: string) => void;
   addBatchKavling: (
@@ -190,6 +193,29 @@ interface PropertyContextType {
 
 const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
 
+const STORAGE_PREFIX = 'adam_erp_v1_';
+
+function loadStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(STORAGE_PREFIX + key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return (parsed !== null && parsed !== undefined) ? parsed : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function saveStorage<T>(key: string, data: T) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed saving to localStorage:', e);
+  }
+}
+
 export function PropertyProvider({ children }: { children: React.ReactNode }) {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
@@ -207,7 +233,43 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [salaryPayments, setSalaryPayments] = useState<SalaryPayment[]>(INITIAL_SALARY_PAYMENTS);
 
-  // Synchronize with Supabase if configured
+  // 1. Immediately restore from localStorage on client-side mount
+  useEffect(() => {
+    const cachedKavs = loadStorage<Kavling[]>('kavlings', []);
+    if (cachedKavs && cachedKavs.length > 0) setKavlings(cachedKavs);
+
+    const cachedProjs = loadStorage<Project[]>('projects', []);
+    if (cachedProjs && cachedProjs.length > 0) setProjects(cachedProjs);
+
+    const cachedCust = loadStorage<Customer[]>('customers', []);
+    if (cachedCust && cachedCust.length > 0) setCustomers(cachedCust);
+
+    const cachedPayments = loadStorage<Payment[]>('payments', []);
+    if (cachedPayments && cachedPayments.length > 0) setPayments(cachedPayments);
+
+    const cachedLands = loadStorage<LandDebt[]>('landDebts', []);
+    if (cachedLands && cachedLands.length > 0) setLandDebts(cachedLands);
+
+    const cachedLpays = loadStorage<LandPayment[]>('landPayments', []);
+    if (cachedLpays && cachedLpays.length > 0) setLandPayments(cachedLpays);
+
+    const cachedCash = loadStorage<CashbookItem[]>('cashbook', []);
+    if (cachedCash && cachedCash.length > 0) setCashbook(cachedCash);
+
+    const cachedPetty = loadStorage<PettyCashItem[]>('pettyCash', []);
+    if (cachedPetty && cachedPetty.length > 0) setPettyCash(cachedPetty);
+
+    const cachedInv = loadStorage<InventoryItem[]>('inventory', []);
+    if (cachedInv && cachedInv.length > 0) setInventory(cachedInv);
+
+    const cachedEmp = loadStorage<Employee[]>('employees', []);
+    if (cachedEmp && cachedEmp.length > 0) setEmployees(cachedEmp);
+
+    const cachedSal = loadStorage<SalaryPayment[]>('salaryPayments', []);
+    if (cachedSal && cachedSal.length > 0) setSalaryPayments(cachedSal);
+  }, []);
+
+  // 2. Synchronize with Supabase if configured
   useEffect(() => {
     let isMounted = true;
     async function loadFromSupabase() {
@@ -223,11 +285,26 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
 
         if (!isMounted) return;
 
-        if (supaProjects && supaProjects.length > 0) setProjects(supaProjects);
-        if (supaKavlings && supaKavlings.length > 0) setKavlings(supaKavlings);
-        if (supaCust && supaCust.length > 0) setCustomers(supaCust);
-        if (supaLands && supaLands.length > 0) setLandDebts(supaLands);
-        if (supaCash && supaCash.length > 0) setCashbook(supaCash);
+        if (supaProjects && supaProjects.length > 0) {
+          setProjects(supaProjects);
+          saveStorage('projects', supaProjects);
+        }
+        if (supaKavlings && supaKavlings.length > 0) {
+          setKavlings(supaKavlings);
+          saveStorage('kavlings', supaKavlings);
+        }
+        if (supaCust && supaCust.length > 0) {
+          setCustomers(supaCust);
+          saveStorage('customers', supaCust);
+        }
+        if (supaLands && supaLands.length > 0) {
+          setLandDebts(supaLands);
+          saveStorage('landDebts', supaLands);
+        }
+        if (supaCash && supaCash.length > 0) {
+          setCashbook(supaCash);
+          saveStorage('cashbook', supaCash);
+        }
       } catch (err) {
         console.warn('Could not sync with Supabase tables:', err);
       }
@@ -372,18 +449,44 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       ...data,
       id: `kav-${Date.now()}`
     };
-    setKavlings(prev => [...prev, newKav]);
+    setKavlings(prev => {
+      const updated = [...prev, newKav];
+      saveStorage('kavlings', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseInsertKavling(newKav).catch(console.warn);
+    }
+  };
+
+  const addMultipleKavlings = (newKavs: Kavling[]) => {
+    setKavlings(prev => {
+      const updated = [...prev, ...newKavs];
+      saveStorage('kavlings', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseInsertBatchKavlings(newKavs).catch(console.warn);
+    }
   };
 
   const updateKavling = (id: string, data: Partial<Omit<Kavling, 'id'>>) => {
-    setKavlings(prev => prev.map(k => (k.id === id ? { ...k, ...data } : k)));
+    setKavlings(prev => {
+      const updated = prev.map(k => (k.id === id ? { ...k, ...data } : k));
+      saveStorage('kavlings', updated);
+      return updated;
+    });
     if (isSupabaseConfigured()) {
       supabaseUpdateKavling(id, data).catch(console.warn);
     }
   };
 
   const deleteKavling = (id: string) => {
-    setKavlings(prev => prev.filter(k => k.id !== id));
+    setKavlings(prev => {
+      const updated = prev.filter(k => k.id !== id);
+      saveStorage('kavlings', updated);
+      return updated;
+    });
     if (isSupabaseConfigured()) {
       supabaseDeleteKavling(id).catch(console.warn);
     }
@@ -418,11 +521,25 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         customerNama: null
       });
     }
-    setKavlings(prev => [...prev, ...newLots]);
+    setKavlings(prev => {
+      const updated = [...prev, ...newLots];
+      saveStorage('kavlings', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseInsertBatchKavlings(newLots).catch(console.warn);
+    }
   };
 
   const updateKavlingStatus = (id: string, status: 'terbuka' | 'booking' | 'terjual') => {
-    setKavlings(prev => prev.map(k => (k.id === id ? { ...k, status } : k)));
+    setKavlings(prev => {
+      const updated = prev.map(k => (k.id === id ? { ...k, status } : k));
+      saveStorage('kavlings', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      supabaseUpdateKavling(id, { status }).catch(console.warn);
+    }
   };
 
   // 3. Customer & Payment (with auto-sync to Cashbook)
@@ -954,6 +1071,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         updateProject,
         deleteProject,
         addKavling,
+        addMultipleKavlings,
         updateKavling,
         deleteKavling,
         addBatchKavling,

@@ -239,6 +239,55 @@ export async function supabaseFetchCashbook(): Promise<CashbookItem[] | null> {
 // UPDATE & DELETE HELPERS
 // ==============================================================================
 
+export async function supabaseInsertKavling(kav: Kavling): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('kavlings').insert({
+      id: kav.id,
+      project_id: kav.projectId,
+      blok: kav.blok,
+      nomor: kav.nomor,
+      luas: kav.luas,
+      dimensi: kav.dimensi,
+      harga: kav.harga,
+      tipe: kav.tipe,
+      status: kav.status,
+      customer_id: kav.customerId || null,
+      customer_nama: kav.customerNama || null,
+      keterangan: kav.keterangan || null
+    });
+    return !error;
+  } catch (e) {
+    console.warn('Error inserting kavling:', e);
+    return false;
+  }
+}
+
+export async function supabaseInsertBatchKavlings(kavs: Kavling[]): Promise<boolean> {
+  if (!isSupabaseConfigured() || kavs.length === 0) return false;
+  try {
+    const payload = kavs.map(kav => ({
+      id: kav.id,
+      project_id: kav.projectId,
+      blok: kav.blok,
+      nomor: kav.nomor,
+      luas: kav.luas,
+      dimensi: kav.dimensi,
+      harga: kav.harga,
+      tipe: kav.tipe,
+      status: kav.status,
+      customer_id: kav.customerId || null,
+      customer_nama: kav.customerNama || null,
+      keterangan: kav.keterangan || null
+    }));
+    const { error } = await supabase.from('kavlings').insert(payload);
+    return !error;
+  } catch (e) {
+    console.warn('Error inserting batch kavlings:', e);
+    return false;
+  }
+}
+
 export async function supabaseUpdateKavling(id: string, updates: Partial<Kavling>): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
   try {

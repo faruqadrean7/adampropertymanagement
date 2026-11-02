@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import * as XLSX from 'xlsx';
 import { useProperty } from '@/context/PropertyContext';
 import ExportButtons from '@/components/common/ExportButtons';
 import { 
@@ -28,7 +29,8 @@ import {
   ShieldCheck,
   AlertCircle,
   Pencil,
-  AlertTriangle
+  AlertTriangle,
+  FileSpreadsheet
 } from 'lucide-react';
 import { Project, Kavling } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -44,6 +46,7 @@ export default function KavlingView() {
     updateProject,
     deleteProject,
     addKavling, 
+    addMultipleKavlings,
     updateKavling,
     deleteKavling,
     addBatchKavling,
@@ -360,6 +363,66 @@ export default function KavlingView() {
     setDeleteProjectTarget(null);
   };
 
+  // Handler for Excel Import
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsName = wb.SheetNames[0];
+        const ws = wb.Sheets[wsName];
+        const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+        if (!rows || rows.length === 0) {
+          alert('File Excel kosong atau tidak memiliki baris data!');
+          return;
+        }
+
+        const projId = selectedProjectId !== 'all' ? selectedProjectId : (projects[0]?.id || 'proj-bm1');
+        const importedLots: Kavling[] = [];
+
+        rows.forEach((r, idx) => {
+          const nomor = String(r.nomor || r.kode_kavling || r.kode || r.unit || r['Kode Kavling'] || r['Nomor Unit'] || `KAV-${idx + 1}`).trim();
+          const blok = String(r.blok || r.Blok || r['Nama Blok'] || 'Blok A').trim();
+          const luas = Number(r.luas || r['Luas (m²)'] || r['Luas'] || 84);
+          const dimensi = String(r.dimensi || r.ukuran || r['Dimensi'] || r['Ukuran'] || '6 x 14 meter').trim();
+          const harga = Number(r.harga || r.harga_jual || r['Harga Jual'] || r['Harga'] || 120000000);
+          const tipe = String(r.tipe || r['Tipe'] || 'Hunian Standar').trim();
+          const rawStatus = String(r.status || r['Status'] || 'terbuka').toLowerCase().trim();
+          const status: 'terbuka' | 'booking' | 'terjual' = 
+            rawStatus === 'booking' ? 'booking' : (rawStatus === 'terjual' || rawStatus === 'lunas' ? 'terjual' : 'terbuka');
+          const keterangan = String(r.keterangan || r['Keterangan'] || r['Catatan'] || '').trim();
+
+          importedLots.push({
+            id: `kav-imp-${Date.now()}-${idx}`,
+            projectId: projId,
+            blok,
+            nomor,
+            luas: isNaN(luas) ? 84 : luas,
+            dimensi,
+            harga: isNaN(harga) ? 120000000 : harga,
+            tipe,
+            status,
+            customerId: null,
+            customerNama: null,
+            keterangan: keterangan || undefined
+          });
+        });
+
+        addMultipleKavlings(importedLots);
+        alert(`Berhasil mengimpor ${importedLots.length} data kavling dari Excel! Data telah tersimpan secara permanen.`);
+      } catch (err: any) {
+        alert('Gagal membaca file Excel: ' + (err?.message || 'Format tidak didukung'));
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = '';
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 w-full min-w-0">
       {/* Management Read-Only Banner */}
@@ -464,6 +527,20 @@ export default function KavlingView() {
                     <span className="hidden sm:inline">+ Buat Blok Sekaligus</span>
                     <span className="sm:hidden">+ Batch Blok</span>
                   </button>
+                  <label
+                    title="Upload file data kavling Excel (.xlsx, .xls, .csv)"
+                    className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg sm:rounded-xl transition flex items-center gap-1 active:scale-95 shadow-2xs cursor-pointer shrink-0"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="hidden sm:inline">Upload Excel Kavling</span>
+                    <span className="sm:hidden">Excel</span>
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls, .csv"
+                      onChange={handleImportExcel}
+                      className="hidden"
+                    />
+                  </label>
                   <button
                     onClick={handleOpenAddModal}
                     className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] rounded-lg sm:rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
