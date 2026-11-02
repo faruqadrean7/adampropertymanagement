@@ -122,10 +122,11 @@ export default function CustomerView() {
 
   // Form Add Customer - Transaksi Kavling
   const [selectedKavlingId, setSelectedKavlingId] = useState('');
-  const [totalHarga, setTotalHarga] = useState(120000000);
-  const [uangMuka, setUangMuka] = useState(30000000);
+  const [totalHarga, setTotalHarga] = useState(0);
+  const [uangMuka, setUangMuka] = useState(0);
   const [metodeBayar, setMetodeBayar] = useState<'tunai' | 'transfer' | 'barter'>('transfer');
   const [rincianBarter, setRincianBarter] = useState('');
+  const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
 
   // Form Payment
   const [payNominal, setPayNominal] = useState<number>(10000000);
@@ -247,57 +248,69 @@ export default function CustomerView() {
 
   const availableLots = kavlings.filter(k => k.status === 'terbuka');
 
-  const handleAddCustomerSubmit = (e: React.FormEvent) => {
+  const handleAddCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedKavlingId) {
-      alert('Pilih unit kavling yang dibeli terlebih dahulu!');
+    if (!nama.trim()) {
+      alert('Nama customer wajib diisi!');
       return;
     }
-    addCustomer({
-      nama,
-      nik,
-      noKk,
-      telepon,
-      tempatTanggalLahir,
-      pekerjaan,
-      alamat,
-      kavlingId: selectedKavlingId,
-      totalHarga: Number(totalHarga),
-      uangMuka: Number(uangMuka),
-      metodeBayar,
-      rincianBarter: metodeBayar === 'barter' ? rincianBarter : undefined,
-      ktpImage,
-      kkImage,
-      ajbImage,
-      shmSplitImage,
-      noAjb: noAjb.trim() || undefined,
-      noShmSplit: noShmSplit.trim() || undefined,
-      notarisPpat: notarisPpat.trim() || undefined,
-      tanggalAjb: tanggalAjb || undefined,
-      tanggalShmSplit: tanggalShmSplit || undefined
-    });
 
-    setShowAddModal(false);
+    try {
+      setIsSubmittingCustomer(true);
+      await addCustomer({
+        nama: nama.trim(),
+        nik: nik.trim() || `CUST-${Date.now().toString().slice(-6)}`,
+        noKk: noKk.trim() || undefined,
+        telepon: telepon.trim() || '-',
+        tempatTanggalLahir: tempatTanggalLahir.trim() || undefined,
+        pekerjaan: pekerjaan.trim() || undefined,
+        alamat: alamat.trim() || 'Cluster Baitul Makmur, Jatikerto',
+        kavlingId: selectedKavlingId || null,
+        totalHarga: Number(totalHarga) || 0,
+        uangMuka: Number(uangMuka) || 0,
+        metodeBayar,
+        rincianBarter: metodeBayar === 'barter' ? rincianBarter : undefined,
+        ktpImage,
+        kkImage,
+        ajbImage,
+        shmSplitImage,
+        noAjb: noAjb.trim() || undefined,
+        noShmSplit: noShmSplit.trim() || undefined,
+        notarisPpat: notarisPpat.trim() || undefined,
+        tanggalAjb: tanggalAjb || undefined,
+        tanggalShmSplit: tanggalShmSplit || undefined
+      });
 
-    // Reset Form
-    setNama('');
-    setNik('');
-    setNoKk('');
-    setTelepon('');
-    setTempatTanggalLahir('');
-    setPekerjaan('');
-    setAlamat('');
-    setSelectedKavlingId('');
-    setKtpImage(null);
-    setKkImage(null);
-    setAjbImage(null);
-    setShmSplitImage(null);
-    setNoAjb('');
-    setNoShmSplit('');
-    setNotarisPpat('');
-    setTanggalAjb('');
-    setTanggalShmSplit('');
-    setRincianBarter('');
+      setShowAddModal(false);
+      alert('✓ Customer berhasil ditambahkan dan disimpan!');
+
+      // Reset Form
+      setNama('');
+      setNik('');
+      setNoKk('');
+      setTelepon('');
+      setTempatTanggalLahir('');
+      setPekerjaan('');
+      setAlamat('');
+      setSelectedKavlingId('');
+      setTotalHarga(0);
+      setUangMuka(0);
+      setKtpImage(null);
+      setKkImage(null);
+      setAjbImage(null);
+      setShmSplitImage(null);
+      setNoAjb('');
+      setNoShmSplit('');
+      setNotarisPpat('');
+      setTanggalAjb('');
+      setTanggalShmSplit('');
+      setRincianBarter('');
+    } catch (err) {
+      console.error('Error adding customer:', err);
+      alert('Gagal menambahkan customer. Silakan coba lagi.');
+    } finally {
+      setIsSubmittingCustomer(false);
+    }
   };
 
   const handlePaySubmit = (e: React.FormEvent) => {
@@ -735,15 +748,14 @@ export default function CustomerView() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="font-bold text-slate-700 block mb-1">
-                      Nomor Induk Kependudukan (NIK KTP - 16 Digit) *
+                      Nomor Induk Kependudukan (NIK KTP)
                     </label>
                     <input
                       type="text"
-                      required
                       maxLength={16}
                       value={nik}
                       onChange={(e) => setNik(e.target.value)}
-                      placeholder="332408xxxxxxxxxx"
+                      placeholder="332408xxxxxxxxxx (opsional)"
                       className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 font-mono font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
@@ -1174,22 +1186,25 @@ export default function CustomerView() {
 
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">
-                    Pilih Unit Kavling yang Dibeli *
+                    Pilih Unit Kavling yang Dibeli (Opsional)
                   </label>
                   <select
-                    required
                     value={selectedKavlingId}
                     onChange={(e) => {
-                      setSelectedKavlingId(e.target.value);
-                      const kav = kavlings.find(k => k.id === e.target.value);
+                      const val = e.target.value;
+                      setSelectedKavlingId(val);
+                      const kav = kavlings.find(k => k.id === val);
                       if (kav) {
                         setTotalHarga(kav.harga);
                         setUangMuka(Math.round(kav.harga * 0.3));
+                      } else {
+                        setTotalHarga(0);
+                        setUangMuka(0);
                       }
                     }}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="">-- Pilih Unit Kavling Siap Jual --</option>
+                    <option value="">-- Belum Pilih Kavling (Bisa Dihubungkan Nanti) --</option>
                     {availableLots.map(k => (
                       <option key={k.id} value={k.id}>
                         {k.blok} - {k.nomor} ({k.luas} m² - Rp {k.harga.toLocaleString('id-ID')})
@@ -1201,11 +1216,10 @@ export default function CustomerView() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="font-bold text-slate-700 block mb-1">
-                      Total Nilai Kesepakatan (Rp) *
+                      Total Nilai Kesepakatan (Rp)
                     </label>
                     <input
                       type="number"
-                      required
                       value={totalHarga}
                       onChange={(e) => setTotalHarga(Number(e.target.value))}
                       className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 font-mono font-bold text-slate-900 focus:outline-none focus:border-emerald-500"
@@ -1217,7 +1231,6 @@ export default function CustomerView() {
                     </label>
                     <input
                       type="number"
-                      required
                       value={uangMuka}
                       onChange={(e) => setUangMuka(Number(e.target.value))}
                       className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 font-mono font-bold text-emerald-700 focus:outline-none focus:border-emerald-500"
@@ -1267,10 +1280,11 @@ export default function CustomerView() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl font-bold shadow-md shadow-emerald-950/20 transition flex items-center gap-1.5"
+                  disabled={isSubmittingCustomer}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 active:scale-[0.98] text-white rounded-xl font-bold shadow-md shadow-emerald-950/20 transition flex items-center gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Simpan Transaksi & Berkas</span>
+                  <span>{isSubmittingCustomer ? 'Menyimpan...' : 'Simpan Transaksi & Berkas'}</span>
                 </button>
               </div>
             </form>

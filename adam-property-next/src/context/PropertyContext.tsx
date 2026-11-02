@@ -45,7 +45,9 @@ import {
   supabaseDeleteProject,
   supabaseUpdateLandDebt,
   supabaseDeleteLandDebt,
+  supabaseInsertCustomer,
   supabaseUpdateCustomer,
+  supabaseDeleteCustomer,
   supabaseInsertPayment,
   supabaseUpdatePayment
 } from '@/lib/supabaseService';
@@ -112,10 +114,10 @@ interface PropertyContextType {
     tempatTanggalLahir?: string;
     pekerjaan?: string;
     alamat: string;
-    kavlingId: string;
-    totalHarga: number;
-    uangMuka: number;
-    metodeBayar: 'tunai' | 'transfer' | 'barter';
+    kavlingId?: string | null;
+    totalHarga?: number;
+    uangMuka?: number;
+    metodeBayar?: 'tunai' | 'transfer' | 'barter';
     rincianBarter?: string;
     ktpImage?: string | null;
     kkImage?: string | null;
@@ -126,7 +128,7 @@ interface PropertyContextType {
     tanggalAjb?: string;
     tanggalShmSplit?: string;
     notarisPpat?: string;
-  }) => void;
+  }) => Promise<boolean>;
   updateCustomerDocuments: (
     customerId: string,
     docs: {
@@ -636,8 +638,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // 3. Customer & Payment (with auto-sync to Cashbook)
-  const addCustomer = (data: {
+  // 3. Customer & Payment (with auto-sync to Supabase & Cashbook)
+  const addCustomer = async (data: {
     nama: string;
     nik: string;
     noKk?: string;
@@ -645,10 +647,10 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     tempatTanggalLahir?: string;
     pekerjaan?: string;
     alamat: string;
-    kavlingId: string;
-    totalHarga: number;
-    uangMuka: number;
-    metodeBayar: 'tunai' | 'transfer' | 'barter';
+    kavlingId?: string | null;
+    totalHarga?: number;
+    uangMuka?: number;
+    metodeBayar?: 'tunai' | 'transfer' | 'barter';
     rincianBarter?: string;
     ktpImage?: string | null;
     kkImage?: string | null;
@@ -659,12 +661,15 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     tanggalAjb?: string;
     tanggalShmSplit?: string;
     notarisPpat?: string;
-  }) => {
+  }): Promise<boolean> => {
     const custId = `cust-${Date.now()}`;
-    const targetKav = kavlings.find(k => k.id === data.kavlingId);
-    const kavKode = targetKav ? `${targetKav.blok} - ${targetKav.nomor}` : 'Kavling';
-    const isLunas = data.uangMuka >= data.totalHarga;
-    const sisa = Math.max(0, data.totalHarga - data.uangMuka);
+    const targetKav = data.kavlingId ? kavlings.find(k => k.id === data.kavlingId) : undefined;
+    const kavKode = targetKav ? `${targetKav.blok} - ${targetKav.nomor}` : (data.kavlingId || '-');
+    const finalTotal = data.totalHarga !== undefined ? data.totalHarga : (targetKav?.harga || 0);
+    const finalDp = data.uangMuka || 0;
+    const isLunas = finalDp >= finalTotal && finalTotal > 0;
+    const sisa = Math.max(0, finalTotal - finalDp);
+    const bayarMethod = data.metodeBayar || 'transfer';
 
     const newCustomer: Customer = {
       id: custId,
@@ -675,11 +680,12 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       tempatTanggalLahir: data.tempatTanggalLahir,
       pekerjaan: data.pekerjaan,
       alamat: data.alamat,
-      kavlingId: data.kavlingId,
+      kavlingId: targetKav?.id || null,
       kavlingKode: kavKode,
+      kavlingIds: targetKav ? [targetKav.id] : [],
       projectId: targetKav?.projectId,
-      totalHarga: data.totalHarga,
-      totalMasuk: data.uangMuka,
+      totalHarga: finalTotal,
+      totalMasuk: finalDp,
       sisaPiutang: sisa,
       statusBayar: isLunas ? 'lunas' : 'belum_lunas',
       tanggalBeli: new Date().toISOString().split('T')[0],
@@ -694,49 +700,90 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       notarisPpat: data.notarisPpat
     };
 
-    setCustomers(prev => [...prev, newCustomer]);
+    // 1. Update customer state & localStorage
+    setCustomers(prev => {
+      const updated = [newCustomer, ...prev];
+      saveStorage('customers', updated);
+      return updated;
+    });
 
-    // Update kavling status
-    setKavlings(prev =>
-      prev.map(k =>
-        k.id === data.kavlingId
-          ? { ...k, status: isLunas ? 'terjual' : 'booking', customerId: custId, customerNama: data.nama }
-          : k
-      )
-    );
+    // 2. Update kavling status if kavling was selected
+    if (targetKav) {
+      setKavlings(prev => {
+        const updated = prev.map(k =>
+          k.id === targetKav.id
+            ? { ...k, status: (isLunas ? 'terjual' : 'booking') as Kavling['status'], customerId: custId, customerNama: data.nama }
+            : k
+        );
+        saveStorage('kavlings', updated);
+        return updated;
+      });
+    }
 
-    // If DP exists, create payment
-    if (data.uangMuka > 0) {
+    let newPay: Payment | null = null;
+    // 3. If DP exists, create payment & cashbook entry
+    if (finalDp > 0) {
       const payId = `pay-${Date.now()}`;
-      const newPay: Payment = {
+      newPay = {
         id: payId,
         customerId: custId,
         customerNama: data.nama,
         kavlingKode: kavKode,
         tanggal: new Date().toISOString().split('T')[0],
-        nominal: data.uangMuka,
-        metodeBayar: data.metodeBayar,
+        nominal: finalDp,
+        metodeBayar: bayarMethod,
         tujuan: isLunas ? 'Pelunasan Pembelian Kavling' : 'Uang Muka (DP)',
         rincianBarter: data.rincianBarter
       };
-      setPayments(prev => [...prev, newPay]);
+
+      setPayments(prev => {
+        const updated = [...prev, newPay!];
+        saveStorage('payments', updated);
+        return updated;
+      });
 
       // Auto-sync to Cashbook
       const cashItem: CashbookItem = {
         id: `cash-${Date.now()}`,
         tanggal: new Date().toISOString().split('T')[0],
         tipe: 'masuk',
-        kategori: data.metodeBayar === 'barter' ? 'jual_kavling_barter' : 'jual_kavling',
+        kategori: bayarMethod === 'barter' ? 'jual_kavling_barter' : 'jual_kavling',
         sumber: `Customer: ${data.nama}`,
         keterangan: `${newPay.tujuan} (${kavKode})`,
-        nominal: data.uangMuka,
-        metode: data.metodeBayar === 'tunai' ? 'Tunai Kasir' : data.metodeBayar === 'transfer' ? 'Transfer Bank' : 'Barter Material',
+        nominal: finalDp,
+        metode: bayarMethod === 'tunai' ? 'Tunai Kasir' : bayarMethod === 'transfer' ? 'Transfer Bank' : 'Barter Material',
         projectId: targetKav?.projectId,
         refType: 'customer_payment',
         refId: payId
       };
-      setCashbook(prev => [...prev, cashItem]);
+      setCashbook(prev => {
+        const updated = [...prev, cashItem];
+        saveStorage('cashbook', updated);
+        return updated;
+      });
     }
+
+    // 4. Cloud Supabase Sync
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseInsertCustomer(newCustomer);
+        if (targetKav) {
+          await supabaseUpdateKavling(targetKav.id, {
+            customerId: custId,
+            customerNama: data.nama,
+            status: isLunas ? 'terjual' : 'booking'
+          });
+        }
+        if (newPay) {
+          await supabaseInsertPayment(newPay);
+        }
+        await refreshCloudData();
+      } catch (e) {
+        console.warn('Error syncing new customer to Supabase:', e);
+      }
+    }
+
+    return true;
   };
 
   const updateCustomer = async (id: string, updates: Partial<Customer>): Promise<boolean> => {

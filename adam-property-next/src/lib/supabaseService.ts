@@ -443,6 +443,61 @@ export async function supabaseUpdateCustomer(id: string, updates: Partial<Custom
   }
 }
 
+export async function supabaseInsertCustomer(cust: Customer): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const payload: any = {
+      id: cust.id,
+      nama: cust.nama,
+      nik: cust.nik,
+      no_kk: cust.noKk || null,
+      telepon: cust.telepon,
+      tempat_tanggal_lahir: cust.tempatTanggalLahir || null,
+      pekerjaan: cust.pekerjaan || null,
+      alamat: cust.alamat || '',
+      kavling_id: cust.kavlingId || null,
+      kavling_kode: cust.kavlingKode || null,
+      project_id: cust.projectId || null,
+      total_harga: cust.totalHarga || 0,
+      total_masuk: cust.totalMasuk || 0,
+      sisa_piutang: cust.sisaPiutang || 0,
+      status_bayar: cust.statusBayar || 'belum_lunas',
+      tanggal_beli: cust.tanggalBeli || new Date().toISOString().split('T')[0],
+      ktp_image: cust.ktpImage || null,
+      kk_image: cust.kkImage || null,
+      ajb_image: cust.ajbImage || null,
+      shm_split_image: cust.shmSplitImage || null,
+      no_ajb: cust.noAjb || null,
+      no_shm_split: cust.noShmSplit || null,
+      tanggal_ajb: cust.tanggalAjb || null,
+      tanggal_shm_split: cust.tanggalShmSplit || null,
+      notaris_ppat: cust.notarisPpat || null
+    };
+
+    const { error } = await supabase.from('customers').upsert(payload, { onConflict: 'id' });
+    if (error) {
+      console.warn('Supabase insert customer error:', error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('Error inserting customer to Supabase:', e);
+    return false;
+  }
+}
+
+export async function supabaseDeleteCustomer(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('customers').delete().eq('id', id);
+    if (error) console.warn('Supabase delete customer error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error deleting customer from Supabase:', e);
+    return false;
+  }
+}
+
 export async function supabaseInsertPayment(pay: Payment): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
   try {
