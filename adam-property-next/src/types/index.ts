@@ -10,6 +10,7 @@ export type NavTab =
   | 'landDebt'
   | 'cashbook'
   | 'pettyCash'
+  | 'nonCash'
   | 'inventory'
   | 'employee';
 

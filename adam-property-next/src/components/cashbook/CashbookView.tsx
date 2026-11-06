@@ -22,7 +22,8 @@ import {
   CreditCard,
   Clock,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  PackageCheck
 } from 'lucide-react';
 import { CashbookItem } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -106,11 +107,12 @@ export default function CashbookView() {
     totalCashIn, 
     totalCashOut, 
     cashbookBalance,
-    pettyCashBalance 
+    pettyCashBalance,
+    totalNonCashBarter
   } = useProperty();
 
   // Navigation Filter Pills
-  const [streamFilter, setStreamFilter] = useState<'all' | 'masuk' | 'keluar' | 'jual_kavling' | 'barter' | 'investor' | 'lahan_petani' | 'operasional'>('all');
+  const [streamFilter, setStreamFilter] = useState<'all' | 'masuk' | 'keluar' | 'jual_kavling' | 'investor' | 'lahan_petani' | 'operasional'>('all');
   const [filterProject, setFilterProject] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewLayout, setViewLayout] = useState<'grouped' | 'flat'>('grouped');
@@ -139,7 +141,6 @@ export default function CashbookView() {
   const countMasuk = cashbook.filter(c => c.tipe === 'masuk').length;
   const countKeluar = cashbook.filter(c => c.tipe === 'keluar').length;
   const countKavling = cashbook.filter(c => c.kategori === 'jual_kavling').length;
-  const countBarter = cashbook.filter(c => c.kategori === 'jual_kavling_barter').length;
   const countInvestor = cashbook.filter(c => c.kategori === 'investor').length;
   const countPetani = cashbook.filter(c => c.kategori === 'lahan_petani').length;
   const countOperasional = cashbook.filter(c => c.kategori === 'operasional').length;
@@ -150,7 +151,6 @@ export default function CashbookView() {
     if (streamFilter === 'masuk') matchStream = c.tipe === 'masuk';
     else if (streamFilter === 'keluar') matchStream = c.tipe === 'keluar';
     else if (streamFilter === 'jual_kavling') matchStream = c.kategori === 'jual_kavling';
-    else if (streamFilter === 'barter') matchStream = c.kategori === 'jual_kavling_barter';
     else if (streamFilter === 'investor') matchStream = c.kategori === 'investor';
     else if (streamFilter === 'lahan_petani') matchStream = c.kategori === 'lahan_petani';
     else if (streamFilter === 'operasional') matchStream = c.kategori === 'operasional';
@@ -162,7 +162,7 @@ export default function CashbookView() {
   });
 
   const totalLotSales = cashbook
-    .filter(c => c.kategori === 'jual_kavling' || c.kategori === 'jual_kavling_barter')
+    .filter(c => c.kategori === 'jual_kavling')
     .reduce((sum, c) => sum + c.nominal, 0);
 
   const totalInvestor = cashbook
@@ -259,18 +259,18 @@ export default function CashbookView() {
       {/* 1. CENTRAL CASH HUB TOP SWITCHER (KAS BESAR <-> KAS KECIL) */}
       {/* ======================================================== */}
       <div className="bg-slate-100 p-1.5 rounded-2xl flex flex-wrap items-center justify-between gap-2 border border-slate-200">
-        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto flex-wrap sm:flex-nowrap">
           <button
             type="button"
             onClick={() => setActiveTab('cashbook')}
-            className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
               activeTab === 'cashbook'
                 ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Vault className="w-4 h-4 text-emerald-600" />
-            <span>Buku Kas Besar & Modal</span>
+            <span>Kas Besar Likuid</span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
               Rp {cashbookBalance.toLocaleString('id-ID')}
             </span>
@@ -279,23 +279,39 @@ export default function CashbookView() {
           <button
             type="button"
             onClick={() => setActiveTab('pettyCash')}
-            className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
               activeTab === 'pettyCash'
                 ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Coins className="w-4 h-4 text-amber-600" />
-            <span>Kas Kecil (Petty Cash)</span>
+            <span>Kas Kecil Kantor</span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
               Rp {pettyCashBalance.toLocaleString('id-ID')}
             </span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('nonCash')}
+            className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'nonCash'
+                ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <PackageCheck className="w-4 h-4 text-indigo-600" />
+            <span>Rekap Non-Tunai & Barter</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+              Rp {totalNonCashBarter.toLocaleString('id-ID')}
+            </span>
+          </button>
         </div>
 
-        <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-500 pr-2">
+        <div className="hidden xl:flex items-center gap-1.5 text-xs text-slate-500 pr-2">
           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-          <span>Navigasi Cepat Antara Kas Besar & Kas Kecil</span>
+          <span>Navigasi Terpadu: Kas Besar, Kas Kecil, & Rekapitulasi Non-Tunai</span>
         </div>
       </div>
 
@@ -330,7 +346,7 @@ export default function CashbookView() {
             Buku Kas Besar & Arus Modal
           </h2>
           <p className="text-[11px] sm:text-xs text-slate-500">
-            Sentral likuiditas: Transaksi DP/Pelunasan kavling & barter otomatis tersinkron ke buku kas ini.
+            Sentral likuiditas: Transaksi penerimaan kas tunai & transfer bank resmi tercatat di buku kas ini. (Pembayaran barter tercatat terpisah di Rekap Non-Tunai).
           </p>
         </div>
 
@@ -383,7 +399,7 @@ export default function CashbookView() {
             <h3 className="text-xs sm:text-base font-black text-teal-700 truncate font-mono">
               Rp {totalLotSales.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[9px] sm:text-[10px] text-teal-600 font-medium truncate">Tunai & Barter</p>
+            <p className="text-[9px] sm:text-[10px] text-teal-600 font-medium truncate">Murni Kas & Bank</p>
           </div>
         </div>
 
@@ -501,16 +517,14 @@ export default function CashbookView() {
 
           <button
             type="button"
-            onClick={() => setStreamFilter('barter')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 shrink-0 ${
-              streamFilter === 'barter'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'
-            }`}
+            onClick={() => setActiveTab('nonCash')}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200"
+            title="Buka Buku Rekapitulasi Non-Tunai & Barter Material"
           >
-            <span>🔄 Barter Material</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${streamFilter === 'barter' ? 'bg-white/20 text-white' : 'bg-amber-200 text-amber-900'}`}>
-              {countBarter}
+            <PackageCheck className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Rekap Non-Tunai</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-indigo-200 text-indigo-900 font-mono">
+              Rp {totalNonCashBarter.toLocaleString('id-ID')}
             </span>
           </button>
 

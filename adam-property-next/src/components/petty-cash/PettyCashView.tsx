@@ -21,7 +21,8 @@ import {
   Receipt,
   Eye,
   X,
-  Sparkles
+  Sparkles,
+  PackageCheck
 } from 'lucide-react';
 import { PettyCashItem } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -105,7 +106,8 @@ export default function PettyCashView() {
     pettyCashIn, 
     pettyCashOut, 
     pettyCashBalance,
-    cashbookBalance
+    cashbookBalance,
+    totalNonCashBarter
   } = useProperty();
 
   // Navigation Filter Pills
@@ -234,18 +236,18 @@ export default function PettyCashView() {
       {/* 1. CENTRAL CASH HUB TOP SWITCHER (KAS BESAR <-> KAS KECIL) */}
       {/* ======================================================== */}
       <div className="bg-slate-100 p-1.5 rounded-2xl flex flex-wrap items-center justify-between gap-2 border border-slate-200">
-        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto flex-wrap sm:flex-nowrap">
           <button
             type="button"
             onClick={() => setActiveTab('cashbook')}
-            className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
               activeTab === 'cashbook'
                 ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Vault className="w-4 h-4 text-emerald-600" />
-            <span>Buku Kas Besar & Modal</span>
+            <span>Kas Besar Likuid</span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
               Rp {cashbookBalance.toLocaleString('id-ID')}
             </span>
@@ -254,23 +256,39 @@ export default function PettyCashView() {
           <button
             type="button"
             onClick={() => setActiveTab('pettyCash')}
-            className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
               activeTab === 'pettyCash'
                 ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Coins className="w-4 h-4 text-amber-600" />
-            <span>Kas Kecil (Petty Cash)</span>
+            <span>Kas Kecil Kantor</span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
               Rp {pettyCashBalance.toLocaleString('id-ID')}
             </span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('nonCash')}
+            className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'nonCash'
+                ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <PackageCheck className="w-4 h-4 text-indigo-600" />
+            <span>Rekap Non-Tunai & Barter</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+              Rp {totalNonCashBarter.toLocaleString('id-ID')}
+            </span>
+          </button>
         </div>
 
-        <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-500 pr-2">
+        <div className="hidden xl:flex items-center gap-1.5 text-xs text-slate-500 pr-2">
           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-          <span>Navigasi Cepat Antara Kas Besar & Kas Kecil</span>
+          <span>Navigasi Terpadu: Kas Besar, Kas Kecil, & Rekapitulasi Non-Tunai</span>
         </div>
       </div>
 

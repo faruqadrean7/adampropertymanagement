@@ -14,6 +14,7 @@ import {
   Coins, 
   Boxes, 
   UserCheck, 
+  PackageCheck,
   RotateCw,
   LogOut,
   X,
@@ -33,12 +34,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navItems: { tab: NavTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { tab: 'dashboard', label: 'Executive Analytics', icon: <BarChart3 className="w-4 h-4" /> },
     { tab: 'kavling', label: '1. Peta & Site Plan Kavling', icon: <MapPin className="w-4 h-4" /> },
-    { tab: 'customer', label: '2. Customer & Barter', icon: <Users className="w-4 h-4" /> },
+    { tab: 'customer', label: '2. Customer & Penjualan', icon: <Users className="w-4 h-4" /> },
     { tab: 'landDebt', label: '3. Hutang Lahan Petani', icon: <Tractor className="w-4 h-4" /> },
     { tab: 'cashbook', label: '4. Kas Besar (General Ledger)', icon: <Vault className="w-4 h-4" /> },
     { tab: 'pettyCash', label: '5. Kas Kecil Kantor', icon: <Coins className="w-4 h-4" /> },
-    { tab: 'inventory', label: '6. Inventaris & Aset Tetap', icon: <Boxes className="w-4 h-4" /> },
-    { tab: 'employee', label: '7. Karyawan & Payroll Gaji', icon: <UserCheck className="w-4 h-4" /> },
+    { tab: 'nonCash', label: '6. Rekap Non-Tunai & Barter', icon: <PackageCheck className="w-4 h-4" /> },
+    { tab: 'inventory', label: '7. Inventaris & Aset Tetap', icon: <Boxes className="w-4 h-4" /> },
+    { tab: 'employee', label: '8. Karyawan & Payroll Gaji', icon: <UserCheck className="w-4 h-4" /> },
   ];
 
   return (

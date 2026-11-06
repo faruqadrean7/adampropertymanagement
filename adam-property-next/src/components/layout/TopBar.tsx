@@ -34,8 +34,9 @@ export default function TopBar({ onToggleSidebar, onOpenPrimaryModal }: TopBarPr
       case 'landDebt': return '3. Hutang Lahan Petani';
       case 'cashbook': return '4. Buku Kas Besar & Arus Kas';
       case 'pettyCash': return '5. Buku Kas Kecil Kantor';
-      case 'inventory': return '6. Inventaris & Aset Kantor';
-      case 'employee': return '7. Data Karyawan & Payroll Gaji';
+      case 'nonCash': return '6. Rekapitulasi Non-Tunai & Barter Material';
+      case 'inventory': return '7. Inventaris & Aset Kantor';
+      case 'employee': return '8. Data Karyawan & Payroll Gaji';
       default: return 'PT Adam Property Indonesia';
     }
   };
@@ -48,6 +49,7 @@ export default function TopBar({ onToggleSidebar, onOpenPrimaryModal }: TopBarPr
       case 'landDebt': return '+ Beli Lahan';
       case 'cashbook': return '+ Catat Kas';
       case 'pettyCash': return '+ Top Up Kas';
+      case 'nonCash': return '+ Catat Barter';
       case 'inventory': return '+ Tambah Aset';
       case 'employee': return '+ Tambah Staf';
       default: return '+ Tambah';

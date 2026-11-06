@@ -222,6 +222,7 @@ interface PropertyContextType {
   totalReceivables: number;
   totalFarmerDebt: number;
   totalAssetValue: number;
+  totalNonCashBarter: number;
 }
 
 const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
@@ -287,7 +288,11 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     if (cachedLpays && cachedLpays.length > 0) setLandPayments(cachedLpays);
 
     const cachedCash = loadStorage<CashbookItem[]>('cashbook', []);
-    if (cachedCash && cachedCash.length > 0) setCashbook(cachedCash);
+    if (cachedCash && cachedCash.length > 0) {
+      // Exclude non-cash barter from liquid cashbook
+      const pureCash = cachedCash.filter(c => c.kategori !== 'jual_kavling_barter' && c.metode !== 'Barter Material');
+      setCashbook(pureCash);
+    }
 
     const cachedPetty = loadStorage<PettyCashItem[]>('pettyCash', []);
     if (cachedPetty && cachedPetty.length > 0) setPettyCash(cachedPetty);
@@ -366,8 +371,10 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         saveStorage('landDebts', supaLands);
       }
       if (supaCash !== null) {
-        setCashbook(supaCash);
-        saveStorage('cashbook', supaCash);
+        // Exclude non-cash barter from liquid cashbook
+        const pureCash = supaCash.filter(c => c.kategori !== 'jual_kavling_barter' && c.metode !== 'Barter Material');
+        setCashbook(pureCash);
+        saveStorage('cashbook', pureCash);
       }
       if (supaPayments !== null && supaPayments.length > 0) {
         setPayments(supaPayments);
@@ -493,7 +500,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     .reduce((sum, k) => sum + k.harga, 0);
 
   const totalCashIn = cashbook
-    .filter(c => c.tipe === 'masuk' && (selectedProjectId === 'all' || !c.projectId || c.projectId === selectedProjectId))
+    .filter(c => c.tipe === 'masuk' && c.kategori !== 'jual_kavling_barter' && c.metode !== 'Barter Material' && (selectedProjectId === 'all' || !c.projectId || c.projectId === selectedProjectId))
     .reduce((sum, c) => sum + c.nominal, 0);
 
   const totalCashOut = cashbook
@@ -501,6 +508,11 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     .reduce((sum, c) => sum + c.nominal, 0);
 
   const cashbookBalance = totalCashIn - totalCashOut;
+
+  // Non-Cash & Barter Compensation Ledger (Strictly Isolated from Liquid Cashbook)
+  const totalNonCashBarter = payments
+    .filter(p => p.metodeBayar === 'barter' && (selectedProjectId === 'all' || !p.kavlingKode || kavlings.find(k => k.nomor === p.kavlingKode)?.projectId === selectedProjectId))
+    .reduce((sum, p) => sum + p.nominal, 0);
 
   const pettyCashIn = pettyCash
     .filter(p => p.tipe === 'masuk')
@@ -866,25 +878,28 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         return updated;
       });
 
-      // Auto-sync to Cashbook
-      newCash = {
-        id: `cash-${Date.now()}`,
-        tanggal: new Date().toISOString().split('T')[0],
-        tipe: 'masuk',
-        kategori: bayarMethod === 'barter' ? 'jual_kavling_barter' : 'jual_kavling',
-        sumber: `Customer: ${data.nama}`,
-        keterangan: `${newPay.tujuan} (${kavKode})`,
-        nominal: finalDp,
-        metode: bayarMethod === 'tunai' ? 'Tunai Kasir' : bayarMethod === 'transfer' ? 'Transfer Bank' : 'Barter Material',
-        projectId: primaryKav?.projectId || 'proj-bm1',
-        refType: 'customer_payment',
-        refId: payId
-      };
-      setCashbook(prev => {
-        const updated = [...prev, newCash!];
-        saveStorage('cashbook', updated);
-        return updated;
-      });
+      // Auto-sync to Cashbook ONLY if payment is liquid (tunai or transfer)!
+      // Non-cash barter is strictly recorded in payments & NonCashBarterView, NEVER in liquid cashbook!
+      if (bayarMethod === 'tunai' || bayarMethod === 'transfer') {
+        newCash = {
+          id: `cash-${Date.now()}`,
+          tanggal: new Date().toISOString().split('T')[0],
+          tipe: 'masuk',
+          kategori: 'jual_kavling',
+          sumber: `Customer: ${data.nama}`,
+          keterangan: `${newPay.tujuan} (${kavKode})`,
+          nominal: finalDp,
+          metode: bayarMethod === 'tunai' ? 'Tunai Kasir' : 'Transfer Bank',
+          projectId: primaryKav?.projectId || 'proj-bm1',
+          refType: 'customer_payment',
+          refId: payId
+        };
+        setCashbook(prev => {
+          const updated = [...prev, newCash!];
+          saveStorage('cashbook', updated);
+          return updated;
+        });
+      }
     }
 
     // 4. Cloud Supabase Sync
@@ -1273,29 +1288,32 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       supabaseInsertPayment(newPay).catch(console.warn);
     }
 
-    // Auto-sync to Cashbook
-    const targetCust = customers.find(c => c.id === data.customerId);
-    const cashItem: CashbookItem = {
-      id: `cash-${Date.now()}`,
-      tanggal: data.tanggal,
-      tipe: 'masuk',
-      kategori: data.metodeBayar === 'barter' ? 'jual_kavling_barter' : 'jual_kavling',
-      sumber: `Customer: ${targetCust?.nama || 'Customer'}`,
-      keterangan: `${data.tujuan} (${data.kavlingKode || ''})`,
-      nominal: data.nominal,
-      metode: data.metodeBayar === 'tunai' ? 'Tunai Kasir' : data.metodeBayar === 'transfer' ? 'Transfer Bank' : 'Barter Material',
-      projectId: targetCust?.projectId,
-      refType: 'customer_payment',
-      refId: payId
-    };
-    setCashbook(prev => {
-      const updated = [...prev, cashItem];
-      saveStorage('cashbook', updated);
-      return updated;
-    });
+    // Auto-sync to Cashbook ONLY if payment is liquid (tunai or transfer)!
+    // Non-cash barter is strictly isolated from liquid cashbook!
+    if (data.metodeBayar === 'tunai' || data.metodeBayar === 'transfer') {
+      const targetCust = customers.find(c => c.id === data.customerId);
+      const cashItem: CashbookItem = {
+        id: `cash-${Date.now()}`,
+        tanggal: data.tanggal,
+        tipe: 'masuk',
+        kategori: 'jual_kavling',
+        sumber: `Customer: ${targetCust?.nama || 'Customer'}`,
+        keterangan: `${data.tujuan} (${data.kavlingKode || ''})`,
+        nominal: data.nominal,
+        metode: data.metodeBayar === 'tunai' ? 'Tunai Kasir' : 'Transfer Bank',
+        projectId: targetCust?.projectId,
+        refType: 'customer_payment',
+        refId: payId
+      };
+      setCashbook(prev => {
+        const updated = [...prev, cashItem];
+        saveStorage('cashbook', updated);
+        return updated;
+      });
 
-    if (isSupabaseConfigured()) {
-      supabaseInsertCashbookItem(cashItem).catch(console.warn);
+      if (isSupabaseConfigured()) {
+        supabaseInsertCashbookItem(cashItem).catch(console.warn);
+      }
     }
   };
 
@@ -1863,7 +1881,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         pettyCashBalance,
         totalReceivables,
         totalFarmerDebt,
-        totalAssetValue
+        totalAssetValue,
+        totalNonCashBarter
       }}
     >
       {children}

@@ -12,6 +12,7 @@ import CustomerView from '@/components/customer/CustomerView';
 import LandDebtView from '@/components/land-debt/LandDebtView';
 import CashbookView from '@/components/cashbook/CashbookView';
 import PettyCashView from '@/components/petty-cash/PettyCashView';
+import NonCashBarterView from '@/components/non-cash/NonCashBarterView';
 import InventoryView from '@/components/inventory/InventoryView';
 import EmployeeView from '@/components/employee/EmployeeView';
 import { Loader2 } from 'lucide-react';
@@ -34,6 +35,8 @@ function MainApp() {
         return <CashbookView />;
       case 'pettyCash':
         return <PettyCashView />;
+      case 'nonCash':
+        return <NonCashBarterView />;
       case 'inventory':
         return <InventoryView />;
       case 'employee':
