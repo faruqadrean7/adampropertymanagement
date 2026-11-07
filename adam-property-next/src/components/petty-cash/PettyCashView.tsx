@@ -22,7 +22,12 @@ import {
   Eye,
   X,
   Sparkles,
-  PackageCheck
+  PackageCheck,
+  Edit3,
+  Trash2,
+  Save,
+  Upload,
+  CheckCircle2
 } from 'lucide-react';
 import { PettyCashItem } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -103,6 +108,8 @@ export default function PettyCashView() {
     pettyCash, 
     topUpPettyCash, 
     addPettyExpense, 
+    updatePettyCashItem,
+    deletePettyCashItem,
     pettyCashIn, 
     pettyCashOut, 
     pettyCashBalance,
@@ -119,6 +126,68 @@ export default function PettyCashView() {
   const [showTopupModal, setShowTopupModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [selectedPettyDetail, setSelectedPettyDetail] = useState<PettyCashItem | null>(null);
+
+  // Edit State
+  const [editingPettyItem, setEditingPettyItem] = useState<PettyCashItem | null>(null);
+  const [editTanggal, setEditTanggal] = useState('');
+  const [editTipe, setEditTipe] = useState<'masuk' | 'keluar'>('keluar');
+  const [editPenerima, setEditPenerima] = useState('');
+  const [editKategori, setEditKategori] = useState<PettyCashItem['kategori']>('atk');
+  const [editNominal, setEditNominal] = useState<number>(0);
+  const [editMetode, setEditMetode] = useState('Tunai Kasir');
+  const [editKeterangan, setEditKeterangan] = useState('');
+  const [editBuktiImage, setEditBuktiImage] = useState<string | null>(null);
+
+  const handleStartEdit = (item: PettyCashItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingPettyItem(item);
+    setEditTanggal(item.tanggal);
+    setEditTipe(item.tipe);
+    setEditPenerima(item.penerima);
+    setEditKategori(item.kategori);
+    setEditNominal(item.nominal);
+    setEditMetode(item.metode || 'Tunai Kasir');
+    setEditKeterangan(item.keterangan || '');
+    setEditBuktiImage(item.buktiImage || null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPettyItem) return;
+    if (Number(editNominal) <= 0) {
+      alert('Nominal transaksi kas kecil harus lebih besar dari Rp 0');
+      return;
+    }
+
+    const updates: Partial<PettyCashItem> = {
+      tanggal: editTanggal,
+      tipe: editTipe,
+      penerima: editPenerima.trim(),
+      kategori: editKategori,
+      nominal: Number(editNominal),
+      metode: editMetode,
+      keterangan: editKeterangan.trim(),
+      buktiImage: editBuktiImage
+    };
+
+    await updatePettyCashItem(editingPettyItem.id, updates);
+    if (selectedPettyDetail && selectedPettyDetail.id === editingPettyItem.id) {
+      setSelectedPettyDetail({ ...selectedPettyDetail, ...updates });
+    }
+    alert('Perubahan transaksi Kas Kecil berhasil disimpan dan tersinkron ke Cloud!');
+    setEditingPettyItem(null);
+  };
+
+  const handleDeletePetty = async (item: PettyCashItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (confirm(`Yakin ingin menghapus transaksi "${item.penerima} - Rp ${item.nominal.toLocaleString('id-ID')}" dari Kas Kecil?`)) {
+      await deletePettyCashItem(item.id);
+      if (selectedPettyDetail && selectedPettyDetail.id === item.id) {
+        setSelectedPettyDetail(null);
+      }
+      alert('Transaksi Kas Kecil berhasil dihapus.');
+    }
+  };
 
   // Form Top Up
   const [topupNominal, setTopupNominal] = useState(5000000);
@@ -675,18 +744,40 @@ export default function PettyCashView() {
                           <td className="py-3 px-4 text-right font-mono font-bold text-rose-600 whitespace-nowrap">
                             {!isMasuk ? `- Rp ${item.nominal.toLocaleString('id-ID')}` : '-'}
                           </td>
-                          <td className="py-3 px-3 text-center">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPettyDetail(item);
-                              }}
-                              className="p-1 text-slate-400 group-hover:text-violet-600 group-hover:bg-violet-100/60 rounded-md transition"
-                              title="Lihat Slip Voucher Kas Kecil"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPettyDetail(item);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition cursor-pointer"
+                                title="Lihat Slip Voucher Kas Kecil"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              {!isReadOnly && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleStartEdit(item, e)}
+                                    className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer"
+                                    title="Edit Transaksi Kas Kecil"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDeletePetty(item, e)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                    title="Hapus Transaksi Kas Kecil"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -737,18 +828,40 @@ export default function PettyCashView() {
                       <td className="py-3 px-4 text-right font-mono font-bold text-rose-600 whitespace-nowrap">
                         {!isMasuk ? `- Rp ${item.nominal.toLocaleString('id-ID')}` : '-'}
                       </td>
-                      <td className="py-3 px-3 text-center">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedPettyDetail(item);
-                          }}
-                          className="p-1 text-slate-400 group-hover:text-violet-600 group-hover:bg-violet-100/60 rounded-md transition"
-                          title="Lihat Slip Voucher Kas Kecil"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPettyDetail(item);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition cursor-pointer"
+                            title="Lihat Slip Voucher Kas Kecil"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          {!isReadOnly && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => handleStartEdit(item, e)}
+                                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer"
+                                title="Edit Transaksi Kas Kecil"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeletePetty(item, e)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                title="Hapus Transaksi Kas Kecil"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -850,7 +963,21 @@ export default function PettyCashView() {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
+            <div className="pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const item = selectedPettyDetail;
+                    setSelectedPettyDetail(null);
+                    handleStartEdit(item);
+                  }}
+                  className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Transaksi</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setSelectedPettyDetail(null)}
@@ -859,6 +986,187 @@ export default function PettyCashView() {
                 Tutup Voucher
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Transaksi Kas Kecil */}
+      {editingPettyItem && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto custom-scrollbar">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">Edit Transaksi Kas Kecil</h3>
+                  <p className="text-[10px] text-slate-500">Koreksi kesalahan input transaksi petty cash harian</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingPettyItem(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-3.5 text-xs mt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tanggal Transaksi *</label>
+                  <input
+                    type="date"
+                    required
+                    value={editTanggal}
+                    onChange={(e) => setEditTanggal(e.target.value)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Arus Kas Kecil *</label>
+                  <select
+                    value={editTipe}
+                    onChange={(e) => setEditTipe(e.target.value as any)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white font-bold"
+                  >
+                    <option value="keluar">➖ Pengeluaran / Belanja</option>
+                    <option value="masuk">➕ Top Up / Kas Masuk</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Penerima Dana / Pemohon *</label>
+                <input
+                  type="text"
+                  required
+                  value={editPenerima}
+                  onChange={(e) => setEditPenerima(e.target.value)}
+                  placeholder="Nama staf, vendor, atau kasir..."
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Kategori Pengeluaran *</label>
+                  <select
+                    value={editKategori}
+                    onChange={(e) => setEditKategori(e.target.value as any)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white"
+                  >
+                    <option value="atk">ATK & Fotocopy</option>
+                    <option value="bensin">Bensin & Transport</option>
+                    <option value="konsumsi">Konsumsi & Tamu</option>
+                    <option value="kebersihan">Kebersihan & Pantry</option>
+                    <option value="utilitas">Listrik, Air & Internet</option>
+                    <option value="gaji_karyawan">Gaji Karyawan</option>
+                    <option value="topup_kas_besar">Top Up Kas Besar</option>
+                    <option value="lainnya">Lain-lain</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Metode Bayar</label>
+                  <input
+                    type="text"
+                    value={editMetode}
+                    onChange={(e) => setEditMetode(e.target.value)}
+                    placeholder="Tunai Kasir / Kas Kecil"
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nominal (Rp) *</label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={editNominal}
+                  onChange={(e) => setEditNominal(Number(e.target.value))}
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold text-sm text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Keterangan / Keperluan Belanja *</label>
+                <textarea
+                  required
+                  rows={2}
+                  value={editKeterangan}
+                  onChange={(e) => setEditKeterangan(e.target.value)}
+                  placeholder="Tuliskan keterangan detail transaksi..."
+                  className="w-full border border-slate-300 rounded-xl p-2.5"
+                />
+              </div>
+
+              {/* Upload Foto Nota */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Lampiran Foto Nota / Bon (Opsional)</label>
+                <div className="border-2 border-dashed border-slate-300 rounded-xl p-3 text-center hover:bg-slate-50 transition cursor-pointer relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 3 * 1024 * 1024) {
+                          alert('Ukuran file maksimal 3MB.');
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setEditBuktiImage(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  {editBuktiImage ? (
+                    <div className="flex items-center justify-center gap-2 text-emerald-700 font-bold text-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Foto nota terpasang (Klik untuk mengganti)</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-slate-500">
+                      <Upload className="w-4 h-4 text-slate-400 mb-1" />
+                      <span className="text-[11px] font-semibold">Klik untuk upload foto nota / bon fisik</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => handleDeletePetty(editingPettyItem)}
+                  className="px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus Transaksi</span>
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingPettyItem(null)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-xs cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Simpan Perubahan</span>
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

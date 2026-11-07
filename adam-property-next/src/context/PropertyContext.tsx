@@ -51,9 +51,11 @@ import {
   supabaseInsertPayment,
   supabaseUpdatePayment,
   supabaseInsertCashbookItem,
+  supabaseUpdateCashbookItem,
   supabaseDeleteCashbookItem,
   supabaseFetchPettyCash,
   supabaseInsertPettyCash,
+  supabaseUpdatePettyCash,
   supabaseDeletePettyCash,
   supabaseFetchInventory,
   supabaseInsertInventory,
@@ -190,6 +192,7 @@ interface PropertyContextType {
   addLandPayment: (data: Omit<LandPayment, 'id'>) => void;
   updateLandPaymentReceipt: (paymentId: string, kwitansiImage: string | null) => void;
   addCashbookItem: (data: Omit<CashbookItem, 'id'>) => void;
+  updateCashbookItem: (id: string, updates: Partial<CashbookItem>) => Promise<boolean>;
   deleteCashbookItem: (id: string) => Promise<boolean>;
   topUpPettyCash: (nominal: number, sumberDana: 'kas_besar' | 'investor', keterangan: string, penerima?: string) => void;
   addPettyExpense: (data: {
@@ -199,6 +202,8 @@ interface PropertyContextType {
     nominal: number;
     metode?: string;
   }) => void;
+  updatePettyCashItem: (id: string, updates: Partial<PettyCashItem>) => Promise<boolean>;
+  deletePettyCashItem: (id: string) => Promise<boolean>;
   addInventoryItem: (data: Omit<InventoryItem, 'id'>) => void;
   deleteInventoryItem: (id: string) => void;
   addEmployee: (data: Omit<Employee, 'id'>) => void;
@@ -1536,6 +1541,18 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateCashbookItem = async (id: string, updates: Partial<CashbookItem>): Promise<boolean> => {
+    setCashbook(prev => {
+      const updated = prev.map(c => c.id === id ? { ...c, ...updates } : c);
+      saveStorage('cashbook', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      return await supabaseUpdateCashbookItem(id, updates);
+    }
+    return true;
+  };
+
   const deleteCashbookItem = async (id: string): Promise<boolean> => {
     setCashbook(prev => {
       const updated = prev.filter(c => c.id !== id);
@@ -1636,6 +1653,30 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     if (isSupabaseConfigured()) {
       supabaseInsertPettyCash(newPetty).catch(console.warn);
     }
+  };
+
+  const updatePettyCashItem = async (id: string, updates: Partial<PettyCashItem>): Promise<boolean> => {
+    setPettyCash(prev => {
+      const updated = prev.map(p => p.id === id ? { ...p, ...updates } : p);
+      saveStorage('pettyCash', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      return await supabaseUpdatePettyCash(id, updates);
+    }
+    return true;
+  };
+
+  const deletePettyCashItem = async (id: string): Promise<boolean> => {
+    setPettyCash(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      saveStorage('pettyCash', updated);
+      return updated;
+    });
+    if (isSupabaseConfigured()) {
+      return await supabaseDeletePettyCash(id);
+    }
+    return true;
   };
 
   // 7. Inventory Items
@@ -1857,9 +1898,12 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         addLandPayment,
         updateLandPaymentReceipt,
         addCashbookItem,
+        updateCashbookItem,
         deleteCashbookItem,
         topUpPettyCash,
         addPettyExpense,
+        updatePettyCashItem,
+        deletePettyCashItem,
         addInventoryItem,
         deleteInventoryItem,
         addEmployee,

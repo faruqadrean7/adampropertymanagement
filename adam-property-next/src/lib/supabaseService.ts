@@ -568,6 +568,30 @@ export async function supabaseInsertCashbookItem(item: CashbookItem): Promise<bo
   }
 }
 
+export async function supabaseUpdateCashbookItem(id: string, updates: Partial<CashbookItem>): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const payload: any = {};
+    if (updates.tanggal !== undefined) payload.tanggal = updates.tanggal;
+    if (updates.tipe !== undefined) payload.tipe = updates.tipe;
+    if (updates.kategori !== undefined) payload.kategori = updates.kategori;
+    if (updates.sumber !== undefined) payload.sumber = updates.sumber;
+    if (updates.keterangan !== undefined) payload.keterangan = updates.keterangan;
+    if (updates.nominal !== undefined) payload.nominal = updates.nominal;
+    if (updates.metode !== undefined) payload.metode = updates.metode;
+    if (updates.projectId !== undefined) payload.project_id = updates.projectId;
+    if (updates.refType !== undefined) payload.ref_type = updates.refType;
+    if (updates.refId !== undefined) payload.ref_id = updates.refId;
+
+    const { error } = await supabase.from('cashbook').update(payload).eq('id', id);
+    if (error) console.warn('Supabase update cashbook error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error updating cashbook item:', e);
+    return false;
+  }
+}
+
 export async function supabaseDeleteCashbookItem(id: string): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
   try {
@@ -629,6 +653,32 @@ export async function supabaseInsertPettyCash(item: PettyCashItem): Promise<bool
     return !error;
   } catch (e) {
     console.warn('Error inserting petty cash item:', e);
+    return false;
+  }
+}
+
+export async function supabaseUpdatePettyCash(id: string, updates: Partial<PettyCashItem>): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const payload: any = {};
+    if (updates.tanggal !== undefined) payload.tanggal = updates.tanggal;
+    if (updates.tipe !== undefined) payload.tipe = updates.tipe;
+    if (updates.kategori !== undefined) payload.kategori = updates.kategori;
+    if (updates.penerima !== undefined) {
+      payload.penerima = updates.penerima;
+      payload.sumber_tujuan = updates.penerima;
+    }
+    if (updates.sumberDana !== undefined) payload.sumber_dana = updates.sumberDana;
+    if (updates.keterangan !== undefined) payload.keterangan = updates.keterangan;
+    if (updates.nominal !== undefined) payload.nominal = updates.nominal;
+    if (updates.metode !== undefined) payload.metode = updates.metode;
+    if (updates.buktiImage !== undefined) payload.bukti_nota = updates.buktiImage;
+
+    const { error } = await supabase.from('petty_cash').update(payload).eq('id', id);
+    if (error) console.warn('Supabase update petty_cash error:', error);
+    return !error;
+  } catch (e) {
+    console.warn('Error updating petty cash item:', e);
     return false;
   }
 }

@@ -23,7 +23,10 @@ import {
   Clock,
   Sparkles,
   ArrowRight,
-  PackageCheck
+  PackageCheck,
+  Edit3,
+  Trash2,
+  Save
 } from 'lucide-react';
 import { CashbookItem } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -104,6 +107,8 @@ export default function CashbookView() {
     projects, 
     cashbook, 
     addCashbookItem, 
+    updateCashbookItem,
+    deleteCashbookItem,
     totalCashIn, 
     totalCashOut, 
     cashbookBalance,
@@ -121,6 +126,65 @@ export default function CashbookView() {
   const [showInvestorModal, setShowInvestorModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [selectedCashDetail, setSelectedCashDetail] = useState<CashbookItem | null>(null);
+
+  // Edit State
+  const [editingCashItem, setEditingCashItem] = useState<CashbookItem | null>(null);
+  const [editTanggal, setEditTanggal] = useState('');
+  const [editTipe, setEditTipe] = useState<'masuk' | 'keluar'>('masuk');
+  const [editSumber, setEditSumber] = useState('');
+  const [editKategori, setEditKategori] = useState<CashbookItem['kategori']>('operasional');
+  const [editNominal, setEditNominal] = useState<number>(0);
+  const [editMetode, setEditMetode] = useState('Transfer Bank BCA');
+  const [editKeterangan, setEditKeterangan] = useState('');
+
+  const handleStartEdit = (item: CashbookItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingCashItem(item);
+    setEditTanggal(item.tanggal);
+    setEditTipe(item.tipe);
+    setEditSumber(item.sumber);
+    setEditKategori(item.kategori);
+    setEditNominal(item.nominal);
+    setEditMetode(item.metode || 'Transfer Bank BCA');
+    setEditKeterangan(item.keterangan || '');
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCashItem) return;
+    if (Number(editNominal) <= 0) {
+      alert('Nominal transaksi kas harus lebih besar dari Rp 0');
+      return;
+    }
+
+    const updates: Partial<CashbookItem> = {
+      tanggal: editTanggal,
+      tipe: editTipe,
+      sumber: editSumber.trim(),
+      kategori: editKategori,
+      nominal: Number(editNominal),
+      metode: editMetode,
+      keterangan: editKeterangan.trim()
+    };
+
+    await updateCashbookItem(editingCashItem.id, updates);
+    if (selectedCashDetail && selectedCashDetail.id === editingCashItem.id) {
+      setSelectedCashDetail({ ...selectedCashDetail, ...updates });
+    }
+    alert('Perubahan transaksi Kas Besar berhasil disimpan dan tersinkron ke Cloud!');
+    setEditingCashItem(null);
+  };
+
+  const handleDeleteCash = async (item: CashbookItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (confirm(`Yakin ingin menghapus transaksi "${item.sumber} - Rp ${item.nominal.toLocaleString('id-ID')}" dari Kas Besar?`)) {
+      await deleteCashbookItem(item.id);
+      if (selectedCashDetail && selectedCashDetail.id === item.id) {
+        setSelectedCashDetail(null);
+      }
+      alert('Transaksi Kas Besar berhasil dihapus.');
+    }
+  };
 
   // Form Investor
   const [invNama, setInvNama] = useState('');
@@ -742,18 +806,40 @@ export default function CashbookView() {
                           <td className="py-3 px-4 text-right font-mono font-bold text-rose-600 whitespace-nowrap">
                             {!isMasuk ? `- Rp ${item.nominal.toLocaleString('id-ID')}` : '-'}
                           </td>
-                          <td className="py-3 px-3 text-center">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCashDetail(item);
-                              }}
-                              className="p-1 text-slate-400 group-hover:text-blue-600 group-hover:bg-blue-100/60 rounded-md transition"
-                              title="Lihat Slip Voucher Kas"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCashDetail(item);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                                title="Lihat Slip Voucher Kas"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              {!isReadOnly && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleStartEdit(item, e)}
+                                    className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer"
+                                    title="Edit Transaksi Kas"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDeleteCash(item, e)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                    title="Hapus Transaksi Kas"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -810,18 +896,40 @@ export default function CashbookView() {
                       <td className="py-3 px-4 text-right font-mono font-bold text-rose-600 whitespace-nowrap">
                         {!isMasuk ? `- Rp ${item.nominal.toLocaleString('id-ID')}` : '-'}
                       </td>
-                      <td className="py-3 px-3 text-center">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCashDetail(item);
-                          }}
-                          className="p-1 text-slate-400 group-hover:text-blue-600 group-hover:bg-blue-100/60 rounded-md transition"
-                          title="Lihat Slip Voucher Kas"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCashDetail(item);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                            title="Lihat Slip Voucher Kas"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          {!isReadOnly && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => handleStartEdit(item, e)}
+                                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer"
+                                title="Edit Transaksi Kas"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteCash(item, e)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                title="Hapus Transaksi Kas"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -930,7 +1038,21 @@ export default function CashbookView() {
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
+            <div className="pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const item = selectedCashDetail;
+                    setSelectedCashDetail(null);
+                    handleStartEdit(item);
+                  }}
+                  className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Transaksi</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setSelectedCashDetail(null)}
@@ -939,6 +1061,147 @@ export default function CashbookView() {
                 Tutup Voucher
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Transaksi Kas Besar */}
+      {editingCashItem && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto custom-scrollbar">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">Edit Transaksi Kas Besar</h3>
+                  <p className="text-[10px] text-slate-500">Koreksi kesalahan input data transaksi buku kas</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingCashItem(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-3.5 text-xs mt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tanggal Transaksi *</label>
+                  <input
+                    type="date"
+                    required
+                    value={editTanggal}
+                    onChange={(e) => setEditTanggal(e.target.value)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Arus Kas (Tipe) *</label>
+                  <select
+                    value={editTipe}
+                    onChange={(e) => setEditTipe(e.target.value as any)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white font-bold"
+                  >
+                    <option value="masuk">➕ Kas Masuk (Penerimaan)</option>
+                    <option value="keluar">➖ Kas Keluar (Pengeluaran)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Pihak / Rekanan / Sumber *</label>
+                <input
+                  type="text"
+                  required
+                  value={editSumber}
+                  onChange={(e) => setEditSumber(e.target.value)}
+                  placeholder="Nama customer, vendor, atau investor..."
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Kategori Akun *</label>
+                  <select
+                    value={editKategori}
+                    onChange={(e) => setEditKategori(e.target.value as any)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white"
+                  >
+                    <option value="jual_kavling">Penjualan Kavling</option>
+                    <option value="investor">Modal Investor</option>
+                    <option value="lahan_petani">Lahan Petani</option>
+                    <option value="operasional">Operasional Kantor/Proyek</option>
+                    <option value="lainnya">Lainnya</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Metode Bayar</label>
+                  <input
+                    type="text"
+                    value={editMetode}
+                    onChange={(e) => setEditMetode(e.target.value)}
+                    placeholder="Transfer Bank BCA / Mandiri / Tunai"
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nominal (Rp) *</label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={editNominal}
+                  onChange={(e) => setEditNominal(Number(e.target.value))}
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold text-sm text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Keterangan / Uraian Biaya *</label>
+                <textarea
+                  required
+                  rows={2}
+                  value={editKeterangan}
+                  onChange={(e) => setEditKeterangan(e.target.value)}
+                  placeholder="Tuliskan keterangan detail transaksi..."
+                  className="w-full border border-slate-300 rounded-xl p-2.5"
+                />
+              </div>
+
+              <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCash(editingCashItem)}
+                  className="px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus Transaksi</span>
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingCashItem(null)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-xs cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Simpan Perubahan</span>
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}
